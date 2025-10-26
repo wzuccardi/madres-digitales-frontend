@@ -6,7 +6,7 @@ import '../config/app_config.dart';
 import 'auth_service.dart';
 
 class ApiService {
-  static const String baseUrl = AppConfig.backendBaseUrl;
+  static final String baseUrl = AppConfig.getApiUrl();
   static const String androidEmulatorUrl = AppConfig.androidEmulatorUrl;
 
   late final Dio _dio;

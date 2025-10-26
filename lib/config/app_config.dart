@@ -161,9 +161,9 @@ class AppConfig {
   
   // Método para obtener URL según plataforma
   static String getApiUrl() {
-    // En desarrollo usar localhost, en producción usar Vercel
-    const bool isProduction = bool.fromEnvironment('dart.vm.product');
-    return isProduction ? backendBaseUrl : backendBaseUrlDev;
+    // En producción siempre usar la URL de Vercel
+    // En desarrollo local, cambiar manualmente si es necesario
+    return backendBaseUrl;
   }
   
   // Método para verificar si un rol tiene acceso completo
