@@ -1,27 +1,12 @@
 {
-  "buildCommand": "flutter build web --release --web-renderer html",
+  "buildCommand": "flutter build web --release",
   "outputDirectory": "build/web",
   "installCommand": "flutter pub get",
   "framework": null,
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
-  ],
-  "headers": [
+  "rewrites": [
     {
       "source": "/(.*)",
-      "headers": [
-        {
-          "key": "X-Frame-Options",
-          "value": "DENY"
-        },
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        }
-      ]
+      "destination": "/index.html"
     }
   ]
 }
