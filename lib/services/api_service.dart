@@ -3,7 +3,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/logger.dart';
 import '../config/app_config.dart';
-import 'auth_service.dart';
 
 class ApiService {
   static final String baseUrl = AppConfig.getApiUrl();

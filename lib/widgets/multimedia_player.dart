@@ -32,7 +32,7 @@ class _MultimediaPlayerState extends State<MultimediaPlayer> {
   bool _isVideoInitialized = false;
   bool _isVideoPlaying = false;
   bool _showControls = true;
-  bool _isFullScreen = false;
+  final bool _isFullScreen = false;
 
   // Audio
   final AudioPlayer _audioPlayer = AudioPlayer();
@@ -333,7 +333,7 @@ class _MultimediaPlayerState extends State<MultimediaPlayer> {
                               ),
                               const SizedBox(width: 20),
                               Container(
-                                decoration: BoxDecoration(
+                                decoration: const BoxDecoration(
                                   color: AppTheme.primaryColor,
                                   shape: BoxShape.circle,
                                 ),
@@ -461,7 +461,7 @@ class _MultimediaPlayerState extends State<MultimediaPlayer> {
         children: [
           Row(
             children: [
-              Icon(Icons.audiotrack, color: AppTheme.primaryColor),
+              const Icon(Icons.audiotrack, color: AppTheme.primaryColor),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -899,7 +899,7 @@ class _FullScreenVideoPlayerState extends State<_FullScreenVideoPlayer> {
                           ),
                           const SizedBox(width: 40),
                           Container(
-                            decoration: BoxDecoration(
+                            decoration: const BoxDecoration(
                               color: AppTheme.primaryColor,
                               shape: BoxShape.circle,
                             ),

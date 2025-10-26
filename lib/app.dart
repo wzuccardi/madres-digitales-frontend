@@ -15,7 +15,6 @@ import 'features/auth/presentation/pages/register_page.dart';
 // import 'features/usuarios/presentation/screens/crear_usuario_admin_screen.dart'; // ELIMINADO
 import 'screens/usuario_form_screen.dart';
 import 'screens/usuarios_screen.dart';
-import 'screens/debug_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/controles_screen.dart';
 import 'screens/gestantes_screen.dart';
