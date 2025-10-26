@@ -104,9 +104,10 @@ class AuthService {
         final data = json.decode(response.body);
         
         if (data['success'] == true) {
-          _currentToken = data['token'];
-          _refreshToken = data['refreshToken'];
-          _currentUser = data['user'];
+          final responseData = data['data'];
+          _currentToken = responseData['token'];
+          _refreshToken = responseData['refreshToken'];
+          _currentUser = responseData['usuario'];
 
           debugPrint('📦 AuthService: Datos recibidos del backend:');
           debugPrint('   - Token: ${_currentToken != null ? "✅" : "❌"}');
