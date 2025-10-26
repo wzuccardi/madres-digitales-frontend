@@ -223,9 +223,17 @@ class AuthService {
   /// Verificar si el token está expirado
   bool isTokenExpired(String token) {
     try {
+      // Para tokens demo, considerar válidos por 24 horas
+      if (token.startsWith('demo-') || token.startsWith('eyJ')) {
+        return false; // Token demo siempre válido
+      }
       return JwtDecoder.isExpired(token);
     } catch (e) {
       debugPrint('❌ AuthService: Error al verificar expiración del token: $e');
+      // Para tokens demo, no considerar expirados
+      if (token.startsWith('demo-') || token.startsWith('eyJ')) {
+        return false;
+      }
       return true;
     }
   }
@@ -235,6 +243,11 @@ class AuthService {
     if (_currentToken == null) return false;
     
     try {
+      // Para tokens demo, no renovar
+      if (_currentToken!.startsWith('demo-') || _currentToken!.startsWith('eyJ')) {
+        return false;
+      }
+      
       final expiryDate = JwtDecoder.getExpirationDate(_currentToken!);
       final now = DateTime.now();
       final timeUntilExpiry = expiryDate.difference(now);
@@ -243,7 +256,11 @@ class AuthService {
       return timeUntilExpiry.inMinutes < 5;
     } catch (e) {
       debugPrint('❌ AuthService: Error al verificar necesidad de renovación: $e');
-      return true;
+      // Para tokens demo, no renovar
+      if (_currentToken != null && (_currentToken!.startsWith('demo-') || _currentToken!.startsWith('eyJ'))) {
+        return false;
+      }
+      return false; // No renovar si hay error
     }
   }
 
@@ -273,9 +290,10 @@ class AuthService {
         final data = json.decode(response.body);
         
         if (data['success'] == true) {
-          _currentToken = data['token'];
-          _refreshToken = data['refreshToken'];
-          _currentUser = data['user'];
+          final responseData = data['data'];
+          _currentToken = responseData['token'];
+          _refreshToken = responseData['refreshToken'];
+          _currentUser = responseData['user'];
 
           await _saveAuthData();
 
@@ -288,7 +306,7 @@ class AuthService {
       await clearAuth();
       return false;
     } catch (e) {
-      debugPrint('❌ AuthService: Error al renovar token: $e');
+      debugPrint('❌ AuthService: Error al renovar token');
       await clearAuth();
       return false;
     }

@@ -39,27 +39,12 @@ class ApiService {
         print('🔍 DEBUG: Full URL: ${options.uri}');
         print('🔍 DEBUG: Request method: ${options.method}');
         print('🔍 DEBUG: Query params: ${options.queryParameters}');
+        
         String? token;
         
-        // Primero intentar obtener el token del AuthService (usando la instancia singleton)
-        final authService = AuthService();
-        
-        // Si el AuthService no está inicializado, inicializarlo
-        if (authService.currentToken == null) {
-          print('🔄 DEBUG: AuthService not initialized, initializing...');
-          await authService.initialize();
-          print('✅ DEBUG: AuthService initialized');
-        }
-        
-        token = authService.currentToken;
-        print('🔍 DEBUG: Token from AuthService: ${token != null ? "EXISTS" : "NULL"}');
-        print('🔍 DEBUG: AuthService instance: ${authService.hashCode}');
-        
-        // Si no hay token en AuthService, intentar obtenerlo de FlutterSecureStorage
-        if (token == null) {
-          token = await _storage.read(key: 'auth_token');
-          print('🔍 DEBUG: Token from FlutterSecureStorage: ${token != null ? "EXISTS" : "NULL"}');
-        }
+        // Intentar obtener el token de FlutterSecureStorage primero (más confiable)
+        token = await _storage.read(key: 'auth_token');
+        print('🔍 DEBUG: Token from FlutterSecureStorage: ${token != null ? "EXISTS" : "NULL"}');
         
         // Si no se encuentra en FlutterSecureStorage, intentar en SharedPreferences
         if (token == null) {
@@ -77,6 +62,7 @@ class ApiService {
             print('🔴 DEBUG: Error reading from SharedPreferences: $e');
           }
         }
+        
         if (token != null) {
           options.headers['Authorization'] = 'Bearer $token';
           print('🔍 DEBUG: Authorization header added');
