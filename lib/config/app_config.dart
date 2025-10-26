@@ -161,9 +161,10 @@ class AppConfig {
   
   // Método para obtener URL según plataforma
   static String getApiUrl() {
-    // En producción siempre usar la URL de Vercel
-    // En desarrollo local, cambiar manualmente si es necesario
-    return backendBaseUrl;
+    // TEMPORAL: Usar backend local para pruebas
+    // Cambiar a backendBaseUrl para producción
+    return 'http://localhost:3000/api';
+    // return backendBaseUrl;
   }
   
   // Método para verificar si un rol tiene acceso completo
