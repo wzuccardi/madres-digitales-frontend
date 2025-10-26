@@ -1,5 +1,5 @@
 import 'package:geolocator/geolocator.dart';
-import 'package:permission_handler/permission_handler.dart';
+import '../utils/logger.dart';
 
 class LocationService {
   static LocationService? _instance;
@@ -56,13 +56,16 @@ class LocationService {
       }
       
       // Obtener ubicación
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          distanceFilter: 10,
+        ),
       );
       
       return position;
     } catch (e) {
-      print('Error obteniendo ubicación: $e');
+      appLogger.error('Error obteniendo ubicación: $e');
       return null;
     }
   }

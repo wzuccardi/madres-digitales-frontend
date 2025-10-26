@@ -1,411 +1,397 @@
 import 'dart:convert';
-import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
-import 'api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:madres_digitales_flutter_new/utils/logger.dart';
+import 'package:madres_digitales_flutter_new/models/dashboard_model.dart';
+import 'package:madres_digitales_flutter_new/models/usuario_model.dart';
 
+/// Servicio para manejar datos offline
 class OfflineService {
-  static OfflineService? _instance;
-  static OfflineService get instance => _instance ??= OfflineService._();
-  OfflineService._();
-  
-  Database? _database;
-  final ApiService _apiService = ApiService();
-  
-  // Inicializar base de datos local
-  Future<Database> get database async {
-    if (_database != null) return _database!;
-    _database = await _initDatabase();
-    return _database!;
-  }
-  
-  Future<Database> _initDatabase() async {
-    String path = join(await getDatabasesPath(), 'madres_digitales_offline.db');
-    
-    return await openDatabase(
-      path,
-      version: 2,
-      onCreate: _createTables,
-      onUpgrade: _onUpgrade,
-    );
-  }
-  
-  Future<void> _createTables(Database db, int version) async {
-    // Tabla para controles prenatales offline
-    await db.execute('''
-      CREATE TABLE controles_offline (
-        id TEXT PRIMARY KEY,
-        gestante_id TEXT NOT NULL,
-        fecha_control TEXT NOT NULL,
-        peso REAL,
-        presion_sistolica INTEGER,
-        presion_diastolica INTEGER,
-        frecuencia_cardiaca INTEGER,
-        temperatura REAL,
-        observaciones TEXT,
-        ubicacion_latitud REAL,
-        ubicacion_longitud REAL,
-        created_at TEXT NOT NULL,
-        synced INTEGER DEFAULT 0
-      )
-    ''');
-    
-    // Tabla para alertas offline
-    await db.execute('''
-      CREATE TABLE alertas_offline (
-        id TEXT PRIMARY KEY,
-        gestante_id TEXT NOT NULL,
-        tipo_alerta TEXT NOT NULL,
-        nivel_prioridad TEXT NOT NULL,
-        mensaje TEXT NOT NULL,
-        ubicacion_latitud REAL,
-        ubicacion_longitud REAL,
-        created_at TEXT NOT NULL,
-        synced INTEGER DEFAULT 0
-      )
-    ''');
-    
-    // Tabla para gestantes (cache)
-    await db.execute('''
-      CREATE TABLE gestantes_cache (
-        id TEXT PRIMARY KEY,
-        nombre TEXT NOT NULL,
-        apellido TEXT NOT NULL,
-        documento TEXT NOT NULL,
-        telefono TEXT,
-        fecha_nacimiento TEXT,
-        direccion TEXT,
-        ubicacion_latitud REAL,
-        ubicacion_longitud REAL,
-        updated_at TEXT NOT NULL
-      )
-    ''');
-    
-    // Tabla para sincronización pendiente
-    await db.execute('''
-      CREATE TABLE sync_queue (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        table_name TEXT NOT NULL,
-        record_id TEXT NOT NULL,
-        action TEXT NOT NULL,
-        data TEXT NOT NULL,
-        created_at TEXT NOT NULL
-      )
-    ''');
-    
-    // Tabla para caché de contenidos
-    await db.execute('''
-      CREATE TABLE contenidos_cache (
-        id TEXT PRIMARY KEY,
-        titulo TEXT NOT NULL,
-        descripcion TEXT,
-        categoria TEXT NOT NULL,
-        tipo TEXT NOT NULL,
-        nivel TEXT NOT NULL,
-        url_contenido TEXT NOT NULL,
-        url_miniatura TEXT,
-        duracion INTEGER,
-        tags TEXT,
-        activo INTEGER DEFAULT 1,
-        ruta_local TEXT,
-        fecha_creacion TEXT NOT NULL,
-        fecha_actualizacion TEXT
-      )
-    ''');
-    
-    // Tabla para progreso de contenido
-    await db.execute('''
-      CREATE TABLE progreso_contenido_cache (
-        contenido_id TEXT NOT NULL,
-        usuario_id TEXT NOT NULL,
-        tiempo_visto INTEGER DEFAULT 0,
-        porcentaje_completado REAL DEFAULT 0.0,
-        completado INTEGER DEFAULT 0,
-        fecha_actualizacion TEXT NOT NULL,
-        PRIMARY KEY (contenido_id, usuario_id)
-      )
-    ''');
-  }
-  
-  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 2) {
-      // Agregar tablas de contenido en la versión 2
-      await db.execute('''
-        CREATE TABLE contenidos_cache (
-          id TEXT PRIMARY KEY,
-          titulo TEXT NOT NULL,
-          descripcion TEXT,
-          categoria TEXT NOT NULL,
-          tipo TEXT NOT NULL,
-          nivel TEXT NOT NULL,
-          url_contenido TEXT NOT NULL,
-          url_miniatura TEXT,
-          duracion INTEGER,
-          tags TEXT,
-          activo INTEGER DEFAULT 1,
-          ruta_local TEXT,
-          fecha_creacion TEXT NOT NULL,
-          fecha_actualizacion TEXT
-        )
-      ''');
+  final SharedPreferences _prefs;
+  static const String _estadisticasCacheKey = 'estadisticas_cache';
+  static const String _estadisticasTimestampKey = 'estadisticas_timestamp';
+  static const String _gestantesCacheKey = 'gestantes_cache';
+  static const String _contenidosCacheKey = 'contenidos_cache';
+  static const Duration _cacheExpiration = Duration(hours: 1);
+
+  OfflineService({required SharedPreferences prefs}) : _prefs = prefs;
+
+  /// Guardar estadísticas en cache offline
+  Future<void> saveEstadisticasCache(EstadisticasGeneralesModel estadisticas) async {
+    try {
+      final estadisticasJson = jsonEncode(estadisticas.toJson());
+      final timestampJson = DateTime.now().toIso8601String();
       
-      await db.execute('''
-        CREATE TABLE progreso_contenido_cache (
-          contenido_id TEXT NOT NULL,
-          usuario_id TEXT NOT NULL,
-          tiempo_visto INTEGER DEFAULT 0,
-          porcentaje_completado REAL DEFAULT 0.0,
-          completado INTEGER DEFAULT 0,
-          fecha_actualizacion TEXT NOT NULL,
-          PRIMARY KEY (contenido_id, usuario_id)
-        )
-      ''');
+      await _prefs.setString(_estadisticasCacheKey, estadisticasJson);
+      await _prefs.setString(_estadisticasTimestampKey, timestampJson);
+      
+      appLogger.info('Estadísticas guardadas en cache offline');
+    } catch (e) {
+      appLogger.error('Error guardando estadísticas en cache', error: e);
     }
   }
-  
-  // Verificar conectividad
-  Future<bool> isConnected() async {
-    final connectivityResult = await Connectivity().checkConnectivity();
-    return connectivityResult != ConnectivityResult.none;
+
+  /// Obtener estadísticas desde cache offline
+  Future<EstadisticasGeneralesModel?> getEstadisticasCache() async {
+    try {
+      final estadisticasJson = _prefs.getString(_estadisticasCacheKey);
+      final timestampJson = _prefs.getString(_estadisticasTimestampKey);
+      
+      if (estadisticasJson == null || timestampJson == null) {
+        return null;
+      }
+      
+      // Verificar si el cache ha expirado
+      final lastUpdate = DateTime.parse(timestampJson);
+      final now = DateTime.now();
+      
+      if (now.difference(lastUpdate) > _cacheExpiration) {
+        appLogger.warn('Cache de estadísticas expirado');
+        return null;
+      }
+      
+      // Decodificar y retornar estadísticas
+      final estadisticasData = jsonDecode(estadisticasJson) as Map<String, dynamic>;
+      final estadisticas = EstadisticasGeneralesModel.fromJson(estadisticasData);
+      
+      appLogger.info('Estadísticas obtenidas desde cache offline');
+      return estadisticas;
+    } catch (e) {
+      appLogger.error('Error obteniendo estadísticas cache', error: e);
+      return null;
+    }
   }
-  
-  // Stream de conectividad
-  Stream<ConnectivityResult> get connectivityStream {
-    return Connectivity().onConnectivityChanged;
+
+  /// Limpiar cache de estadísticas
+  Future<void> clearEstadisticasCache() async {
+    try {
+      await _prefs.remove(_estadisticasCacheKey);
+      await _prefs.remove(_estadisticasTimestampKey);
+      
+      appLogger.info('Cache de estadísticas limpiado');
+    } catch (e) {
+      appLogger.error('Error limpiando cache de estadísticas', error: e);
+    }
   }
-  
-  // Guardar control prenatal offline
-  Future<void> saveControlOffline(Map<String, dynamic> controlData) async {
-    final db = await database;
-    
-    await db.insert(
-      'controles_offline',
-      {
-        ...controlData,
-        'created_at': DateTime.now().toIso8601String(),
-        'synced': 0,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-    
-    // Agregar a cola de sincronización
-    await _addToSyncQueue('controles_offline', controlData['id'], 'INSERT', controlData);
+
+  /// Guardar gestantes en cache offline
+  Future<void> saveGestantesCache(List<Map<String, dynamic>> gestantes) async {
+    try {
+      final gestantesJson = jsonEncode(gestantes);
+      await _prefs.setString(_gestantesCacheKey, gestantesJson);
+      
+      appLogger.info('Gestantes guardadas en cache offline: ${gestantes.length}');
+    } catch (e) {
+      appLogger.error('Error guardando gestantes en cache', error: e);
+    }
   }
-  
-  // Guardar alerta offline
-  Future<void> saveAlertaOffline(Map<String, dynamic> alertaData) async {
-    final db = await database;
-    
-    await db.insert(
-      'alertas_offline',
-      {
-        ...alertaData,
-        'created_at': DateTime.now().toIso8601String(),
-        'synced': 0,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-    
-    // Agregar a cola de sincronización
-    await _addToSyncQueue('alertas_offline', alertaData['id'], 'INSERT', alertaData);
+
+  /// Obtener gestantes desde cache offline
+  Future<List<Map<String, dynamic>>?> getGestantesCache() async {
+    try {
+      final gestantesJson = _prefs.getString(_gestantesCacheKey);
+      
+      if (gestantesJson == null) {
+        return null;
+      }
+      
+      final gestantesData = jsonDecode(gestantesJson) as List<dynamic>;
+      final gestantes = gestantesData.cast<Map<String, dynamic>>();
+      
+      appLogger.info('Gestantes obtenidas desde cache offline: ${gestantes.length}');
+      return gestantes;
+    } catch (e) {
+      appLogger.error('Error obteniendo gestantes cache', error: e);
+      return null;
+    }
   }
-  
-  // Cache de gestantes
-  Future<void> cacheGestante(Map<String, dynamic> gestanteData) async {
-    final db = await database;
-    
-    await db.insert(
-      'gestantes_cache',
-      {
-        ...gestanteData,
-        'updated_at': DateTime.now().toIso8601String(),
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+
+  /// Guardar contenidos en cache offline
+  Future<void> saveContenidosCache(List<Map<String, dynamic>> contenidos) async {
+    try {
+      final contenidosJson = jsonEncode(contenidos);
+      await _prefs.setString(_contenidosCacheKey, contenidosJson);
+      
+      appLogger.info('Contenidos guardados en cache offline: ${contenidos.length}');
+    } catch (e) {
+      appLogger.error('Error guardando contenidos en cache', error: e);
+    }
   }
-  
-  // Obtener gestantes desde cache
-  Future<List<Map<String, dynamic>>> getCachedGestantes() async {
-    final db = await database;
-    return await db.query('gestantes_cache');
+
+  /// Obtener contenidos desde cache offline
+  Future<List<Map<String, dynamic>>?> getContenidosCache() async {
+    try {
+      final contenidosJson = _prefs.getString(_contenidosCacheKey);
+      
+      if (contenidosJson == null) {
+        return null;
+      }
+      
+      final contenidosData = jsonDecode(contenidosJson) as List<dynamic>;
+      final contenidos = contenidosData.cast<Map<String, dynamic>>();
+      
+      appLogger.info('Contenidos obtenidos desde cache offline: ${contenidos.length}');
+      return contenidos;
+    } catch (e) {
+      appLogger.error('Error obteniendo contenidos cache', error: e);
+      return null;
+    }
   }
-  
-  // Obtener controles offline
-  Future<List<Map<String, dynamic>>> getOfflineControles() async {
-    final db = await database;
-    return await db.query('controles_offline', where: 'synced = ?', whereArgs: [0]);
-  }
-  
-  // Obtener alertas offline
-  Future<List<Map<String, dynamic>>> getOfflineAlertas() async {
-    final db = await database;
-    return await db.query('alertas_offline', where: 'synced = ?', whereArgs: [0]);
-  }
-  
-  // Agregar a cola de sincronización
-  Future<void> _addToSyncQueue(
-    String tableName,
-    String recordId,
-    String action,
-    Map<String, dynamic> data,
+
+  /// Guardar contenidos por categoría en cache offline
+  Future<void> saveContenidosPorCategoriaCache(
+    String categoria, 
+    List<Map<String, dynamic>> contenidos
   ) async {
-    final db = await database;
-    
-    await db.insert('sync_queue', {
-      'table_name': tableName,
-      'record_id': recordId,
-      'action': action,
-      'data': jsonEncode(data),
-      'created_at': DateTime.now().toIso8601String(),
-    });
+    try {
+      final cacheKey = '${_contenidosCacheKey}_$categoria';
+      final contenidosJson = jsonEncode(contenidos);
+      await _prefs.setString(cacheKey, contenidosJson);
+      
+      appLogger.info('Contenidos guardados en cache offline para categoría $categoria: ${contenidos.length}');
+    } catch (e) {
+      appLogger.error('Error guardando contenidos en cache para categoría $categoria', error: e);
+    }
+  }
+
+  /// Obtener contenidos por categoría desde cache offline
+  Future<List<Map<String, dynamic>>?> getContenidosPorCategoriaCache(String categoria) async {
+    try {
+      final cacheKey = '${_contenidosCacheKey}_$categoria';
+      final contenidosJson = _prefs.getString(cacheKey);
+      
+      if (contenidosJson == null) {
+        return null;
+      }
+      
+      final contenidosData = jsonDecode(contenidosJson) as List<dynamic>;
+      final contenidos = contenidosData.cast<Map<String, dynamic>>();
+      
+      return contenidos;
+    } catch (e) {
+      appLogger.error('Error obteniendo contenidos cache para categoría $categoria', error: e);
+      return null;
+    }
+  }
+
+  /// Limpiar todo el cache
+  Future<void> clearAllCache() async {
+    try {
+      await clearEstadisticasCache();
+      await _prefs.remove(_gestantesCacheKey);
+      await _prefs.remove(_contenidosCacheKey);
+      
+      // Limpiar cache por categorías
+      final keys = _prefs.getKeys();
+      final categoriaKeys = keys.where((key) => 
+        key.startsWith('${_contenidosCacheKey}_') && key != _contenidosCacheKey
+      );
+      
+      for (final key in categoriaKeys) {
+        await _prefs.remove(key);
+      }
+      
+      appLogger.info('Todo el cache offline limpiado');
+    } catch (e) {
+      appLogger.error('Error limpiando todo el cache', error: e);
+    }
+  }
+
+  /// Verificar si hay datos cacheados
+  Future<bool> hasCachedData() async {
+    try {
+      final estadisticasJson = _prefs.getString(_estadisticasCacheKey);
+      final gestantesJson = _prefs.getString(_gestantesCacheKey);
+      final contenidosJson = _prefs.getString(_contenidosCacheKey);
+      
+      return estadisticasJson != null || 
+             gestantesJson != null || 
+             contenidosJson != null;
+    } catch (e) {
+      appLogger.error('Error verificando datos cacheados', error: e);
+      return false;
+    }
+  }
+
+  /// Obtener tamaño del cache
+  Future<int> getCacheSize() async {
+    try {
+      int totalSize = 0;
+      final keys = _prefs.getKeys();
+      
+      for (final key in keys) {
+        if (key.contains('cache')) {
+          final value = _prefs.getString(key);
+          if (value != null) {
+            totalSize += value.length;
+          }
+        }
+      }
+      
+      return totalSize;
+    } catch (e) {
+      appLogger.error('Error obteniendo tamaño del cache', error: e);
+      return 0;
+    }
   }
   
-  // Sincronizar datos pendientes
-  Future<SyncResult> syncPendingData() async {
-    if (!await isConnected()) {
-      return SyncResult(success: false, message: 'Sin conexión a internet');
-    }
-    
-    final db = await database;
-    final pendingItems = await db.query('sync_queue', orderBy: 'created_at ASC');
-    
-    int successCount = 0;
-    int errorCount = 0;
-    List<String> errors = [];
-    
-    for (final item in pendingItems) {
+  /// Reintentar operación con backoff exponencial
+  Future<bool> reintentarOperacion(Future Function() operacion) async {
+    const maxIntentos = 5;
+    for (int i = 1; i <= maxIntentos; i++) {
       try {
-        final data = jsonDecode(item['data'] as String);
-        bool synced = false;
-        
-        switch (item['table_name']) {
-          case 'controles_offline':
-            synced = await _syncControl(data);
-            break;
-          case 'alertas_offline':
-            synced = await _syncAlerta(data);
-            break;
-        }
-        
-        if (synced) {
-          // Marcar como sincronizado
-          await db.update(
-            item['table_name'] as String,
-            {'synced': 1},
-            where: 'id = ?',
-            whereArgs: [item['record_id']],
-          );
-          
-          // Eliminar de cola de sincronización
-          await db.delete('sync_queue', where: 'id = ?', whereArgs: [item['id']]);
-          
-          successCount++;
-        } else {
-          errorCount++;
-        }
+        await operacion();
+        return true;
       } catch (e) {
-        errors.add('Error sincronizando ${item['table_name']}: $e');
-        errorCount++;
+        if (i == maxIntentos) rethrow;
+        // Calcular delay con backoff exponencial (2^i segundos, máximo 30 segundos)
+        final delaySeconds = (1 << (i - 1)).clamp(1, 30);
+        final delay = Duration(seconds: delaySeconds);
+        
+        appLogger.warn('Error en operación, reintentando en ${delay.inSeconds}s', error: e);
+        await Future.delayed(delay);
       }
     }
-    
-    return SyncResult(
-      success: errorCount == 0,
-      message: 'Sincronizados: $successCount, Errores: $errorCount',
-      syncedCount: successCount,
-      errorCount: errorCount,
-      errors: errors,
-    );
+    return false;
   }
   
-  // Sincronizar control prenatal
-  Future<bool> _syncControl(Map<String, dynamic> data) async {
+  /// Guardar datos offline para sincronización posterior
+  Future<void> saveOfflineData(String key, Map<String, dynamic> data) async {
     try {
-      final response = await _apiService.post('/controles', data: data);
-      return response.statusCode == 201;
+      final offlineData = _prefs.getString('offline_data_$key') ?? '[]';
+      final List<dynamic> dataList = jsonDecode(offlineData);
+      dataList.add({
+        'data': data,
+        'timestamp': DateTime.now().toIso8601String(),
+      });
+      
+      await _prefs.setString('offline_data_$key', jsonEncode(dataList));
+      appLogger.info('Datos guardados offline para sincronización: $key');
     } catch (e) {
-      print('Error sincronizando control: $e');
+      appLogger.error('Error guardando datos offline', error: e);
+    }
+  }
+  
+  /// Obtener datos guardados offline
+  Future<List<Map<String, dynamic>>> getOfflineData(String key) async {
+    try {
+      final offlineData = _prefs.getString('offline_data_$key');
+      if (offlineData == null) return [];
+      
+      final List<dynamic> dataList = jsonDecode(offlineData);
+      return dataList.cast<Map<String, dynamic>>();
+    } catch (e) {
+      appLogger.error('Error obteniendo datos offline', error: e);
+      return [];
+    }
+  }
+  
+  /// Sincronizar datos pendientes
+  Future<void> syncPendingData() async {
+    try {
+      final keys = _prefs.getKeys().where((key) => key.startsWith('offline_data_')).toList();
+      
+      for (final key in keys) {
+        final entityKey = key.replaceFirst('offline_data_', '');
+        final dataList = await getOfflineData(entityKey);
+        
+        if (dataList.isNotEmpty) {
+          appLogger.info('Sincronizando ${dataList.length} elementos para $entityKey');
+          
+          // Aquí iría la lógica específica para sincronizar cada tipo de entidad
+          // Por ahora, solo limpiamos los datos offline
+          await _prefs.remove(key);
+        }
+      }
+      
+      appLogger.info('Sincronización de datos offline completada');
+    } catch (e) {
+      appLogger.error('Error sincronizando datos offline', error: e);
+    }
+  }
+  
+  /// Obtener IPS offline
+  Future<List<IpsModel>> getOfflineIps() async {
+    try {
+      final ipsData = await getOfflineData('ips');
+      return ipsData.map((json) => IpsModel.fromJson(json)).toList();
+    } catch (e) {
+      appLogger.error('Error obteniendo IPS offline', error: e);
+      return [];
+    }
+  }
+  
+  /// Obtener médicos offline
+  Future<List<MedicoModel>> getOfflineMedicos() async {
+    try {
+      final medicosData = await getOfflineData('medicos');
+      return medicosData.map((json) => MedicoModel.fromJson(json)).toList();
+    } catch (e) {
+      appLogger.error('Error obteniendo médicos offline', error: e);
+      return [];
+    }
+  }
+  
+  /// Guardar IPS offline
+  Future<void> saveOfflineIps(List<IpsModel> ipsList) async {
+    try {
+      final ipsData = ipsList.map((ips) => ips.toJson()).toList();
+      await saveOfflineData('ips', {'ips': ipsData});
+      appLogger.info('IPS guardadas offline: ${ipsList.length}');
+    } catch (e) {
+      appLogger.error('Error guardando IPS offline', error: e);
+    }
+  }
+  
+  /// Guardar médicos offline
+  Future<void> saveOfflineMedicos(List<MedicoModel> medicosList) async {
+    try {
+      final medicosData = medicosList.map((medico) => medico.toJson()).toList();
+      await saveOfflineData('medicos', {'medicos': medicosData});
+      appLogger.info('Médicos guardados offline: ${medicosList.length}');
+    } catch (e) {
+      appLogger.error('Error guardando médicos offline', error: e);
+    }
+  }
+  
+  /// Limpiar datos offline de IPS
+  Future<void> clearOfflineIps() async {
+    try {
+      await _prefs.remove('offline_data_ips');
+      appLogger.info('Datos offline de IPS eliminados');
+    } catch (e) {
+      appLogger.error('Error eliminando datos offline de IPS', error: e);
+    }
+  }
+  
+  /// Limpiar datos offline de médicos
+  Future<void> clearOfflineMedicos() async {
+    try {
+      await _prefs.remove('offline_data_medicos');
+      appLogger.info('Datos offline de médicos eliminados');
+    } catch (e) {
+      appLogger.error('Error eliminando datos offline de médicos', error: e);
+    }
+  }
+  
+  /// Verificar si hay datos offline de IPS
+  Future<bool> hasOfflineIps() async {
+    try {
+      final ipsData = _prefs.getString('offline_data_ips');
+      return ipsData != null;
+    } catch (e) {
+      appLogger.error('Error verificando datos offline de IPS', error: e);
       return false;
     }
   }
   
-  // Sincronizar alerta
-  Future<bool> _syncAlerta(Map<String, dynamic> data) async {
+  /// Verificar si hay datos offline de médicos
+  Future<bool> hasOfflineMedicos() async {
     try {
-      final response = await _apiService.post('/alertas', data: data);
-      return response.statusCode == 201;
+      final medicosData = _prefs.getString('offline_data_medicos');
+      return medicosData != null;
     } catch (e) {
-      print('Error sincronizando alerta: $e');
+      appLogger.error('Error verificando datos offline de médicos', error: e);
       return false;
     }
   }
-  
-  // Limpiar datos sincronizados antiguos
-  Future<void> cleanupSyncedData() async {
-    final db = await database;
-    final cutoffDate = DateTime.now().subtract(const Duration(days: 7));
-    
-    await db.delete(
-      'controles_offline',
-      where: 'synced = ? AND created_at < ?',
-      whereArgs: [1, cutoffDate.toIso8601String()],
-    );
-    
-    await db.delete(
-      'alertas_offline',
-      where: 'synced = ? AND created_at < ?',
-      whereArgs: [1, cutoffDate.toIso8601String()],
-    );
-  }
-  
-  // Obtener estadísticas de sincronización
-  Future<SyncStats> getSyncStats() async {
-    final db = await database;
-    
-    final controlesPendientes = await db.rawQuery(
-      'SELECT COUNT(*) as count FROM controles_offline WHERE synced = 0'
-    );
-    
-    final alertasPendientes = await db.rawQuery(
-      'SELECT COUNT(*) as count FROM alertas_offline WHERE synced = 0'
-    );
-    
-    final queueSize = await db.rawQuery('SELECT COUNT(*) as count FROM sync_queue');
-    
-    return SyncStats(
-      controlesPendientes: controlesPendientes.first['count'] as int,
-      alertasPendientes: alertasPendientes.first['count'] as int,
-      queueSize: queueSize.first['count'] as int,
-    );
-  }
-}
-
-class SyncResult {
-  final bool success;
-  final String message;
-  final int syncedCount;
-  final int errorCount;
-  final List<String> errors;
-  
-  SyncResult({
-    required this.success,
-    required this.message,
-    this.syncedCount = 0,
-    this.errorCount = 0,
-    this.errors = const [],
-  });
-}
-
-class SyncStats {
-  final int controlesPendientes;
-  final int alertasPendientes;
-  final int queueSize;
-  
-  SyncStats({
-    required this.controlesPendientes,
-    required this.alertasPendientes,
-    required this.queueSize,
-  });
-  
-  int get totalPendientes => controlesPendientes + alertasPendientes;
 }

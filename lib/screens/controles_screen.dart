@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
-import '../models/gestante_model.dart';
-import '../services/control_prenatal_service.dart';
+import '../services/control_service.dart';
 import '../services/gestante_service.dart';
+import '../services/alerta_service.dart';
+import '../providers/service_providers.dart';
+import '../screens/control_form_screen.dart';
+import '../utils/logger.dart';
+import '../shared/widgets/info_contextual_widget.dart';
+import '../shared/widgets/app_bar_with_logo.dart';
 
 class ControlesScreen extends ConsumerStatefulWidget {
   const ControlesScreen({super.key});
@@ -15,58 +19,125 @@ class ControlesScreen extends ConsumerStatefulWidget {
 class _ControlesScreenState extends ConsumerState<ControlesScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final ControlPrenatalService _controlService = ControlPrenatalService();
-  final GestanteService _gestanteService = GestanteService();
-  
-  List<ControlPrenatalModel> _controles = [];
-  List<ControlPrenatalModel> _controlesVencidos = [];
-  List<ControlPrenatalModel> _controlesPendientes = [];
+  List<Control> _controles = [];
+  List<Control> _controlesVencidos = [];
+  List<Control> _controlesPendientes = [];
   bool _isLoading = true;
+  String? _error;
+  bool _isDisposed = false;
+  
+  // Cache de alertas para evitar múltiples solicitudes
+  final Map<String, List<Alerta>> _alertasCache = {};
+  DateTime? _alertasCacheTimestamp;
+  static const Duration _cacheExpiry = Duration(minutes: 5); // Cache expira después de 5 minutos
 
   @override
   void initState() {
     super.initState();
+    print('🩺 ControlesScreen: ========== INICIALIZANDO PANTALLA ==========');
     _tabController = TabController(length: 3, vsync: this);
-    _loadControles();
+    print('🩺 ControlesScreen: TabController creado con 3 tabs');
+    
+    // Usar WidgetsBinding para evitar setState durante build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      print('🩺 ControlesScreen: PostFrameCallback ejecutado');
+      if (mounted && !_isDisposed) {
+        print('🩺 ControlesScreen: Widget montado, iniciando carga de controles...');
+        _cargarControles();
+      } else {
+        print('❌ ControlesScreen: Widget no montado o disposed');
+      }
+    });
   }
 
   @override
   void dispose() {
+    print('🩺 ControlesScreen: ========== DISPOSING PANTALLA ==========');
+    _isDisposed = true;
+    print('🩺 ControlesScreen: Flag _isDisposed establecido a true');
+    
     _tabController.dispose();
+    print('🩺 ControlesScreen: ✅ TabController disposed');
+    
+    print('🩺 ControlesScreen: ✅ Pantalla disposed exitosamente');
     super.dispose();
   }
 
-  Future<void> _loadControles() async {
-    setState(() => _isLoading = true);
+  Future<void> _cargarControles() async {
+    if (_isDisposed || !mounted) return;
+    
+    // Usar WidgetsBinding para evitar setState durante build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_isDisposed) {
+        setState(() {
+          _isLoading = true;
+          _error = null;
+        });
+        appLogger.info('ControlesScreen: Estado de carga actualizado a true');
+      }
+    });
+
     try {
-      final controles = await _controlService.obtenerControles();
-      final controlesVencidos = await _controlService.obtenerControlesVencidos();
+      appLogger.info('ControlesScreen: Cargando controles reales del backend...');
       
-      setState(() {
-        _controles = controles;
-        _controlesVencidos = controlesVencidos;
-        _controlesPendientes = controles.where((c) => 
-          c.fechaProximoControl != null && 
-          c.fechaProximoControl!.isAfter(DateTime.now())
-        ).toList();
-        _isLoading = false;
+      // Limpiar caché de alertas al recargar controles
+      _limpiarCacheAlertas();
+      
+      // Usar el servicio específico desde el provider
+      final apiService = ref.read(apiServiceProvider);
+      final gestanteService = GestanteService(apiService);
+      final controlService = ControlService(apiService, gestanteService);
+      
+      // Obtener controles reales
+      final controles = await controlService.obtenerControles();
+      
+      // Filtrar controles por estado
+      final controlesVencidos = await controlService.obtenerControlesVencidos();
+      final controlesPendientes = await controlService.obtenerControlesPendientes();
+      
+      appLogger.info('ControlesScreen: Controles obtenidos: ${controles.length}');
+      
+      // Usar WidgetsBinding para evitar setState durante build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_isDisposed) {
+          setState(() {
+            _controles = controles;
+            _controlesVencidos = controlesVencidos;
+            _controlesPendientes = controlesPendientes;
+            _isLoading = false;
+          });
+          appLogger.info('ControlesScreen: Estado actualizado - Vencidos: ${controlesVencidos.length}, Pendientes: ${controlesPendientes.length}');
+        }
       });
     } catch (e) {
-      setState(() => _isLoading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al cargar controles: $e')),
-        );
-      }
+      appLogger.error('ControlesScreen: Error cargando controles', error: e);
+      
+      // Usar WidgetsBinding para evitar setState durante build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_isDisposed) {
+          setState(() {
+            _error = 'Error al cargar controles: $e';
+            _isLoading = false;
+          });
+          appLogger.info('ControlesScreen: Estado de error actualizado');
+        }
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Controles Prenatales'),
-        backgroundColor: Colors.blue[100],
+      appBar: AppBarWithLogo(
+        title: 'Controles Prenatales',
+        actions: [
+          const ControlPrenatalInfoWidget(),
+          const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _cargarControles,
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
@@ -85,16 +156,61 @@ class _ControlesScreenState extends ConsumerState<ControlesScreen>
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddControlDialog(),
-        backgroundColor: Colors.blue,
+        heroTag: "controles_fab",
+        onPressed: () async {
+          print('🔶 CONTROLES_SCREEN: Botón de agregar control presionado - ARCHIVO: controles_screen.dart');
+          print('🔶 CONTROLES_SCREEN: Navegando a ControlFormScreen');
+          final result = await Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => ControlFormScreen(),
+            ),
+          );
+          if (result == true) {
+            // Recargar controles si se creó uno nuevo
+            _cargarControles();
+          }
+        },
+        backgroundColor: Colors.teal[600],
         child: const Icon(Icons.add),
       ),
+
     );
   }
 
-  Widget _buildControlesList(List<ControlPrenatalModel> controles, String tipo) {
+  Widget _buildControlesList(List<Control> controles, String tipo) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Cargando controles...'),
+          ],
+        ),
+      );
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 64, color: Colors.red),
+            const SizedBox(height: 16),
+            Text(
+              _error!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.red),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _cargarControles,
+              child: const Text('Reintentar'),
+            ),
+          ],
+        ),
+      );
     }
 
     if (controles.isEmpty) {
@@ -120,7 +236,7 @@ class _ControlesScreenState extends ConsumerState<ControlesScreen>
     }
 
     return RefreshIndicator(
-      onRefresh: _loadControles,
+      onRefresh: _cargarControles,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: controles.length,
@@ -132,642 +248,478 @@ class _ControlesScreenState extends ConsumerState<ControlesScreen>
     );
   }
 
-  Widget _buildControlCard(ControlPrenatalModel control, String tipo) {
+  Widget _buildControlCard(Control control, String tipo) {
     final isVencido = tipo == 'vencidos';
     final isPendiente = tipo == 'pendientes';
     
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () => _showControlDetail(control),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
+      child: ListTile(
+        leading: Stack(
+          children: [
+            CircleAvatar(
+              backgroundColor: isVencido ? Colors.red[100] : 
+                              isPendiente ? Colors.orange[100] : Colors.blue[100],
+              child: Icon(
+                Icons.medical_services,
+                color: isVencido ? Colors.red : 
+                       isPendiente ? Colors.orange : Colors.blue,
+              ),
+            ),
+            // Indicador de alertas - solo mostrar si hay alertas en caché
+            if (_alertasCache.containsKey(control.gestanteId) &&
+                _alertasCache[control.gestanteId]!.isNotEmpty)
+              Positioned(
+                right: 0,
+                top: 0,
+                child: GestureDetector(
+                  onTap: () => _mostrarAlertasRecientes(control),
+                  child: Container(
+                    width: 12,
+                    height: 12,
                     decoration: BoxDecoration(
-                      color: isVencido ? Colors.red[100] : 
-                             isPendiente ? Colors.orange[100] : Colors.blue[100],
-                      borderRadius: BorderRadius.circular(8),
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 1),
                     ),
-                    child: Icon(
-                      Icons.medical_services,
-                      color: isVencido ? Colors.red : 
-                             isPendiente ? Colors.orange : Colors.blue,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Control #${control.numeroControl}',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          'Gestante ID: ${control.gestanteId}',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
+                    child: const Icon(
+                      Icons.warning,
+                      size: 8,
+                      color: Colors.white,
                     ),
                   ),
-                  if (isVencido)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
+                ),
+              ),
+          ],
+        ),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Control ${control.tipo}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            // Indicador de alertas en el título
+            FutureBuilder<bool>(
+              future: _tieneAlertasRecientes(control.gestanteId),
+              builder: (context, snapshot) {
+                if (snapshot.data == true) {
+                  return GestureDetector(
+                    onTap: () => _mostrarAlertasRecientes(control),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: Colors.red[100],
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Text(
-                        'Vencido',
-                        style: TextStyle(
-                          color: Colors.red,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  _buildInfoChip(
-                    Icons.calendar_today,
-                    DateFormat('dd/MM/yyyy').format(control.fechaControl),
-                    Colors.blue,
-                  ),
-                  const SizedBox(width: 8),
-                  _buildInfoChip(
-                    Icons.pregnant_woman,
-                    '${control.semanasGestacion} sem',
-                    Colors.pink,
-                  ),
-                  const SizedBox(width: 8),
-                  if (control.peso != null)
-                    _buildInfoChip(
-                      Icons.monitor_weight,
-                      '${control.peso} kg',
-                      Colors.green,
-                    ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  if (control.presionArterial != null)
-                    _buildInfoChip(
-                      Icons.favorite,
-                      control.presionArterial!,
-                      Colors.red,
-                    ),
-                  const SizedBox(width: 8),
-                  if (control.temperatura != null)
-                    _buildInfoChip(
-                      Icons.thermostat,
-                      '${control.temperatura}°C',
-                      Colors.orange,
-                    ),
-                  const SizedBox(width: 8),
-                  if (control.frecuenciaCardiaca != null)
-                    _buildInfoChip(
-                      Icons.monitor_heart,
-                      '${control.frecuenciaCardiaca} bpm',
-                      Colors.purple,
-                    ),
-                ],
-              ),
-              if (control.fechaProximoControl != null) ...[
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(Icons.schedule, size: 16, color: Colors.grey[600]),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Próximo control: ${DateFormat('dd/MM/yyyy').format(control.fechaProximoControl!)}',
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoChip(IconData icon, String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showControlDetail(ControlPrenatalModel control) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => ControlDetailSheet(control: control),
-    );
-  }
-
-  void _showAddControlDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => const AddControlDialog(),
-    );
-  }
-}
-
-class ControlDetailSheet extends StatelessWidget {
-  final ControlPrenatalModel control;
-
-  const ControlDetailSheet({super.key, required this.control});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.8,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        children: [
-          // Handle
-          Container(
-            width: 40,
-            height: 4,
-            margin: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          // Header
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.blue[100],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.medical_services,
-                    color: Colors.blue,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Control Prenatal #${control.numeroControl}',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        'Fecha: ${DateFormat('dd/MM/yyyy').format(control.fechaControl)}',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Content
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildDetailSection('Información General', [
-                    _buildDetailRow('Número de Control', control.numeroControl.toString()),
-                    _buildDetailRow('Semanas de Gestación', '${control.semanasGestacion}'),
-                    _buildDetailRow('Fecha de Control', 
-                        DateFormat('dd/MM/yyyy').format(control.fechaControl)),
-                    if (control.fechaProximoControl != null)
-                      _buildDetailRow('Próximo Control', 
-                          DateFormat('dd/MM/yyyy').format(control.fechaProximoControl!)),
-                  ]),
-                  const SizedBox(height: 20),
-                  _buildDetailSection('Signos Vitales', [
-                    _buildDetailRow('Peso', 
-                        control.peso != null ? '${control.peso} kg' : 'No registrado'),
-                    _buildDetailRow('Talla', 
-                        control.talla != null ? '${control.talla} cm' : 'No registrada'),
-                    _buildDetailRow('Presión Arterial', 
-                        control.presionArterial ?? 'No registrada'),
-                    _buildDetailRow('Temperatura', 
-                        control.temperatura != null ? '${control.temperatura}°C' : 'No registrada'),
-                    _buildDetailRow('Frecuencia Cardíaca', 
-                        control.frecuenciaCardiaca != null ? '${control.frecuenciaCardiaca} bpm' : 'No registrada'),
-                  ]),
-                  const SizedBox(height: 20),
-                  _buildDetailSection('Exámenes y Observaciones', [
-                    _buildDetailRow('Exámenes Realizados', 
-                        control.examenesRealizados?.join(', ') ?? 'Ninguno'),
-                    _buildDetailRow('Observaciones', 
-                        control.observaciones ?? 'Sin observaciones'),
-                    _buildDetailRow('Recomendaciones', 
-                        control.recomendaciones ?? 'Sin recomendaciones'),
-                  ]),
-                  const SizedBox(height: 20),
-                  if (control.medicamentos != null && control.medicamentos!.isNotEmpty)
-                    _buildDetailSection('Medicamentos', [
-                      _buildDetailRow('Medicamentos Prescritos', 
-                          control.medicamentos!.join(', ')),
-                    ]),
-                  const SizedBox(height: 20),
-                ],
-              ),
-            ),
-          ),
-          // Actions
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      // Edit control
-                    },
-                    icon: const Icon(Icons.edit),
-                    label: const Text('Editar'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      // Generate report
-                    },
-                    icon: const Icon(Icons.print),
-                    label: const Text('Reporte'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailSection(String title, List<Widget> children) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.blue,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[200]!),
-          ),
-          child: Column(
-            children: children,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 140,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontWeight: FontWeight.w500,
-                color: Colors.black87,
-              ),
-            ),
-          ),
-          const Text(': '),
-          Expanded(
-            child: Text(
-              value,
-              style: TextStyle(color: Colors.grey[700]),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class AddControlDialog extends StatefulWidget {
-  const AddControlDialog({super.key});
-
-  @override
-  State<AddControlDialog> createState() => _AddControlDialogState();
-}
-
-class _AddControlDialogState extends State<AddControlDialog> {
-  final _formKey = GlobalKey<FormState>();
-  final _pesoController = TextEditingController();
-  final _tallaController = TextEditingController();
-  final _presionController = TextEditingController();
-  final _temperaturaController = TextEditingController();
-  final _frecuenciaController = TextEditingController();
-  final _observacionesController = TextEditingController();
-  final _recomendacionesController = TextEditingController();
-  
-  DateTime _fechaControl = DateTime.now();
-  DateTime? _fechaProximoControl;
-  int _semanasGestacion = 1;
-  String? _gestanteSeleccionada;
-
-  @override
-  void dispose() {
-    _pesoController.dispose();
-    _tallaController.dispose();
-    _presionController.dispose();
-    _temperaturaController.dispose();
-    _frecuenciaController.dispose();
-    _observacionesController.dispose();
-    _recomendacionesController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Container(
-        width: MediaQuery.of(context).size.width * 0.9,
-        constraints: const BoxConstraints(maxHeight: 700),
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Nuevo Control Prenatal',
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.blue,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: Form(
-                key: _formKey,
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      DropdownButtonFormField<String>(
-                        value: _gestanteSeleccionada,
-                        decoration: const InputDecoration(
-                          labelText: 'Gestante',
-                          border: OutlineInputBorder(),
-                        ),
-                        items: const [
-                          DropdownMenuItem(
-                            value: '1',
-                            child: Text('María García - CC: 12345678'),
-                          ),
-                          DropdownMenuItem(
-                            value: '2',
-                            child: Text('Ana López - CC: 87654321'),
-                          ),
-                        ],
-                        onChanged: (value) {
-                          setState(() => _gestanteSeleccionada = value);
-                        },
-                        validator: (value) {
-                          if (value == null) {
-                            return 'Por favor seleccione una gestante';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _pesoController,
-                              decoration: const InputDecoration(
-                                labelText: 'Peso (kg)',
-                                border: OutlineInputBorder(),
-                              ),
-                              keyboardType: TextInputType.number,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: TextFormField(
-                              controller: _tallaController,
-                              decoration: const InputDecoration(
-                                labelText: 'Talla (cm)',
-                                border: OutlineInputBorder(),
-                              ),
-                              keyboardType: TextInputType.number,
+                          Icon(Icons.warning, size: 12, color: Colors.red[700]),
+                          const SizedBox(width: 2),
+                          Text(
+                            'ALERTA',
+                            style: TextStyle(
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.red[700],
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _presionController,
-                              decoration: const InputDecoration(
-                                labelText: 'Presión Arterial',
-                                hintText: '120/80',
-                                border: OutlineInputBorder(),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: TextFormField(
-                              controller: _temperaturaController,
-                              decoration: const InputDecoration(
-                                labelText: 'Temperatura (°C)',
-                                border: OutlineInputBorder(),
-                              ),
-                              keyboardType: TextInputType.number,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _frecuenciaController,
-                              decoration: const InputDecoration(
-                                labelText: 'Frecuencia Cardíaca',
-                                border: OutlineInputBorder(),
-                              ),
-                              keyboardType: TextInputType.number,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: DropdownButtonFormField<int>(
-                              value: _semanasGestacion,
-                              decoration: const InputDecoration(
-                                labelText: 'Semanas Gestación',
-                                border: OutlineInputBorder(),
-                              ),
-                              items: List.generate(42, (index) => 
-                                DropdownMenuItem(
-                                  value: index + 1,
-                                  child: Text('${index + 1} semanas'),
-                                ),
-                              ),
-                              onChanged: (value) {
-                                setState(() => _semanasGestacion = value!);
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _observacionesController,
-                        decoration: const InputDecoration(
-                          labelText: 'Observaciones',
-                          border: OutlineInputBorder(),
-                        ),
-                        maxLines: 3,
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _recomendacionesController,
-                        decoration: const InputDecoration(
-                          labelText: 'Recomendaciones',
-                          border: OutlineInputBorder(),
-                        ),
-                        maxLines: 3,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancelar'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _saveControl,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
                     ),
-                    child: const Text('Guardar'),
-                  ),
-                ),
-              ],
+                  );
+                }
+                return const SizedBox.shrink();
+              },
             ),
           ],
         ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Fecha: ${_formatDate(control.fechaProgramada)}'),
+            Text(
+              'Gestante: ${_getGestanteDisplayName(control)}',
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+            if (_getGestanteDetails(control).isNotEmpty)
+              Text(
+                _getGestanteDetails(control),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+              ),
+            Text('Estado: ${control.estado}'),
+            if (control.semanasGestacion != null)
+              Text(
+                'Semana gestación: ${control.semanasGestacion}',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.blue[600],
+                ),
+              ),
+            if (control.peso != null)
+              Text(
+                'Peso: ${control.peso} kg',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.green[600],
+                ),
+              ),
+            if (control.presionSistolica != null && control.presionDiastolica != null)
+              Text(
+                'Presión: ${control.presionSistolica}/${control.presionDiastolica} mmHg',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.red[600],
+                ),
+              ),
+          ],
+        ),
+        trailing: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isVencido ? Icons.schedule : 
+              isPendiente ? Icons.pending : Icons.check_circle,
+              color: isVencido ? Colors.red : 
+                     isPendiente ? Colors.orange : Colors.green,
+              size: 20,
+            ),
+            Text(
+              isVencido ? 'Vencido' : 
+              isPendiente ? 'Pendiente' : 'Realizado',
+              style: TextStyle(
+                fontSize: 12,
+                color: isVencido ? Colors.red : 
+                       isPendiente ? Colors.orange : Colors.green,
+              ),
+            ),
+          ],
+        ),
+        onTap: () {
+          if (mounted) {
+            _mostrarDetalleControl(control);
+          }
+        },
+        onLongPress: () async {
+          if (mounted) {
+            print('🔶 CONTROLES_SCREEN: Mantener presionado control para editar - ARCHIVO: controles_screen.dart');
+            print('🔶 CONTROLES_SCREEN: controlId = ${control.id}, gestanteId = ${control.gestanteId}');
+            final result = await Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => ControlFormScreen(
+                  controlId: control.id,
+                  gestantePreseleccionada: control.gestanteId,
+                ),
+              ),
+            );
+            if (result == true) {
+              // Recargar controles si se editó
+              _cargarControles();
+            }
+          }
+        },
       ),
     );
   }
 
-  void _saveControl() {
-    if (_formKey.currentState!.validate()) {
-      // Here you would typically save the control using the service
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Control prenatal guardado exitosamente')),
-      );
+  void _mostrarDetalleControl(Control control) {
+    if (!mounted) return;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Control ${control.tipo}'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('ID Control: ${control.id}'),
+              const SizedBox(height: 8),
+              Text(
+                'Gestante: ${_getGestanteDisplayName(control)}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              if (_getGestanteDetails(control).isNotEmpty) ...[
+                Text(_getGestanteDetails(control)),
+                const SizedBox(height: 8),
+              ],
+              Text('Fecha: ${_formatDate(control.fechaProgramada)}'),
+              Text('Estado: ${control.estado}'),
+              Text('Tipo: ${control.tipo}'),
+              if (control.semanasGestacion != null)
+                Text('Semana gestación: ${control.semanasGestacion}'),
+              if (control.peso != null)
+                Text('Peso: ${control.peso} kg'),
+              if (control.alturaUterina != null)
+                Text('Altura uterina: ${control.alturaUterina} cm'),
+              if (control.presionSistolica != null && control.presionDiastolica != null)
+                Text('Presión: ${control.presionSistolica}/${control.presionDiastolica} mmHg'),
+              if (control.frecuenciaCardiaca != null)
+                Text('Frecuencia cardíaca: ${control.frecuenciaCardiaca} lpm'),
+              if (control.temperatura != null)
+                Text('Temperatura: ${control.temperatura} °C'),
+              if (control.observaciones != null && control.observaciones!.isNotEmpty)
+                Text('Observaciones: ${control.observaciones}'),
+              if (control.recomendaciones != null && control.recomendaciones!.isNotEmpty)
+                Text('Recomendaciones: ${control.recomendaciones}'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cerrar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
+  Future<bool> _tieneAlertasRecientes(String gestanteId) async {
+    try {
+      final alertas = await _obtenerAlertasRecientes(gestanteId);
+      return alertas.isNotEmpty;
+    } catch (e) {
+      appLogger.error('Error verificando alertas recientes', error: e);
+      return false;
     }
+  }
+
+  // Método para obtener las alertas recientes de una gestante con caché
+  Future<List<Alerta>> _obtenerAlertasRecientes(String gestanteId) async {
+    try {
+      // Verificar si tenemos datos en caché y si no han expirado
+      final ahora = DateTime.now();
+      if (_alertasCacheTimestamp != null &&
+          ahora.difference(_alertasCacheTimestamp!) < _cacheExpiry &&
+          _alertasCache.containsKey(gestanteId)) {
+        return _alertasCache[gestanteId]!;
+      }
+      
+      // Si no hay datos en caché o han expirado, obtener del servidor
+      final apiService = ref.read(apiServiceProvider);
+      final gestanteService = GestanteService(apiService);
+      final alertaService = AlertaService(apiService, gestanteService);
+      final alertas = await alertaService.obtenerAlertas(limit: 10);
+      
+      // Filtrar alertas de las últimas 24 horas para esta gestante
+      final hace24Horas = ahora.subtract(const Duration(hours: 24));
+      final alertasFiltradas = alertas.where((alerta) =>
+        alerta.gestanteId == gestanteId &&
+        alerta.fechaCreacion.isAfter(hace24Horas) &&
+        !alerta.resuelta
+      ).toList();
+      
+      // Actualizar caché
+      _alertasCache[gestanteId] = alertasFiltradas;
+      _alertasCacheTimestamp = ahora;
+      
+      return alertasFiltradas;
+    } catch (e) {
+      appLogger.error('Error obteniendo alertas recientes', error: e);
+      return [];
+    }
+  }
+  
+  // Método para limpiar el caché de alertas
+  void _limpiarCacheAlertas() {
+    _alertasCache.clear();
+    _alertasCacheTimestamp = null;
+  }
+
+  // Método para obtener los datos completos de la gestante
+  String _getGestanteDisplayName(Control control) {
+    // Si tenemos los datos completos de la gestante, mostrar nombre y teléfono
+    if (control.gestante != null) {
+      final gestante = control.gestante!;
+      if (gestante.telefono != null && gestante.telefono!.isNotEmpty) {
+        return '${gestante.nombre} (${gestante.telefono})';
+      }
+      return gestante.nombre;
+    }
+    
+    // Si solo tenemos el nombre, usarlo
+    if (control.gestanteNombre != null && control.gestanteNombre!.isNotEmpty) {
+      return control.gestanteNombre!;
+    }
+    
+    // Si no tenemos nada, mostrar el ID
+    return 'Gestante ID: ${control.gestanteId}';
+  }
+
+  String _getGestanteDetails(Control control) {
+    if (control.gestante == null) {
+      return '';
+    }
+    
+    final gestante = control.gestante!;
+    final details = <String>[];
+    
+    if (gestante.documento.isNotEmpty) {
+      details.add('CC: ${gestante.documento}');
+    }
+    
+    if (gestante.telefono != null && gestante.telefono!.isNotEmpty) {
+      details.add('Tel: ${gestante.telefono}');
+    }
+    
+    if (gestante.eps != null && gestante.eps!.isNotEmpty) {
+      details.add('EPS: ${gestante.eps}');
+    }
+    
+    if (gestante.riesgo_alto) {
+      details.add('⚠️ Alto riesgo');
+    }
+    
+    return details.isNotEmpty ? details.join(' • ') : '';
+  }
+
+  void _mostrarAlertasRecientes(Control control) {
+    if (!mounted) return;
+    
+    showDialog(
+      context: context,
+      builder: (context) => FutureBuilder<List<Alerta>>(
+        future: _obtenerAlertasRecientes(control.gestanteId),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const AlertDialog(
+              content: Center(child: CircularProgressIndicator()),
+            );
+          }
+          
+          if (snapshot.hasError) {
+            return AlertDialog(
+              title: const Text('Error'),
+              content: Text('No se pudieron cargar las alertas: ${snapshot.error}'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cerrar'),
+                ),
+              ],
+            );
+          }
+          
+          final alertas = snapshot.data ?? [];
+          
+          return AlertDialog(
+            title: Text('Alertas de ${_getGestanteDisplayName(control)}'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: alertas.isEmpty
+                  ? const Text('No hay alertas recientes')
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: alertas.length,
+                      itemBuilder: (context, index) {
+                        final alerta = alertas[index];
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: ListTile(
+                            leading: Icon(
+                              Icons.warning,
+                              color: alerta.esCritica ? Colors.red : Colors.orange,
+                            ),
+                            title: Text(alerta.tipoTexto),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(alerta.mensaje),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Prioridad: ${alerta.prioridadTexto}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: alerta.esCritica ? Colors.red : Colors.orange,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  'Fecha: ${_formatDate(alerta.fechaCreacion)}',
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                                // Mostrar los valores del control que activaron la alarma
+                                if (alerta.signosVitales != null) ...[
+                                  const SizedBox(height: 4),
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[100],
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Valores que activaron la alarma:',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        if (alerta.signosVitales!['presion_sistolica'] != null &&
+                                            alerta.signosVitales!['presion_diastolica'] != null)
+                                          Text(
+                                            'Presión: ${alerta.signosVitales!['presion_sistolica']}/${alerta.signosVitales!['presion_diastolica']} mmHg',
+                                            style: const TextStyle(fontSize: 12),
+                                          ),
+                                        if (alerta.signosVitales!['frecuencia_cardiaca'] != null)
+                                          Text(
+                                            'Frecuencia cardíaca: ${alerta.signosVitales!['frecuencia_cardiaca']} lpm',
+                                            style: const TextStyle(fontSize: 12),
+                                          ),
+                                        if (alerta.signosVitales!['temperatura'] != null)
+                                          Text(
+                                            'Temperatura: ${alerta.signosVitales!['temperatura']} °C',
+                                            style: const TextStyle(fontSize: 12),
+                                          ),
+                                        if (alerta.signosVitales!['semanas_gestacion'] != null)
+                                          Text(
+                                            'Semana gestación: ${alerta.signosVitales!['semanas_gestacion']}',
+                                            style: const TextStyle(fontSize: 12),
+                                          ),
+                                        if (alerta.sintomas.isNotEmpty) ...[
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            'Síntomas: ${alerta.sintomas.join(', ')}',
+                                            style: const TextStyle(fontSize: 12),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            trailing: alerta.esCritica
+                                ? const Icon(Icons.priority_high, color: Colors.red)
+                                : const Icon(Icons.info, color: Colors.orange),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cerrar'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 }

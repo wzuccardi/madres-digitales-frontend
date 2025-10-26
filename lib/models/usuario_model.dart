@@ -86,6 +86,11 @@ class UsuarioModel extends Equatable {
   
   String get nombreCompleto => '$nombre $apellido';
   
+  // Getters para compatibilidad con código existente
+  String get nombres => nombre;
+  String get apellidos => apellido;
+  String get numeroDocumento => documento;
+  
   bool get tieneUbicacion => ubicacionLatitud != null && ubicacionLongitud != null;
   
   @override

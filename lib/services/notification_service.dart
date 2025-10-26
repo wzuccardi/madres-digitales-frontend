@@ -1,5 +1,7 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../utils/logger.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 class NotificationService {
   static NotificationService? _instance;
@@ -50,7 +52,7 @@ class NotificationService {
     final payload = response.payload;
     if (payload != null) {
       // Aquí puedes manejar la navegación basada en el payload
-      print('Notificación tocada con payload: $payload');
+      appLogger.info('Notificación tocada con payload: $payload');
     }
   }
   
@@ -124,10 +126,10 @@ class NotificationService {
       id,
       title,
       body,
-      scheduledDate,
+      tz.TZDateTime.from(scheduledDate, tz.local),
       details,
       payload: payload,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
     );
   }
   
@@ -245,6 +247,28 @@ class NotificationService {
         return Priority.high;
       case NotificationPriority.max:
         return Priority.max;
+    }
+  }
+  
+  // Marcar notificación como leída
+  Future<void> marcarComoLeido(String notificacionId) async {
+    try {
+      // En una implementación real, aquí se llamaría a la API
+      // Por ahora, solo registramos el evento
+      appLogger.info('Notificación marcada como leída: $notificacionId');
+      
+      // Aquí iría la llamada a la API para marcar como leído en el backend
+      // await ApiService().put('/notificaciones/$notificacionId/leido', {
+      //   'leido': true,
+      //   'timestamp': DateTime.now().toIso8601String(),
+      // });
+      
+      // Actualizar localmente (en una implementación real)
+      // final db = await LocalDatabase.instance;
+      // await db.notificacionDao.marcarLeido(notificacionId);
+    } catch (e) {
+      appLogger.error('Error marcando notificación como leída', error: e);
+      rethrow;
     }
   }
 }

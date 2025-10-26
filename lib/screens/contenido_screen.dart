@@ -1,13 +1,164 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:video_player/video_player.dart';
-import 'package:chewie/chewie.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../models/contenido_model.dart';
-import '../services/contenido_service.dart';
+import '../models/contenido_unificado.dart';
 import '../shared/theme/app_theme.dart';
 import '../shared/widgets/loading_widget.dart';
 import '../shared/widgets/error_widget.dart';
+import '../providers/service_providers.dart';
+import '../widgets/multimedia_player.dart';
+import '../services/contenido_progreso_service.dart';
+import '../services/auth_service.dart';
+import 'contenido_crud_screen.dart';
+
+// Hot reload trigger - 2025-10-24
+
+// Enum local para categorías de contenido
+enum CategoriaContenido {
+  nutricion,
+  cuidadoPrenatal,
+  signosAlarma,
+  lactancia,
+  parto,
+  posparto,
+  planificacion,
+  saludMental,
+  ejercicio,
+  higiene,
+  derechos,
+  otros;
+}
+
+// --- String helpers as top-level functions ---
+String obtenerNombreCategoriaString(String categoria) {
+  switch (categoria.toUpperCase()) {
+    case 'EMBARAZO':
+      return 'Embarazo';
+    case 'PARTO':
+      return 'Parto';
+    case 'POSPARTO':
+      return 'Posparto';
+    case 'LACTANCIA':
+      return 'Lactancia';
+    case 'NUTRICION':
+    case 'NUTRICIÓN':
+      return 'Nutrición';
+    case 'EJERCICIO':
+      return 'Ejercicio';
+    case 'SALUD_MENTAL':
+    case 'SALUDMENTAL':
+      return 'Salud Mental';
+    case 'CUIDADO_BEBE':
+    case 'CUIDADOBEBE':
+      return 'Cuidado del Bebé';
+    case 'PLANIFICACION_FAMILIAR':
+    case 'PLANIFICACIONFAMILIAR':
+      return 'Planificación Familiar';
+    case 'EMERGENCIAS':
+      return 'Emergencias';
+    case 'EDUCACION':
+    case 'EDUCACIÓN':
+      return 'Educación';
+    case 'CUIDADO_PRENATAL':
+    case 'CUIDADOPRENATAL':
+      return 'Cuidado Prenatal';
+    default:
+      return categoria;
+  }
+}
+
+String obtenerNombreTipoString(String tipo) {
+  switch (tipo.toUpperCase()) {
+    case 'ARTICULO':
+      return 'Artículo';
+    case 'VIDEO':
+      return 'Video';
+    case 'AUDIO':
+      return 'Audio';
+    case 'INFOGRAFIA':
+    case 'INFOGRAFÍA':
+      return 'Infografía';
+    case 'GUIA':
+    case 'GUÍA':
+      return 'Guía';
+    case 'CHECKLIST':
+      return 'Checklist';
+    default:
+      return tipo;
+  }
+}
+
+String obtenerNombreNivelString(String? nivel) {
+  if (nivel == null) return 'No especificado';
+  switch (nivel.toUpperCase()) {
+    case 'BASICO':
+    case 'BÁSICO':
+      return 'Básico';
+    case 'INTERMEDIO':
+      return 'Intermedio';
+    case 'AVANZADO':
+      return 'Avanzado';
+    case 'PRINCIPIANTE':
+      return 'Principiante';
+    case 'EXPERTO':
+      return 'Experto';
+    default:
+      return nivel;
+  }
+}
+
+IconData obtenerIconoTipoString(String tipo) {
+  switch (tipo.toUpperCase()) {
+    case 'VIDEO':
+      return Icons.videocam;
+    case 'AUDIO':
+      return Icons.audiotrack;
+    case 'IMAGEN':
+      return Icons.image;
+    case 'DOCUMENTO':
+      return Icons.description;
+    case 'INTERACTIVO':
+      return Icons.touch_app;
+    case 'ARTICULO':
+    case 'ARTÍCULO':
+      return Icons.article;
+    case 'INFOGRAFIA':
+    case 'INFOGRAFÍA':
+      return Icons.info;
+    default:
+      return Icons.help;
+  }
+}
+
+Widget buildTipoChipString(String tipo) {
+  return Chip(
+    label: Text(obtenerNombreTipoString(tipo)),
+    backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
+  );
+}
+
+Widget buildNivelChipString(String? nivel) {
+  return Chip(
+    label: Text(obtenerNombreNivelString(nivel)),
+    backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
+  );
+}
+
+Widget buildDuracionChip(int duracion) {
+  return Chip(
+    label: Text('${(duracion / 60).round()} min'),
+    backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
+  );
+}
+
+void abrirContenido(BuildContext context, ContenidoUnificado contenido) {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => ContenidoDetailScreen(contenido: contenido),
+    ),
+  );
+}
 
 class ContenidoScreen extends ConsumerStatefulWidget {
   const ContenidoScreen({super.key});
@@ -16,14 +167,43 @@ class ContenidoScreen extends ConsumerStatefulWidget {
   ConsumerState<ContenidoScreen> createState() => _ContenidoScreenState();
 }
 
-class _ContenidoScreenState extends ConsumerState<ContenidoScreen>
-    with SingleTickerProviderStateMixin {
+class _ContenidoScreenState extends ConsumerState<ContenidoScreen> with SingleTickerProviderStateMixin {
+  // Helper for tab icon
+  IconData _obtenerIconoCategoria(CategoriaContenido categoria) {
+    switch (categoria) {
+      case CategoriaContenido.nutricion:
+        return Icons.restaurant;
+      case CategoriaContenido.cuidadoPrenatal:
+        return Icons.pregnant_woman;
+      case CategoriaContenido.signosAlarma:
+        return Icons.warning;
+      case CategoriaContenido.lactancia:
+        return Icons.baby_changing_station;
+      case CategoriaContenido.parto:
+        return Icons.local_hospital;
+      case CategoriaContenido.posparto:
+        return Icons.healing;
+      case CategoriaContenido.planificacion:
+        return Icons.calendar_today;
+      case CategoriaContenido.saludMental:
+        return Icons.psychology;
+      case CategoriaContenido.ejercicio:
+        return Icons.fitness_center;
+      case CategoriaContenido.higiene:
+        return Icons.clean_hands;
+      case CategoriaContenido.derechos:
+        return Icons.gavel;
+      case CategoriaContenido.otros:
+        return Icons.more_horiz;
+    }
+  }
+
   late TabController _tabController;
-  List<ContenidoModel> _contenidos = [];
-  List<ContenidoModel> _contenidosFiltrados = [];
+  List<ContenidoUnificado> _contenidos = [];
+  List<ContenidoUnificado> _contenidosFiltrados = [];
   bool _isLoading = true;
   String? _error;
-  CategoriaContenido _categoriaSeleccionada = CategoriaContenido.embarazo;
+  CategoriaContenido _categoriaSeleccionada = CategoriaContenido.nutricion;
   String _busqueda = '';
 
   @override
@@ -34,7 +214,10 @@ class _ContenidoScreenState extends ConsumerState<ContenidoScreen>
       vsync: this,
     );
     _tabController.addListener(_onTabChanged);
-    _cargarContenidos();
+    // Cargar contenidos después de que el widget esté construido
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _cargarContenidos();
+    });
   }
 
   @override
@@ -42,13 +225,47 @@ class _ContenidoScreenState extends ConsumerState<ContenidoScreen>
     _tabController.dispose();
     super.dispose();
   }
+  // Helper for tab label
+  String _obtenerNombreCategoria(CategoriaContenido categoria) {
+    switch (categoria) {
+      case CategoriaContenido.nutricion:
+        return 'Nutrición';
+      case CategoriaContenido.cuidadoPrenatal:
+        return 'Cuidado Prenatal';
+      case CategoriaContenido.signosAlarma:
+        return 'Signos de Alarma';
+      case CategoriaContenido.lactancia:
+        return 'Lactancia';
+      case CategoriaContenido.parto:
+        return 'Parto';
+      case CategoriaContenido.posparto:
+        return 'Posparto';
+      case CategoriaContenido.planificacion:
+        return 'Planificación';
+      case CategoriaContenido.saludMental:
+        return 'Salud Mental';
+      case CategoriaContenido.ejercicio:
+        return 'Ejercicio';
+      case CategoriaContenido.higiene:
+        return 'Higiene';
+      case CategoriaContenido.derechos:
+        return 'Derechos';
+      case CategoriaContenido.otros:
+        return 'Otros';
+    }
+  }
 
   void _onTabChanged() {
     if (_tabController.indexIsChanging) {
-      setState(() {
-        _categoriaSeleccionada = CategoriaContenido.values[_tabController.index];
+      // Usar addPostFrameCallback para evitar setState durante build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _categoriaSeleccionada = CategoriaContenido.values[_tabController.index];
+          });
+          _cargarContenidos();
+        }
       });
-      _cargarContenidos();
     }
   }
 
@@ -57,20 +274,13 @@ class _ContenidoScreenState extends ConsumerState<ContenidoScreen>
       _isLoading = true;
       _error = null;
     });
-
     try {
-      // Aquí normalmente obtendrías el servicio del provider
-      // final contenidoService = ref.read(contenidoServiceProvider);
-      // final contenidos = await contenidoService.obtenerContenidosPorCategoria(_categoriaSeleccionada);
-      
-      // Por ahora simulamos datos
-      await Future.delayed(const Duration(seconds: 1));
-      
-      final contenidosSimulados = _generarContenidosSimulados(_categoriaSeleccionada);
-      
+      // Esperar a que el servicio esté disponible
+      final contenidoService = await ref.read(contenidoServiceProvider.future);
+      final contenidos = await contenidoService.getContenidosByCategoria(_categoriaSeleccionada.name);
       setState(() {
-        _contenidos = contenidosSimulados;
-        _contenidosFiltrados = contenidosSimulados;
+        _contenidos = contenidos;
+        _contenidosFiltrados = contenidos;
         _isLoading = false;
       });
     } catch (e) {
@@ -81,116 +291,7 @@ class _ContenidoScreenState extends ConsumerState<ContenidoScreen>
     }
   }
 
-  List<ContenidoModel> _generarContenidosSimulados(CategoriaContenido categoria) {
-    final contenidos = <ContenidoModel>[];
-    
-    switch (categoria) {
-      case CategoriaContenido.embarazo:
-        contenidos.addAll([
-          ContenidoModel(
-            id: '1',
-            titulo: 'Primeros síntomas del embarazo',
-            descripcion: 'Aprende a identificar los primeros signos de embarazo',
-            categoria: categoria,
-            tipo: TipoContenido.video,
-            nivel: NivelDificultad.basico,
-            urlContenido: 'https://example.com/video1.mp4',
-            urlMiniatura: 'https://example.com/thumb1.jpg',
-            duracion: 300,
-            tags: ['síntomas', 'embarazo temprano'],
-            activo: true,
-            fechaCreacion: DateTime.now().subtract(const Duration(days: 10)),
-          ),
-          ContenidoModel(
-            id: '2',
-            titulo: 'Nutrición durante el embarazo',
-            descripcion: 'Guía completa sobre alimentación saludable para embarazadas',
-            categoria: categoria,
-            tipo: TipoContenido.documento,
-            nivel: NivelDificultad.intermedio,
-            urlContenido: 'https://example.com/doc1.pdf',
-            urlMiniatura: 'https://example.com/thumb2.jpg',
-            tags: ['nutrición', 'alimentación', 'salud'],
-            activo: true,
-            fechaCreacion: DateTime.now().subtract(const Duration(days: 5)),
-          ),
-        ]);
-        break;
-      case CategoriaContenido.parto:
-        contenidos.addAll([
-          ContenidoModel(
-            id: '3',
-            titulo: 'Preparación para el parto',
-            descripcion: 'Todo lo que necesitas saber para prepararte para el parto',
-            categoria: categoria,
-            tipo: TipoContenido.video,
-            nivel: NivelDificultad.intermedio,
-            urlContenido: 'https://example.com/video2.mp4',
-            urlMiniatura: 'https://example.com/thumb3.jpg',
-            duracion: 600,
-            tags: ['parto', 'preparación'],
-            activo: true,
-            fechaCreacion: DateTime.now().subtract(const Duration(days: 3)),
-          ),
-        ]);
-        break;
-      case CategoriaContenido.lactancia:
-        contenidos.addAll([
-          ContenidoModel(
-            id: '4',
-            titulo: 'Técnicas de lactancia materna',
-            descripcion: 'Aprende las mejores técnicas para una lactancia exitosa',
-            categoria: categoria,
-            tipo: TipoContenido.video,
-            nivel: NivelDificultad.basico,
-            urlContenido: 'https://example.com/video3.mp4',
-            urlMiniatura: 'https://example.com/thumb4.jpg',
-            duracion: 450,
-            tags: ['lactancia', 'técnicas'],
-            activo: true,
-            fechaCreacion: DateTime.now().subtract(const Duration(days: 1)),
-          ),
-        ]);
-        break;
-      case CategoriaContenido.cuidadoBebe:
-        contenidos.addAll([
-          ContenidoModel(
-            id: '5',
-            titulo: 'Cuidados básicos del recién nacido',
-            descripcion: 'Guía esencial para el cuidado de tu bebé',
-            categoria: categoria,
-            tipo: TipoContenido.interactivo,
-            nivel: NivelDificultad.basico,
-            urlContenido: 'https://example.com/interactive1.html',
-            urlMiniatura: 'https://example.com/thumb5.jpg',
-            tags: ['recién nacido', 'cuidados'],
-            activo: true,
-            fechaCreacion: DateTime.now(),
-          ),
-        ]);
-        break;
-      case CategoriaContenido.saludMental:
-        contenidos.addAll([
-          ContenidoModel(
-            id: '6',
-            titulo: 'Manejo del estrés durante el embarazo',
-            descripcion: 'Técnicas de relajación y manejo del estrés',
-            categoria: categoria,
-            tipo: TipoContenido.audio,
-            nivel: NivelDificultad.basico,
-            urlContenido: 'https://example.com/audio1.mp3',
-            urlMiniatura: 'https://example.com/thumb6.jpg',
-            duracion: 900,
-            tags: ['estrés', 'relajación', 'bienestar'],
-            activo: true,
-            fechaCreacion: DateTime.now().subtract(const Duration(days: 7)),
-          ),
-        ]);
-        break;
-    }
-    
-    return contenidos;
-  }
+  // Eliminada función de mocks
 
   void _filtrarContenidos(String query) {
     setState(() {
@@ -200,15 +301,34 @@ class _ContenidoScreenState extends ConsumerState<ContenidoScreen>
       } else {
         _contenidosFiltrados = _contenidos.where((contenido) {
           return contenido.titulo.toLowerCase().contains(query.toLowerCase()) ||
-                 contenido.descripcion.toLowerCase().contains(query.toLowerCase()) ||
-                 contenido.tags.any((tag) => tag.toLowerCase().contains(query.toLowerCase()));
+                  (contenido.descripcion?.toLowerCase().contains(query.toLowerCase()) ?? false) || // Corrección: descripcion es nullable
+                  (contenido.tags?.any((tag) => tag.toLowerCase().contains(query.toLowerCase())) ?? false); // Corrección: usar tags
         }).toList();
       }
     });
   }
 
+  void _mostrarBusqueda(BuildContext context) {
+    // TODO: Implementar ContenidoSearchDelegate o reemplazar búsqueda
+    // showSearch(
+    //   context: context,
+    //   delegate: ContenidoSearchDelegate(
+    //     contenidos: _contenidos,
+    //     onSearch: _filtrarContenidos,
+    //   ),
+    // );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final authService = AuthService();
+    final isAdmin = authService.hasAnyRole(['admin', 'super_admin', 'coordinador']);
+    
+    // Debug: Verificar rol del usuario
+    print('🔍 ContenidoScreen: isAdmin = $isAdmin');
+    print('🔍 ContenidoScreen: currentUser = ${authService.currentUser}');
+    print('🔍 ContenidoScreen: userRole = ${authService.currentUser?['rol']}');
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Contenido Educativo'),
@@ -219,6 +339,21 @@ class _ContenidoScreenState extends ConsumerState<ContenidoScreen>
             icon: const Icon(Icons.search),
             onPressed: () => _mostrarBusqueda(context),
           ),
+          IconButton(
+            icon: const Icon(Icons.admin_panel_settings),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const ContenidoCrudScreen(),
+                ),
+              ).then((_) {
+                // Recargar contenidos al volver
+                _cargarContenidos();
+              });
+            },
+            tooltip: 'Administrar Contenidos (CRUD Completo)',
+          ),
+
         ],
         bottom: TabBar(
           controller: _tabController,
@@ -247,6 +382,18 @@ class _ContenidoScreenState extends ConsumerState<ContenidoScreen>
                     return _buildContenidoList();
                   }).toList(),
                 ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          print('🟣 CONTENIDO_SCREEN: Botón presionado - navegando a CRUD');
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ContenidoCrudScreen()),
+          );
+          if (result == true) _cargarContenidos();
+        },
+        icon: const Icon(Icons.add),
+        label: const Text('Nuevo Contenido'),
+      ),
     );
   }
 
@@ -282,27 +429,27 @@ class _ContenidoScreenState extends ConsumerState<ContenidoScreen>
         itemCount: _contenidosFiltrados.length,
         itemBuilder: (context, index) {
           final contenido = _contenidosFiltrados[index];
-          return _buildContenidoCard(contenido);
+          return _buildContenidoCard(contenido, context);
         },
       ),
     );
   }
 
-  Widget _buildContenidoCard(ContenidoModel contenido) {
+  Widget _buildContenidoCard(ContenidoUnificado contenido, BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 4,
       child: InkWell(
-        onTap: () => _abrirContenido(contenido),
+        onTap: () => abrirContenido(context, contenido),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Miniatura
-            if (contenido.urlMiniatura != null)
+            if (contenido.urlImagen != null) // Corrección: usar urlImagen
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
                 child: CachedNetworkImage(
-                  imageUrl: contenido.urlMiniatura!,
+                  imageUrl: contenido.urlImagen!, // Corrección: usar urlImagen
                   height: 200,
                   width: double.infinity,
                   fit: BoxFit.cover,
@@ -317,14 +464,13 @@ class _ContenidoScreenState extends ConsumerState<ContenidoScreen>
                     height: 200,
                     color: Colors.grey[300],
                     child: Icon(
-                      _obtenerIconoTipo(contenido.tipo),
+                      obtenerIconoTipoString(contenido.tipo), // Corrección: usar tipo
                       size: 64,
                       color: Colors.grey[600],
                     ),
                   ),
                 ),
               ),
-            
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -341,40 +487,34 @@ class _ContenidoScreenState extends ConsumerState<ContenidoScreen>
                           ),
                         ),
                       ),
-                      _buildTipoChip(contenido.tipo),
+                      buildTipoChipString(contenido.tipo), // Corrección: usar tipo
                     ],
                   ),
-                  
                   const SizedBox(height: 8),
-                  
                   // Descripción
                   Text(
-                    contenido.descripcion,
+                    contenido.descripcion ?? '', // Corrección: descripcion es nullable
                     style: Theme.of(context).textTheme.bodyMedium,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  
                   const SizedBox(height: 12),
-                  
                   // Información adicional
                   Row(
                     children: [
-                      _buildNivelChip(contenido.nivel),
+                      buildNivelChipString(contenido.nivel), // Corrección: usar nivel
                       const SizedBox(width: 8),
-                      if (contenido.duracion != null)
-                        _buildDuracionChip(contenido.duracion!),
+                      if (contenido.duracionMinutos != null) // Corrección: usar duracionMinutos
+                        buildDuracionChip(contenido.duracionMinutos!),
                     ],
                   ),
-                  
                   const SizedBox(height: 8),
-                  
                   // Tags
-                  if (contenido.tags.isNotEmpty)
+                  if (contenido.tags?.isNotEmpty ?? false) // Corrección: usar tags
                     Wrap(
                       spacing: 4,
                       runSpacing: 4,
-                      children: contenido.tags.take(3).map((tag) {
+                      children: contenido.tags!.take(3).map((tag) { // Corrección: usar tags
                         return Chip(
                           label: Text(
                             tag,
@@ -394,294 +534,40 @@ class _ContenidoScreenState extends ConsumerState<ContenidoScreen>
     );
   }
 
-  Widget _buildTipoChip(TipoContenido tipo) {
-    final color = _obtenerColorTipo(tipo);
-    return Chip(
-      label: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            _obtenerIconoTipo(tipo),
-            size: 16,
-            color: color,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            _obtenerNombreTipo(tipo),
-            style: TextStyle(
-              fontSize: 12,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-      backgroundColor: color.withOpacity(0.1),
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-    );
-  }
-
-  Widget _buildNivelChip(NivelDificultad nivel) {
-    final color = _obtenerColorNivel(nivel);
-    return Chip(
-      label: Text(
-        _obtenerNombreNivel(nivel),
-        style: TextStyle(
-          fontSize: 12,
-          color: color,
-        ),
-      ),
-      backgroundColor: color.withOpacity(0.1),
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-    );
-  }
-
-  Widget _buildDuracionChip(int duracionSegundos) {
-    final minutos = (duracionSegundos / 60).round();
-    return Chip(
-      label: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.access_time, size: 16),
-          const SizedBox(width: 4),
-          Text(
-            '${minutos}min',
-            style: const TextStyle(fontSize: 12),
-          ),
-        ],
-      ),
-      backgroundColor: Colors.grey[200],
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-    );
-  }
-
-  void _mostrarBusqueda(BuildContext context) {
-    showSearch(
-      context: context,
-      delegate: ContenidoSearchDelegate(
-        contenidos: _contenidos,
-        onSearch: _filtrarContenidos,
-      ),
-    );
-  }
-
-  void _abrirContenido(ContenidoModel contenido) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ContenidoDetailScreen(contenido: contenido),
-      ),
-    );
-  }
-
-  String _obtenerNombreCategoria(CategoriaContenido categoria) {
-    switch (categoria) {
-      case CategoriaContenido.embarazo:
-        return 'Embarazo';
-      case CategoriaContenido.parto:
-        return 'Parto';
-      case CategoriaContenido.lactancia:
-        return 'Lactancia';
-      case CategoriaContenido.cuidadoBebe:
-        return 'Cuidado Bebé';
-      case CategoriaContenido.saludMental:
-        return 'Salud Mental';
-    }
-  }
-
-  IconData _obtenerIconoCategoria(CategoriaContenido categoria) {
-    switch (categoria) {
-      case CategoriaContenido.embarazo:
-        return Icons.pregnant_woman;
-      case CategoriaContenido.parto:
-        return Icons.child_care;
-      case CategoriaContenido.lactancia:
-        return Icons.baby_changing_station;
-      case CategoriaContenido.cuidadoBebe:
-        return Icons.child_friendly;
-      case CategoriaContenido.saludMental:
-        return Icons.psychology;
-    }
-  }
-
-  IconData _obtenerIconoTipo(TipoContenido tipo) {
-    switch (tipo) {
-      case TipoContenido.video:
-        return Icons.play_circle;
-      case TipoContenido.audio:
-        return Icons.audiotrack;
-      case TipoContenido.imagen:
-        return Icons.image;
-      case TipoContenido.documento:
-        return Icons.description;
-      case TipoContenido.interactivo:
-        return Icons.touch_app;
-    }
-  }
-
-  Color _obtenerColorTipo(TipoContenido tipo) {
-    switch (tipo) {
-      case TipoContenido.video:
+  Color obtenerColorTipo(String tipo) {
+    switch (tipo.toUpperCase()) {
+      case 'VIDEO':
         return Colors.red;
-      case TipoContenido.audio:
+      case 'AUDIO':
         return Colors.purple;
-      case TipoContenido.imagen:
+      case 'IMAGEN':
         return Colors.green;
-      case TipoContenido.documento:
+      case 'DOCUMENTO':
         return Colors.blue;
-      case TipoContenido.interactivo:
+      case 'INTERACTIVO':
         return Colors.orange;
-    }
-  }
-
-  String _obtenerNombreTipo(TipoContenido tipo) {
-    switch (tipo) {
-      case TipoContenido.video:
-        return 'Video';
-      case TipoContenido.audio:
-        return 'Audio';
-      case TipoContenido.imagen:
-        return 'Imagen';
-      case TipoContenido.documento:
-        return 'Documento';
-      case TipoContenido.interactivo:
-        return 'Interactivo';
-    }
-  }
-
-  Color _obtenerColorNivel(NivelDificultad nivel) {
-    switch (nivel) {
-      case NivelDificultad.basico:
-        return Colors.green;
-      case NivelDificultad.intermedio:
-        return Colors.orange;
-      case NivelDificultad.avanzado:
-        return Colors.red;
-    }
-  }
-
-  String _obtenerNombreNivel(NivelDificultad nivel) {
-    switch (nivel) {
-      case NivelDificultad.basico:
-        return 'Básico';
-      case NivelDificultad.intermedio:
-        return 'Intermedio';
-      case NivelDificultad.avanzado:
-        return 'Avanzado';
+      case 'ARTICULO':
+      case 'ARTÍCULO':
+        return Colors.teal;
+      case 'INFOGRAFIA':
+      case 'INFOGRAFÍA':
+        return Colors.indigo;
+      default:
+        return Colors.grey;
     }
   }
 }
 
-class ContenidoSearchDelegate extends SearchDelegate<String> {
-  final List<ContenidoModel> contenidos;
-  final Function(String) onSearch;
-
-  ContenidoSearchDelegate({
-    required this.contenidos,
-    required this.onSearch,
-  });
+class ContenidoDetailScreen extends ConsumerWidget {
+  final ContenidoUnificado contenido;
+  const ContenidoDetailScreen({super.key, required this.contenido});
 
   @override
-  List<Widget> buildActions(BuildContext context) {
-    return [
-      IconButton(
-        icon: const Icon(Icons.clear),
-        onPressed: () {
-          query = '';
-          onSearch('');
-        },
-      ),
-    ];
-  }
+  Widget build(BuildContext context, WidgetRef ref) {
 
-  @override
-  Widget buildLeading(BuildContext context) {
-    return IconButton(
-      icon: const Icon(Icons.arrow_back),
-      onPressed: () {
-        close(context, '');
-      },
-    );
-  }
-
-  @override
-  Widget buildResults(BuildContext context) {
-    onSearch(query);
-    close(context, query);
-    return Container();
-  }
-
-  @override
-  Widget buildSuggestions(BuildContext context) {
-    final sugerencias = contenidos.where((contenido) {
-      return contenido.titulo.toLowerCase().contains(query.toLowerCase()) ||
-             contenido.tags.any((tag) => tag.toLowerCase().contains(query.toLowerCase()));
-    }).toList();
-
-    return ListView.builder(
-      itemCount: sugerencias.length,
-      itemBuilder: (context, index) {
-        final contenido = sugerencias[index];
-        return ListTile(
-          title: Text(contenido.titulo),
-          subtitle: Text(contenido.descripcion),
-          onTap: () {
-            query = contenido.titulo;
-            showResults(context);
-          },
-        );
-      },
-    );
-  }
-}
-
-class ContenidoDetailScreen extends StatefulWidget {
-  final ContenidoModel contenido;
-
-  const ContenidoDetailScreen({
-    super.key,
-    required this.contenido,
-  });
-
-  @override
-  State<ContenidoDetailScreen> createState() => _ContenidoDetailScreenState();
-}
-
-class _ContenidoDetailScreenState extends State<ContenidoDetailScreen> {
-  VideoPlayerController? _videoController;
-  ChewieController? _chewieController;
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.contenido.tipo == TipoContenido.video) {
-      _initializeVideoPlayer();
-    }
-  }
-
-  @override
-  void dispose() {
-    _videoController?.dispose();
-    _chewieController?.dispose();
-    super.dispose();
-  }
-
-  void _initializeVideoPlayer() {
-    _videoController = VideoPlayerController.network(widget.contenido.urlContenido);
-    _chewieController = ChewieController(
-      videoPlayerController: _videoController!,
-      autoPlay: false,
-      looping: false,
-      allowFullScreen: true,
-      allowMuting: true,
-      showControls: true,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.contenido.titulo),
+        title: Text(contenido.titulo),
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
       ),
@@ -690,7 +576,7 @@ class _ContenidoDetailScreenState extends State<ContenidoDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Reproductor de contenido
-            _buildContentPlayer(),
+            _buildContentPlayer(context, ref),
             
             // Información del contenido
             Padding(
@@ -699,7 +585,7 @@ class _ContenidoDetailScreenState extends State<ContenidoDetailScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    widget.contenido.titulo,
+                    contenido.titulo,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -708,20 +594,20 @@ class _ContenidoDetailScreenState extends State<ContenidoDetailScreen> {
                   const SizedBox(height: 8),
                   
                   Text(
-                    widget.contenido.descripcion,
+                    contenido.descripcion ?? '', // Corrección: descripcion es nullable
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
                   
                   const SizedBox(height: 16),
                   
                   // Información adicional
-                  _buildInfoSection(),
+                  _buildInfoSection(context, contenido),
                   
                   const SizedBox(height: 16),
                   
                   // Tags
-                  if (widget.contenido.tags.isNotEmpty)
-                    _buildTagsSection(),
+                  if (contenido.tags?.isNotEmpty ?? false)
+                    _buildTagsSection(context, contenido),
                 ],
               ),
             ),
@@ -731,71 +617,47 @@ class _ContenidoDetailScreenState extends State<ContenidoDetailScreen> {
     );
   }
 
-  Widget _buildContentPlayer() {
-    switch (widget.contenido.tipo) {
-      case TipoContenido.video:
-        if (_chewieController != null) {
-          return AspectRatio(
-            aspectRatio: 16 / 9,
-            child: Chewie(controller: _chewieController!),
+  Widget _buildContentPlayer(BuildContext context, WidgetRef ref) {
+    final apiService = ref.read(apiServiceProvider);
+    final progresoService = ContenidoProgresoService(apiService);
+    
+    return MultimediaPlayer(
+      contenido: contenido,
+      progresoService: progresoService,
+      onProgressUpdate: (duration) async {
+        // Actualizar progreso cada 30 segundos
+        if (duration.inSeconds % 30 == 0) {
+          final totalDuration = contenido.duracionMinutos ?? 300; // Corrección: usar duracionMinutos
+          final porcentaje = ((duration.inSeconds / totalDuration) * 100).round();
+          
+          await progresoService.actualizarProgreso(
+            contenidoId: contenido.id,
+            porcentajeProgreso: porcentaje.clamp(0, 100),
+            tiempoVisto: duration.inSeconds,
           );
         }
-        return Container(
-          height: 200,
-          color: Colors.black,
-          child: const Center(
-            child: CircularProgressIndicator(),
-          ),
+      },
+      onCompleted: () async {
+        // Marcar como completado
+        await progresoService.actualizarProgreso(
+          contenidoId: contenido.id,
+          porcentajeProgreso: 100,
+          completado: true,
         );
         
-      case TipoContenido.imagen:
-        return CachedNetworkImage(
-          imageUrl: widget.contenido.urlContenido,
-          width: double.infinity,
-          fit: BoxFit.cover,
-          placeholder: (context, url) => Container(
-            height: 200,
-            color: Colors.grey[300],
-            child: const Center(
-              child: CircularProgressIndicator(),
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('¡Contenido completado!'),
+              backgroundColor: Colors.green,
             ),
-          ),
-          errorWidget: (context, url, error) => Container(
-            height: 200,
-            color: Colors.grey[300],
-            child: const Icon(Icons.error),
-          ),
-        );
-        
-      default:
-        return Container(
-          height: 200,
-          color: AppTheme.primaryColor.withOpacity(0.1),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  _obtenerIconoTipo(widget.contenido.tipo),
-                  size: 64,
-                  color: AppTheme.primaryColor,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Toca para abrir',
-                  style: TextStyle(
-                    color: AppTheme.primaryColor,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-    }
+          );
+        }
+      },
+    );
   }
 
-  Widget _buildInfoSection() {
+  Widget _buildInfoSection(BuildContext context, ContenidoUnificado contenido) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -809,12 +671,12 @@ class _ContenidoDetailScreenState extends State<ContenidoDetailScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            _buildInfoRow('Categoría', _obtenerNombreCategoria(widget.contenido.categoria)),
-            _buildInfoRow('Tipo', _obtenerNombreTipo(widget.contenido.tipo)),
-            _buildInfoRow('Nivel', _obtenerNombreNivel(widget.contenido.nivel)),
-            if (widget.contenido.duracion != null)
-              _buildInfoRow('Duración', '${(widget.contenido.duracion! / 60).round()} minutos'),
-            _buildInfoRow('Fecha', _formatearFecha(widget.contenido.fechaCreacion)),
+            _buildInfoRow('Categoría', obtenerNombreCategoriaString(contenido.categoria)),
+            _buildInfoRow('Tipo', obtenerNombreTipoString(contenido.tipo)), // Corrección: usar tipo
+            _buildInfoRow('Nivel', obtenerNombreNivelString(contenido.nivel)), // Corrección: usar nivel
+            if (contenido.duracionMinutos != null) // Corrección: usar duracionMinutos
+              _buildInfoRow('Duración', '${(contenido.duracionMinutos! / 60).round()} minutos'),
+            _buildInfoRow('Fecha', _formatearFecha(contenido.fechaActualizacion)), // Corrección: usar fechaActualizacion
           ],
         ),
       ),
@@ -840,7 +702,7 @@ class _ContenidoDetailScreenState extends State<ContenidoDetailScreen> {
     );
   }
 
-  Widget _buildTagsSection() {
+  Widget _buildTagsSection(BuildContext context, ContenidoUnificado contenido) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -854,74 +716,20 @@ class _ContenidoDetailScreenState extends State<ContenidoDetailScreen> {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: widget.contenido.tags.map((tag) {
+          children: contenido.tags?.map((tag) { // Corrección: usar tags
             return Chip(
               label: Text(tag),
               backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
             );
-          }).toList(),
+          }).toList() ?? [],
         ),
       ],
     );
   }
 
-  IconData _obtenerIconoTipo(TipoContenido tipo) {
-    switch (tipo) {
-      case TipoContenido.video:
-        return Icons.play_circle;
-      case TipoContenido.audio:
-        return Icons.audiotrack;
-      case TipoContenido.imagen:
-        return Icons.image;
-      case TipoContenido.documento:
-        return Icons.description;
-      case TipoContenido.interactivo:
-        return Icons.touch_app;
-    }
-  }
-
-  String _obtenerNombreCategoria(CategoriaContenido categoria) {
-    switch (categoria) {
-      case CategoriaContenido.embarazo:
-        return 'Embarazo';
-      case CategoriaContenido.parto:
-        return 'Parto';
-      case CategoriaContenido.lactancia:
-        return 'Lactancia';
-      case CategoriaContenido.cuidadoBebe:
-        return 'Cuidado del Bebé';
-      case CategoriaContenido.saludMental:
-        return 'Salud Mental';
-    }
-  }
-
-  String _obtenerNombreTipo(TipoContenido tipo) {
-    switch (tipo) {
-      case TipoContenido.video:
-        return 'Video';
-      case TipoContenido.audio:
-        return 'Audio';
-      case TipoContenido.imagen:
-        return 'Imagen';
-      case TipoContenido.documento:
-        return 'Documento';
-      case TipoContenido.interactivo:
-        return 'Interactivo';
-    }
-  }
-
-  String _obtenerNombreNivel(NivelDificultad nivel) {
-    switch (nivel) {
-      case NivelDificultad.basico:
-        return 'Básico';
-      case NivelDificultad.intermedio:
-        return 'Intermedio';
-      case NivelDificultad.avanzado:
-        return 'Avanzado';
-    }
-  }
 
   String _formatearFecha(DateTime fecha) {
     return '${fecha.day}/${fecha.month}/${fecha.year}';
   }
 }
+

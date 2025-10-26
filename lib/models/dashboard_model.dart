@@ -7,11 +7,16 @@ part 'dashboard_model.g.dart';
 class EstadisticasGeneralesModel extends Equatable {
   final int totalGestantes;
   final int gestantesActivas;
+  final int gestantesInactivas;
   final int gestantesAltoRiesgo;
   final int totalControles;
   final int controlesUltimoMes;
+  final int totalAlertas;
   final int alertasActivas;
-  final int alertasCriticas;
+  final int alertasResueltas;
+  final int alertasUrgentes;
+  final double? promedioEdadGestacional;
+  final double? porcentajeControlCompleto;
   final int totalMedicos;
   final int totalIps;
   final double promedioControlesPorGestante;
@@ -20,11 +25,16 @@ class EstadisticasGeneralesModel extends Equatable {
   const EstadisticasGeneralesModel({
     required this.totalGestantes,
     required this.gestantesActivas,
+    required this.gestantesInactivas,
     required this.gestantesAltoRiesgo,
     required this.totalControles,
     required this.controlesUltimoMes,
+    required this.totalAlertas,
     required this.alertasActivas,
-    required this.alertasCriticas,
+    required this.alertasResueltas,
+    required this.alertasUrgentes,
+    this.promedioEdadGestacional,
+    this.porcentajeControlCompleto,
     required this.totalMedicos,
     required this.totalIps,
     required this.promedioControlesPorGestante,
@@ -38,17 +48,22 @@ class EstadisticasGeneralesModel extends Equatable {
     totalGestantes > 0 ? (gestantesAltoRiesgo / totalGestantes) * 100 : 0;
   
   double get porcentajeAlertasCriticas => 
-    alertasActivas > 0 ? (alertasCriticas / alertasActivas) * 100 : 0;
+    alertasActivas > 0 ? (alertasUrgentes / alertasActivas) * 100 : 0;
   
   @override
   List<Object?> get props => [
     totalGestantes,
     gestantesActivas,
+    gestantesInactivas,
     gestantesAltoRiesgo,
     totalControles,
     controlesUltimoMes,
+    totalAlertas,
     alertasActivas,
-    alertasCriticas,
+    alertasResueltas,
+    alertasUrgentes,
+    promedioEdadGestacional,
+    porcentajeControlCompleto,
     totalMedicos,
     totalIps,
     promedioControlesPorGestante,
@@ -65,6 +80,8 @@ class EstadisticasPorPeriodoModel extends Equatable {
   final int controlesRealizados;
   final int alertasGeneradas;
   final int alertasResueltas;
+  final double? promedioTiempoResolucion;
+  final double? satisfaccionPromedio;
   final List<EstadisticaDiariaModel> datosDiarios;
   
   const EstadisticasPorPeriodoModel({
@@ -75,6 +92,8 @@ class EstadisticasPorPeriodoModel extends Equatable {
     required this.controlesRealizados,
     required this.alertasGeneradas,
     required this.alertasResueltas,
+    this.promedioTiempoResolucion,
+    this.satisfaccionPromedio,
     required this.datosDiarios,
   });
   
@@ -96,6 +115,8 @@ class EstadisticasPorPeriodoModel extends Equatable {
     controlesRealizados,
     alertasGeneradas,
     alertasResueltas,
+    promedioTiempoResolucion,
+    satisfaccionPromedio,
     datosDiarios,
   ];
 }
@@ -107,6 +128,7 @@ class EstadisticaDiariaModel extends Equatable {
   final int controlesRealizados;
   final int alertasGeneradas;
   final int alertasResueltas;
+  final int usuariosActivos;
   
   const EstadisticaDiariaModel({
     required this.fecha,
@@ -114,6 +136,7 @@ class EstadisticaDiariaModel extends Equatable {
     required this.controlesRealizados,
     required this.alertasGeneradas,
     required this.alertasResueltas,
+    required this.usuariosActivos,
   });
   
   factory EstadisticaDiariaModel.fromJson(Map<String, dynamic> json) => _$EstadisticaDiariaModelFromJson(json);
@@ -126,6 +149,7 @@ class EstadisticaDiariaModel extends Equatable {
     controlesRealizados,
     alertasGeneradas,
     alertasResueltas,
+    usuariosActivos,
   ];
 }
 
@@ -140,7 +164,13 @@ class EstadisticasGeograficasModel extends Equatable {
   final int gestantesAltoRiesgo;
   final int controlesRealizados;
   final int alertasActivas;
+  final int totalControles;
+  final int totalAlertas;
+  final int alertasUrgentes;
+  final int gestantesActivas;
   final double cobertura;
+  final double? ubicacionLatitud;
+  final double? ubicacionLongitud;
   
   const EstadisticasGeograficasModel({
     required this.region,
@@ -152,7 +182,13 @@ class EstadisticasGeograficasModel extends Equatable {
     required this.gestantesAltoRiesgo,
     required this.controlesRealizados,
     required this.alertasActivas,
+    required this.totalControles,
+    required this.totalAlertas,
+    required this.alertasUrgentes,
+    required this.gestantesActivas,
     required this.cobertura,
+    this.ubicacionLatitud,
+    this.ubicacionLongitud,
   });
   
   factory EstadisticasGeograficasModel.fromJson(Map<String, dynamic> json) => _$EstadisticasGeograficasModelFromJson(json);
@@ -174,7 +210,13 @@ class EstadisticasGeograficasModel extends Equatable {
     gestantesAltoRiesgo,
     controlesRealizados,
     alertasActivas,
+    totalControles,
+    totalAlertas,
+    alertasUrgentes,
+    gestantesActivas,
     cobertura,
+    ubicacionLatitud,
+    ubicacionLongitud,
   ];
 }
 
@@ -192,6 +234,13 @@ class ReporteModel extends Equatable {
   final String? urlArchivo;
   final String formatoArchivo;
   final String creadoPor;
+  final DateTime? fechaInicio;
+  final DateTime? fechaFin;
+  final String? archivoUrl;
+  final String? formato;
+  final String? usuarioId;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
   
   const ReporteModel({
     required this.id,
@@ -206,6 +255,13 @@ class ReporteModel extends Equatable {
     this.urlArchivo,
     required this.formatoArchivo,
     required this.creadoPor,
+    this.fechaInicio,
+    this.fechaFin,
+    this.archivoUrl,
+    this.formato,
+    this.usuarioId,
+    this.createdAt,
+    this.updatedAt,
   });
   
   factory ReporteModel.fromJson(Map<String, dynamic> json) => _$ReporteModelFromJson(json);
@@ -236,6 +292,13 @@ class ReporteModel extends Equatable {
     urlArchivo,
     formatoArchivo,
     creadoPor,
+    fechaInicio,
+    fechaFin,
+    archivoUrl,
+    formato,
+    usuarioId,
+    createdAt,
+    updatedAt,
   ];
 }
 

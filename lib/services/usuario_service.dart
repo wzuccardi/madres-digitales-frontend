@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../models/usuario_model.dart';
+import '../utils/logger.dart';
 import 'api_service.dart';
 import 'location_service.dart';
 import 'offline_service.dart';
@@ -37,7 +38,7 @@ class UsuarioService {
       if (departamento != null) queryParams['departamento'] = departamento;
       if (municipio != null) queryParams['municipio'] = municipio;
       
-      final response = await _apiService.get('/usuarios', queryParams: queryParams);
+      final response = await _apiService.get('/usuarios', queryParameters: queryParams);
       
       if (response.data['success'] == true) {
         final List<dynamic> usuariosData = response.data['data'];
@@ -48,7 +49,8 @@ class UsuarioService {
     } catch (e) {
       if (e is DioException && e.type == DioExceptionType.connectionError) {
         // Retornar datos offline si están disponibles
-        return await _offlineService.getOfflineUsuarios();
+        final usuariosOffline = await _offlineService.getOfflineData('usuarios');
+        return usuariosOffline.map((json) => UsuarioModel.fromJson(json)).toList();
       }
       rethrow;
     }
@@ -153,7 +155,7 @@ class UsuarioService {
         if (rol != null) 'rol': rol.name,
       };
       
-      final response = await _apiService.get('/usuarios/ubicacion', queryParams: queryParams);
+      final response = await _apiService.get('/usuarios/ubicacion', queryParameters: queryParams);
       
       if (response.data['success'] == true) {
         final List<dynamic> usuariosData = response.data['data'];
@@ -186,7 +188,7 @@ class UsuarioService {
       if (departamento != null) queryParams['departamento'] = departamento;
       if (municipio != null) queryParams['municipio'] = municipio;
       
-      final response = await _apiService.get('/ips', queryParams: queryParams);
+      final response = await _apiService.get('/ips', queryParameters: queryParams);
       
       if (response.data['success'] == true) {
         final List<dynamic> ipsData = response.data['data'];
@@ -196,7 +198,8 @@ class UsuarioService {
       }
     } catch (e) {
       if (e is DioException && e.type == DioExceptionType.connectionError) {
-        return await _offlineService.getOfflineIps();
+        final List<IpsModel> ipsOffline = await _offlineService.getOfflineIps();
+        return ipsOffline;
       }
       rethrow;
     }
@@ -273,7 +276,7 @@ class UsuarioService {
         if (nivel != null) 'nivel': nivel.name,
       };
       
-      final response = await _apiService.get('/ips/ubicacion', queryParams: queryParams);
+      final response = await _apiService.get('/ips/ubicacion', queryParameters: queryParams);
       
       if (response.data['success'] == true) {
         final List<dynamic> ipsData = response.data['data'];
@@ -284,19 +287,17 @@ class UsuarioService {
     } catch (e) {
       // Búsqueda offline por ubicación
       if (e is DioException && e.type == DioExceptionType.connectionError) {
-        final ipsOffline = await _offlineService.getOfflineIps();
-        return ipsOffline.where((ips) {
-          if (ips.latitud != null && ips.longitud != null) {
-            final distancia = _locationService.calculateDistance(
-              latitud,
-              longitud,
-              ips.latitud!,
-              ips.longitud!,
-            );
-            return distancia <= radioKm;
-          }
-          return false;
+        final List<IpsModel> ipsOffline = await _offlineService.getOfflineIps();
+        final List<IpsModel> resultado = ipsOffline.where((ips) {
+          final distancia = _locationService.calculateDistance(
+            latitud,
+            longitud,
+            ips.ubicacionLatitud,
+            ips.ubicacionLongitud,
+          );
+          return distancia <= radioKm;
         }).toList();
+        return resultado;
       }
       rethrow;
     }
@@ -324,7 +325,7 @@ class UsuarioService {
       if (departamento != null) queryParams['departamento'] = departamento;
       if (municipio != null) queryParams['municipio'] = municipio;
       
-      final response = await _apiService.get('/medicos', queryParams: queryParams);
+      final response = await _apiService.get('/medicos', queryParameters: queryParams);
       
       if (response.data['success'] == true) {
         final List<dynamic> medicosData = response.data['data'];
@@ -334,7 +335,8 @@ class UsuarioService {
       }
     } catch (e) {
       if (e is DioException && e.type == DioExceptionType.connectionError) {
-        return await _offlineService.getOfflineMedicos();
+        final List<MedicoModel> medicosOffline = await _offlineService.getOfflineMedicos();
+        return medicosOffline;
       }
       rethrow;
     }
@@ -411,7 +413,7 @@ class UsuarioService {
         if (especialidad != null) 'especialidad': especialidad,
       };
       
-      final response = await _apiService.get('/medicos/ubicacion', queryParams: queryParams);
+      final response = await _apiService.get('/medicos/ubicacion', queryParameters: queryParams);
       
       if (response.data['success'] == true) {
         final List<dynamic> medicosData = response.data['data'];
@@ -438,7 +440,7 @@ class UsuarioService {
       if (fecha != null) queryParams['fecha'] = fecha.toIso8601String();
       if (horario != null) queryParams['horario'] = horario;
       
-      final response = await _apiService.get('/medicos/disponibles', queryParams: queryParams);
+      final response = await _apiService.get('/medicos/disponibles', queryParameters: queryParams);
       
       if (response.data['success'] == true) {
         final List<dynamic> medicosData = response.data['data'];
@@ -461,7 +463,7 @@ class UsuarioService {
       if (departamento != null) queryParams['departamento'] = departamento;
       if (municipio != null) queryParams['municipio'] = municipio;
       
-      final response = await _apiService.get('/usuarios/estadisticas', queryParams: queryParams);
+      final response = await _apiService.get('/usuarios/estadisticas', queryParameters: queryParams);
       
       if (response.data['success'] == true) {
         return response.data['data'];
@@ -478,16 +480,17 @@ class UsuarioService {
     try {
       await _offlineService.syncPendingData();
     } catch (e) {
-      print('Error sincronizando datos offline: $e');
+      appLogger.error('Error sincronizando datos offline: $e');
     }
   }
+  
   
   // Validar datos de usuario
   bool validarUsuario(UsuarioModel usuario) {
     if (usuario.email.isEmpty || !usuario.email.contains('@')) return false;
     if (usuario.nombres.isEmpty || usuario.apellidos.isEmpty) return false;
     if (usuario.numeroDocumento.isEmpty) return false;
-    if (usuario.telefono.isEmpty) return false;
+    if (usuario.telefono?.isEmpty ?? true) return false;
     
     return true;
   }
@@ -495,10 +498,10 @@ class UsuarioService {
   // Validar datos de IPS
   bool validarIps(IpsModel ips) {
     if (ips.nombre.isEmpty) return false;
-    if (ips.codigoHabilitacion.isEmpty) return false;
+    if (ips.codigo.isEmpty) return false; // Usar 'codigo' en lugar de 'codigoHabilitacion'
     if (ips.direccion.isEmpty) return false;
     if (ips.telefono.isEmpty) return false;
-    if (ips.latitud == null || ips.longitud == null) return false;
+    if (ips.ubicacionLatitud == 0 || ips.ubicacionLongitud == 0) return false; // Usar ubicacionLatitud/ubicacionLongitud
     
     return true;
   }
@@ -506,9 +509,36 @@ class UsuarioService {
   // Validar datos de médico
   bool validarMedico(MedicoModel medico) {
     if (medico.usuarioId.isEmpty) return false;
-    if (medico.numeroLicencia.isEmpty) return false;
-    if (medico.especialidades.isEmpty) return false;
+    if (medico.registroMedico.isEmpty) return false; // Usar 'registroMedico' en lugar de 'numeroLicencia'
+    if (medico.especialidad.isEmpty) return false; // Usar 'especialidad' (singular) en lugar de 'especialidades'
     
     return true;
+  }
+  
+  // Cerrar sesión remotamente
+  Future<void> cerrarSesionRemota(String token) async {
+    try {
+      final response = await _apiService.post(
+        '/auth/logout',
+        data: {
+          'token': token,
+        },
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+      
+      if (response.statusCode != 200 || response.data['success'] != true) {
+        throw Exception('No se pudo invalidar la sesión en el servidor');
+      }
+      
+      appLogger.info('Sesión cerrada correctamente en el servidor');
+    } catch (e) {
+      appLogger.error('Error cerrando sesión remota', error: e);
+      rethrow;
+    }
   }
 }

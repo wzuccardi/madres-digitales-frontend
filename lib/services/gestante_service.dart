@@ -1,366 +1,170 @@
-import 'package:dio/dio.dart';
-import '../models/gestante_model.dart';
-import '../models/usuario_model.dart';
-import 'api_service.dart';
-import 'location_service.dart';
-import 'offline_service.dart';
-import 'notification_service.dart';
+import 'package:madres_digitales_flutter_new/services/api_service.dart';
+import 'package:madres_digitales_flutter_new/utils/logger.dart';
+
+class Gestante {
+  final String id;
+  final String documento;
+  final String nombre;
+  final String? telefono;
+  final DateTime? fecha_nacimiento;
+  final DateTime? fecha_ultima_menstruacion;
+  final DateTime? fecha_probable_parto;
+  final String? eps;
+  final String? regimen_salud;
+  final String? municipio_id;
+  final String? madrina_id;
+  final bool activa;
+  final bool riesgo_alto;
+
+  Gestante({
+    required this.id,
+    required this.documento,
+    required this.nombre,
+    this.telefono,
+    this.fecha_nacimiento,
+    this.fecha_ultima_menstruacion,
+    this.fecha_probable_parto,
+    this.eps,
+    this.regimen_salud,
+    this.municipio_id,
+    this.madrina_id,
+    this.activa = true,
+    this.riesgo_alto = false,
+  });
+
+  factory Gestante.fromJson(Map<String, dynamic> json) {
+    print('🔍 Gestante.fromJson: Procesando JSON con claves: ${json.keys.toList()}');
+    return Gestante(
+      id: json['id']?.toString() ?? '',
+      documento: json['documento']?.toString() ?? '',
+      nombre: json['nombre']?.toString() ?? '',
+      telefono: json['telefono']?.toString(),
+      fecha_nacimiento: json['fecha_nacimiento'] != null
+          ? DateTime.tryParse(json['fecha_nacimiento'].toString())
+          : null,
+      fecha_ultima_menstruacion: json['fecha_ultima_menstruacion'] != null
+          ? DateTime.tryParse(json['fecha_ultima_menstruacion'].toString())
+          : null,
+      fecha_probable_parto: json['fecha_probable_parto'] != null
+          ? DateTime.tryParse(json['fecha_probable_parto'].toString())
+          : null,
+      eps: json['eps']?.toString(),
+      regimen_salud: json['regimen_salud']?.toString(),
+      municipio_id: json['municipio_id']?.toString(),
+      madrina_id: json['madrina_id']?.toString(),
+      activa: json['activa'] ?? true,
+      riesgo_alto: json['riesgo_alto'] ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'documento': documento,
+      'nombre': nombre,
+      'telefono': telefono,
+      'fecha_nacimiento': fecha_nacimiento?.toIso8601String(),
+      'fecha_ultima_menstruacion': fecha_ultima_menstruacion?.toIso8601String(),
+      'fecha_probable_parto': fecha_probable_parto?.toIso8601String(),
+      'eps': eps,
+      'regimen_salud': regimen_salud,
+      'municipio_id': municipio_id,
+      'madrina_id': madrina_id,
+      'activa': activa,
+      'riesgo_alto': riesgo_alto,
+    };
+  }
+}
 
 class GestanteService {
   final ApiService _apiService;
-  final LocationService _locationService;
-  final OfflineService _offlineService;
-  final NotificationService _notificationService;
-  
-  GestanteService({
-    required ApiService apiService,
-    required LocationService locationService,
-    required OfflineService offlineService,
-    required NotificationService notificationService,
-  }) : _apiService = apiService,
-       _locationService = locationService,
-       _offlineService = offlineService,
-       _notificationService = notificationService;
-  
-  // Obtener todas las gestantes
-  Future<List<GestanteModel>> obtenerGestantes({
-    int? page,
-    int? limit,
-    String? search,
-    bool? altoRiesgo,
-    String? departamento,
-    String? municipio,
-  }) async {
+
+  GestanteService(this._apiService);
+
+  Future<List<Gestante>> obtenerGestantes() async {
     try {
-      final queryParams = <String, dynamic>{};
-      if (page != null) queryParams['page'] = page;
-      if (limit != null) queryParams['limit'] = limit;
-      if (search != null && search.isNotEmpty) queryParams['search'] = search;
-      if (altoRiesgo != null) queryParams['altoRiesgo'] = altoRiesgo;
-      if (departamento != null) queryParams['departamento'] = departamento;
-      if (municipio != null) queryParams['municipio'] = municipio;
+      appLogger.info('GestanteService: Obteniendo gestantes');
+      final response = await _apiService.get('/gestantes');
+      print('🔍 GestanteService: Respuesta recibida - Tipo: ${response.data.runtimeType}');
+      print('🔍 GestanteService: Respuesta recibida - Contenido: ${response.data}');
       
-      final response = await _apiService.get('/gestantes', queryParams: queryParams);
-      
-      if (response.data['success'] == true) {
-        final List<dynamic> gestantesData = response.data['data'];
-        final gestantes = gestantesData.map((json) => GestanteModel.fromJson(json)).toList();
-        
-        // Cachear gestantes para uso offline
-        await _offlineService.cacheGestantes(gestantes);
-        
-        return gestantes;
+      List<dynamic> gestantesData;
+      if (response.data is Map<String, dynamic>) {
+        // La respuesta tiene la estructura {data: [...]}
+        gestantesData = response.data['data'] as List<dynamic>;
+        print('🔍 GestanteService: Extraída lista de gestantes de la clave "data": ${gestantesData.length} elementos');
       } else {
-        throw Exception(response.data['message'] ?? 'Error al obtener gestantes');
+        // La respuesta es directamente una lista
+        gestantesData = response.data as List<dynamic>;
+        print('🔍 GestanteService: La respuesta es directamente una lista: ${gestantesData.length} elementos');
       }
-    } catch (e) {
-      // Si hay error de conectividad, intentar obtener datos offline
-      if (e is DioException && e.type == DioExceptionType.connectionError) {
-        return await _offlineService.getOfflineGestantes();
-      }
+      
+      final gestantes = gestantesData.map((data) {
+        print('🔍 GestanteService: Procesando gestante: $data');
+        return Gestante.fromJson(data);
+      }).toList();
+      print('🔍 GestanteService: ${gestantes.length} gestantes procesadas correctamente');
+      return gestantes;
+    } catch (e, stackTrace) {
+      print('❌ GestanteService: Error obteniendo gestantes: $e');
+      print('❌ GestanteService: Tipo de error: ${e.runtimeType}');
+      print('❌ GestanteService: Stack trace: $stackTrace');
+      appLogger.error('Error obteniendo gestantes', error: e);
       rethrow;
     }
   }
-  
-  // Obtener gestante por ID
-  Future<GestanteModel> obtenerGestantePorId(String id) async {
+
+  Future<Gestante?> obtenerGestantePorId(String id) async {
     try {
+      appLogger.info('GestanteService: Obteniendo gestante por ID: $id');
       final response = await _apiService.get('/gestantes/$id');
-      
-      if (response.data['success'] == true) {
-        return GestanteModel.fromJson(response.data['data']);
-      } else {
-        throw Exception(response.data['message'] ?? 'Error al obtener gestante');
-      }
+      return Gestante.fromJson(response.data);  // Corrección: Acceder a data de Response
     } catch (e) {
-      // Intentar obtener de cache offline
-      if (e is DioException && e.type == DioExceptionType.connectionError) {
-        final gestantesOffline = await _offlineService.getOfflineGestantes();
-        final gestante = gestantesOffline.where((g) => g.id == id).firstOrNull;
-        if (gestante != null) return gestante;
-      }
-      rethrow;
+      appLogger.error('Error obteniendo gestante por ID', error: e, context: {
+        'id': id,
+      });
+      return null;
     }
   }
-  
-  // Crear nueva gestante
-  Future<GestanteModel> crearGestante(GestanteModel gestante) async {
+
+  Future<Gestante> crearGestante(Map<String, dynamic> gestanteData) async {
     try {
-      final gestanteData = gestante.toJson();
-      
-      // Obtener ubicación actual si está disponible
-      final ubicacion = await _locationService.getCurrentLocation();
-      if (ubicacion != null) {
-        gestanteData['ubicacionRegistro'] = {
-          'latitud': ubicacion.latitude,
-          'longitud': ubicacion.longitude,
-        };
-      }
-      
-      final response = await _apiService.post('/gestantes', data: gestanteData);
-      
-      if (response.data['success'] == true) {
-        final nuevaGestante = GestanteModel.fromJson(response.data['data']);
-        
-        // Programar recordatorios de controles prenatales
-        await _programarRecordatoriosControles(nuevaGestante);
-        
-        return nuevaGestante;
-      } else {
-        throw Exception(response.data['message'] ?? 'Error al crear gestante');
-      }
+      appLogger.info('GestanteService: Creando gestante');
+      final response = await _apiService.post('/gestantes', data: gestanteData);  // Corrección: Usar parámetro named
+      return Gestante.fromJson(response.data);  // Corrección: Acceder a data de Response
     } catch (e) {
-      // Si no hay conectividad, guardar offline
-      if (e is DioException && e.type == DioExceptionType.connectionError) {
-        await _offlineService.saveOfflineData('gestantes', gestante.toJson());
-        return gestante;
-      }
+      appLogger.error('Error creando gestante', error: e);
       rethrow;
     }
   }
-  
-  // Actualizar gestante
-  Future<GestanteModel> actualizarGestante(String id, GestanteModel gestante) async {
+
+  Future<Gestante> actualizarGestante(String id, Map<String, dynamic> gestanteData) async {
     try {
-      final response = await _apiService.put('/gestantes/$id', data: gestante.toJson());
-      
-      if (response.data['success'] == true) {
-        final gestanteActualizada = GestanteModel.fromJson(response.data['data']);
-        
-        // Actualizar recordatorios si cambió información relevante
-        await _programarRecordatoriosControles(gestanteActualizada);
-        
-        return gestanteActualizada;
-      } else {
-        throw Exception(response.data['message'] ?? 'Error al actualizar gestante');
-      }
+      appLogger.info('GestanteService: Actualizando gestante', context: {
+        'id': id,
+      });
+      final response = await _apiService.put('/gestantes/$id', data: gestanteData);  // Corrección: Usar parámetro named
+      return Gestante.fromJson(response.data);  // Corrección: Acceder a data de Response
     } catch (e) {
-      // Si no hay conectividad, guardar offline
-      if (e is DioException && e.type == DioExceptionType.connectionError) {
-        await _offlineService.saveOfflineData('gestantes_update', {
-          'id': id,
-          'data': gestante.toJson(),
-        });
-        return gestante;
-      }
+      appLogger.error('Error actualizando gestante', error: e, context: {
+        'id': id,
+      });
       rethrow;
     }
   }
-  
-  // Eliminar gestante
+
   Future<bool> eliminarGestante(String id) async {
     try {
-      final response = await _apiService.delete('/gestantes/$id');
-      
-      if (response.data['success'] == true) {
-        // Cancelar recordatorios programados
-        await _notificationService.cancelNotification(id.hashCode);
-        return true;
-      } else {
-        throw Exception(response.data['message'] ?? 'Error al eliminar gestante');
-      }
+      appLogger.info('GestanteService: Eliminando gestante', context: {
+        'id': id,
+      });
+      await _apiService.delete('/gestantes/$id');
+      return true;
     } catch (e) {
-      // Si no hay conectividad, marcar para eliminación offline
-      if (e is DioException && e.type == DioExceptionType.connectionError) {
-        await _offlineService.saveOfflineData('gestantes_delete', {'id': id});
-        return true;
-      }
-      rethrow;
-    }
-  }
-  
-  // Buscar gestantes por ubicación
-  Future<List<GestanteModel>> buscarGestantesPorUbicacion({
-    required double latitud,
-    required double longitud,
-    required double radioKm,
-    bool? altoRiesgo,
-  }) async {
-    try {
-      final queryParams = {
-        'latitud': latitud,
-        'longitud': longitud,
-        'radio': radioKm,
-        if (altoRiesgo != null) 'altoRiesgo': altoRiesgo,
-      };
-      
-      final response = await _apiService.get('/gestantes/ubicacion', queryParams: queryParams);
-      
-      if (response.data['success'] == true) {
-        final List<dynamic> gestantesData = response.data['data'];
-        return gestantesData.map((json) => GestanteModel.fromJson(json)).toList();
-      } else {
-        throw Exception(response.data['message'] ?? 'Error al buscar gestantes por ubicación');
-      }
-    } catch (e) {
-      // Búsqueda offline por ubicación
-      if (e is DioException && e.type == DioExceptionType.connectionError) {
-        final gestantesOffline = await _offlineService.getOfflineGestantes();
-        return gestantesOffline.where((gestante) {
-          if (gestante.usuario?.latitud != null && gestante.usuario?.longitud != null) {
-            final distancia = _locationService.calculateDistance(
-              latitud,
-              longitud,
-              gestante.usuario!.latitud!,
-              gestante.usuario!.longitud!,
-            );
-            return distancia <= radioKm;
-          }
-          return false;
-        }).toList();
-      }
-      rethrow;
-    }
-  }
-  
-  // Obtener gestantes de alto riesgo
-  Future<List<GestanteModel>> obtenerGestantesAltoRiesgo({
-    double? latitud,
-    double? longitud,
-    double? radioKm,
-  }) async {
-    try {
-      final queryParams = <String, dynamic>{'altoRiesgo': true};
-      
-      if (latitud != null && longitud != null) {
-        queryParams['latitud'] = latitud;
-        queryParams['longitud'] = longitud;
-        if (radioKm != null) queryParams['radio'] = radioKm;
-      }
-      
-      final response = await _apiService.get('/gestantes/alto-riesgo', queryParams: queryParams);
-      
-      if (response.data['success'] == true) {
-        final List<dynamic> gestantesData = response.data['data'];
-        return gestantesData.map((json) => GestanteModel.fromJson(json)).toList();
-      } else {
-        throw Exception(response.data['message'] ?? 'Error al obtener gestantes de alto riesgo');
-      }
-    } catch (e) {
-      if (e is DioException && e.type == DioExceptionType.connectionError) {
-        final gestantesOffline = await _offlineService.getOfflineGestantes();
-        return gestantesOffline.where((g) => g.embarazoAltoRiesgo).toList();
-      }
-      rethrow;
-    }
-  }
-  
-  // Obtener estadísticas de gestantes
-  Future<Map<String, dynamic>> obtenerEstadisticasGestantes({
-    String? departamento,
-    String? municipio,
-    DateTime? fechaInicio,
-    DateTime? fechaFin,
-  }) async {
-    try {
-      final queryParams = <String, dynamic>{};
-      if (departamento != null) queryParams['departamento'] = departamento;
-      if (municipio != null) queryParams['municipio'] = municipio;
-      if (fechaInicio != null) queryParams['fechaInicio'] = fechaInicio.toIso8601String();
-      if (fechaFin != null) queryParams['fechaFin'] = fechaFin.toIso8601String();
-      
-      final response = await _apiService.get('/gestantes/estadisticas', queryParams: queryParams);
-      
-      if (response.data['success'] == true) {
-        return response.data['data'];
-      } else {
-        throw Exception(response.data['message'] ?? 'Error al obtener estadísticas');
-      }
-    } catch (e) {
-      if (e is DioException && e.type == DioExceptionType.connectionError) {
-        // Calcular estadísticas básicas offline
-        final gestantesOffline = await _offlineService.getOfflineGestantes();
-        return {
-          'total': gestantesOffline.length,
-          'altoRiesgo': gestantesOffline.where((g) => g.embarazoAltoRiesgo).length,
-          'activas': gestantesOffline.where((g) => g.activo).length,
-        };
-      }
-      rethrow;
-    }
-  }
-  
-  // Programar recordatorios de controles prenatales
-  Future<void> _programarRecordatoriosControles(GestanteModel gestante) async {
-    try {
-      // Calcular fechas de controles según semanas de gestación
-      final semanasGestacion = gestante.semanasGestacion;
-      final proximosControles = _calcularProximosControles(semanasGestacion, gestante.fechaUltimaMenstruacion);
-      
-      for (int i = 0; i < proximosControles.length; i++) {
-        final fechaControl = proximosControles[i];
-        final notificationId = '${gestante.id}_control_$i'.hashCode;
-        
-        await _notificationService.scheduleNotification(
-          id: notificationId,
-          title: 'Recordatorio de Control Prenatal',
-          body: 'Es hora de tu control prenatal. Semana ${semanasGestacion + (i + 1) * 4}',
-          scheduledDate: fechaControl.subtract(const Duration(days: 1)), // Recordar 1 día antes
-          payload: {
-            'type': 'control_prenatal',
-            'gestanteId': gestante.id,
-            'fechaControl': fechaControl.toIso8601String(),
-          },
-        );
-      }
-    } catch (e) {
-      print('Error programando recordatorios: $e');
-    }
-  }
-  
-  // Calcular próximos controles prenatales
-  List<DateTime> _calcularProximosControles(int semanasActuales, DateTime fechaUltimaMenstruacion) {
-    final controles = <DateTime>[];
-    final controlesRecomendados = [8, 12, 16, 20, 24, 28, 32, 36, 38, 40]; // Semanas recomendadas
-    
-    for (final semana in controlesRecomendados) {
-      if (semana > semanasActuales) {
-        final fechaControl = fechaUltimaMenstruacion.add(Duration(days: semana * 7));
-        if (fechaControl.isAfter(DateTime.now())) {
-          controles.add(fechaControl);
-        }
-      }
-    }
-    
-    return controles;
-  }
-  
-  // Sincronizar datos offline
-  Future<void> sincronizarDatosOffline() async {
-    try {
-      await _offlineService.syncPendingData();
-    } catch (e) {
-      print('Error sincronizando datos offline: $e');
-    }
-  }
-  
-  // Verificar gestantes que requieren atención
-  Future<List<GestanteModel>> verificarGestantesAtencion() async {
-    try {
-      final response = await _apiService.get('/gestantes/requieren-atencion');
-      
-      if (response.data['success'] == true) {
-        final List<dynamic> gestantesData = response.data['data'];
-        final gestantes = gestantesData.map((json) => GestanteModel.fromJson(json)).toList();
-        
-        // Enviar notificaciones para gestantes que requieren atención urgente
-        for (final gestante in gestantes) {
-          if (gestante.embarazoAltoRiesgo) {
-            await _notificationService.showMedicalAlert(
-              title: 'Atención Requerida',
-              message: 'La gestante ${gestante.nombreCompleto} requiere atención médica',
-              priority: 'ALTA',
-              gestanteId: gestante.id,
-            );
-          }
-        }
-        
-        return gestantes;
-      } else {
-        throw Exception(response.data['message'] ?? 'Error al verificar gestantes');
-      }
-    } catch (e) {
-      rethrow;
+      appLogger.error('Error eliminando gestante', error: e, context: {
+        'id': id,
+      });
+      return false;
     }
   }
 }

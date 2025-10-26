@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
-import '../models/gestante_model.dart';
-import '../services/alerta_service.dart';
+import 'package:madres_digitales_flutter_new/services/alerta_service.dart';
+import 'package:madres_digitales_flutter_new/providers/service_providers.dart';
+import 'package:madres_digitales_flutter_new/screens/alerta_form_screen.dart';
+import 'package:madres_digitales_flutter_new/utils/logger.dart';
 
 class AlertasScreen extends ConsumerStatefulWidget {
   const AlertasScreen({super.key});
@@ -14,100 +15,391 @@ class AlertasScreen extends ConsumerStatefulWidget {
 class _AlertasScreenState extends ConsumerState<AlertasScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final AlertaService _alertaService = AlertaService();
-  
-  List<AlertaModel> _alertas = [];
-  List<AlertaModel> _alertasCriticas = [];
-  List<AlertaModel> _alertasResueltas = [];
+  List<Alerta> _todasAlertas = [];
+  List<Alerta> _alertasCriticas = [];
+  List<Alerta> _alertasPendientes = [];
+  List<Alerta> _alertasAutomaticas = [];
   bool _isLoading = true;
+  String? _error;
+  bool _isDisposed = false;
+  
+  // Filtros
+  String? _filtroTipo;
+  String? _filtroPrioridad;
+  String? _filtroEstado;
+  bool? _filtroAutomatica;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-    _loadAlertas();
+    _tabController = TabController(length: 4, vsync: this);
+    _cargarAlertas();
   }
 
   @override
   void dispose() {
+    _isDisposed = true;
     _tabController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadAlertas() async {
-    setState(() => _isLoading = true);
+  Future<void> _cargarAlertas() async {
+    if (_isDisposed || !mounted) return;
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
     try {
-      final alertas = await _alertaService.obtenerAlertas();
-      final alertasCriticas = await _alertaService.obtenerAlertasCriticas();
+      appLogger.info('AlertasScreen: Cargando alertas del backend...');
+      final apiService = ref.read(apiServiceProvider);
+      final alertaService = AlertaService(apiService);
       
+      final alertas = await alertaService.obtenerAlertas(
+        nivelPrioridad: _filtroPrioridad,
+        tipoAlerta: _filtroTipo,
+        estado: _filtroEstado,
+        esAutomatica: _filtroAutomatica,
+      );
+
+      if (!mounted || _isDisposed) return;
+
       setState(() {
-        _alertas = alertas;
-        _alertasCriticas = alertasCriticas;
-        _alertasResueltas = alertas.where((a) => a.fechaResolucion != null).toList();
+        _todasAlertas = alertas;
+        _alertasCriticas = alertas.where((a) => a.esCritica).toList();
+        _alertasPendientes = alertas.where((a) => a.esPendiente).toList();
+        _alertasAutomaticas = alertas.where((a) => a.esAutomatica).toList();
         _isLoading = false;
       });
+
+      appLogger.info('AlertasScreen: Alertas cargadas - Total: ${alertas.length}, Críticas: ${_alertasCriticas.length}, Pendientes: ${_alertasPendientes.length}, Automáticas: ${_alertasAutomaticas.length}');
     } catch (e) {
-      setState(() => _isLoading = false);
+      appLogger.error('AlertasScreen: Error cargando alertas', error: e);
+      if (!mounted || _isDisposed) return;
+
+      setState(() {
+        _error = 'Error al cargar alertas: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _resolverAlerta(Alerta alerta) async {
+    if (alerta.resuelta) return;
+
+    try {
+      final apiService = ref.read(apiServiceProvider);
+      final alertaService = AlertaService(apiService);
+      final success = await alertaService.resolverAlerta(alerta.id);
+      
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Alerta resuelta exitosamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        _cargarAlertas(); // Recargar para actualizar el estado
+      }
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al cargar alertas: $e')),
+          SnackBar(
+            content: Text('Error al resolver alerta: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
+  }
+
+  Future<void> _marcarComoLeida(Alerta alerta) async {
+    try {
+      final apiService = ref.read(apiServiceProvider);
+      final alertaService = AlertaService(apiService);
+      final success = await alertaService.marcarComoLeida(alerta.id);
+      
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Alerta marcada como leída'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        _cargarAlertas(); // Recargar para actualizar el estado
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al marcar alerta como leída: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _navegarAFormularioAlerta() async {
+    final result = await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const AlertaFormScreen(),
+      ),
+    );
+    
+    if (result == true) {
+      _cargarAlertas(); // Recargar alertas si se creó una nueva
+    }
+  }
+
+  void _mostrarFiltros() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Filtros',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              
+              // Filtro por prioridad
+              DropdownButtonFormField<String>(
+                initialValue: _filtroPrioridad,
+                decoration: const InputDecoration(
+                  labelText: 'Prioridad',
+                  border: OutlineInputBorder(),
+                ),
+                items: [
+                  const DropdownMenuItem<String>(value: null, child: Text('Todas')),
+                  ...AlertaService.nivelesPrioridad.map((p) => 
+                    DropdownMenuItem<String>(value: p, child: Text(p.toUpperCase()))
+                  ),
+                ],
+                onChanged: (value) {
+                  setModalState(() {
+                    _filtroPrioridad = value;
+                  });
+                },
+              ),
+              
+              const SizedBox(height: 12),
+              
+              // Filtro por tipo
+              DropdownButtonFormField<String>(
+                initialValue: _filtroTipo,
+                decoration: const InputDecoration(
+                  labelText: 'Tipo',
+                  border: OutlineInputBorder(),
+                ),
+                items: [
+                  const DropdownMenuItem<String>(value: null, child: Text('Todos')),
+                  ...AlertaService.tiposAlerta.map((t) => 
+                    DropdownMenuItem<String>(value: t, child: Text(t.replaceAll('_', ' ').toUpperCase()))
+                  ),
+                ],
+                onChanged: (value) {
+                  setModalState(() {
+                    _filtroTipo = value;
+                  });
+                },
+              ),
+              
+              const SizedBox(height: 12),
+              
+              // Filtro por estado
+              DropdownButtonFormField<String>(
+                initialValue: _filtroEstado,
+                decoration: const InputDecoration(
+                  labelText: 'Estado',
+                  border: OutlineInputBorder(),
+                ),
+                items: const [
+                  DropdownMenuItem<String>(value: null, child: Text('Todos')),
+                  DropdownMenuItem<String>(value: 'pendiente', child: Text('PENDIENTE')),
+                  DropdownMenuItem<String>(value: 'en_progreso', child: Text('EN PROGRESO')),
+                  DropdownMenuItem<String>(value: 'resuelta', child: Text('RESUELTA')),
+                ],
+                onChanged: (value) {
+                  setModalState(() {
+                    _filtroEstado = value;
+                  });
+                },
+              ),
+              
+              const SizedBox(height: 12),
+              
+              // Filtro automática
+              CheckboxListTile(
+                title: const Text('Solo alertas automáticas'),
+                value: _filtroAutomatica ?? false,
+                onChanged: (value) {
+                  setModalState(() {
+                    _filtroAutomatica = value == true ? true : null;
+                  });
+                },
+              ),
+              
+              const SizedBox(height: 16),
+              
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        setModalState(() {
+                          _filtroPrioridad = null;
+                          _filtroTipo = null;
+                          _filtroEstado = null;
+                          _filtroAutomatica = null;
+                        });
+                      },
+                      child: const Text('Limpiar'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        setState(() {
+                          // Los filtros ya están actualizados
+                        });
+                        _cargarAlertas();
+                      },
+                      child: const Text('Aplicar'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Alertas Médicas'),
-        backgroundColor: Colors.orange[100],
+        title: const Text('Alertas'),
+        backgroundColor: Colors.red,
+        foregroundColor: Colors.white,
         actions: [
           IconButton(
             icon: const Icon(Icons.filter_list),
-            onPressed: _showFilterDialog,
+            onPressed: _mostrarFiltros,
+            tooltip: 'Filtros',
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _cargarAlertas,
+            tooltip: 'Actualizar',
           ),
         ],
         bottom: TabBar(
           controller: _tabController,
+          indicatorColor: Colors.white,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
+          isScrollable: true,
           tabs: [
             Tab(
-              text: 'Activas',
+              text: 'Todas',
               icon: Badge(
-                label: Text('${_alertas.where((a) => a.fechaResolucion == null).length}'),
-                child: const Icon(Icons.warning),
+                label: Text('${_todasAlertas.length}'),
+                child: const Icon(Icons.list),
               ),
             ),
             Tab(
               text: 'Críticas',
               icon: Badge(
                 label: Text('${_alertasCriticas.length}'),
-                child: const Icon(Icons.priority_high),
+                child: const Icon(Icons.warning),
               ),
             ),
-            const Tab(text: 'Resueltas', icon: Icon(Icons.check_circle)),
+            Tab(
+              text: 'Pendientes',
+              icon: Badge(
+                label: Text('${_alertasPendientes.length}'),
+                child: const Icon(Icons.pending),
+              ),
+            ),
+            Tab(
+              text: 'Automáticas',
+              icon: Badge(
+                label: Text('${_alertasAutomaticas.length}'),
+                child: const Icon(Icons.smart_toy),
+              ),
+            ),
           ],
         ),
       ),
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildAlertasList(_alertas.where((a) => a.fechaResolucion == null).toList(), 'activas'),
+          _buildAlertasList(_todasAlertas, 'todas'),
           _buildAlertasList(_alertasCriticas, 'criticas'),
-          _buildAlertasList(_alertasResueltas, 'resueltas'),
+          _buildAlertasList(_alertasPendientes, 'pendientes'),
+          _buildAlertasList(_alertasAutomaticas, 'automaticas'),
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddAlertaDialog(),
-        backgroundColor: Colors.orange,
+        heroTag: "alertas_fab",
+        onPressed: () async {
+          final result = await Navigator.of(context).pushNamed('/alertas/nueva');
+          if (result == true) {
+            // Recargar alertas si se creó una nueva
+            _cargarAlertas();
+          }
+        },
+        backgroundColor: Colors.red,
         child: const Icon(Icons.add_alert),
       ),
     );
   }
 
-  Widget _buildAlertasList(List<AlertaModel> alertas, String tipo) {
+  Widget _buildAlertasList(List<Alerta> alertas, String tipo) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Cargando alertas...'),
+          ],
+        ),
+      );
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 64, color: Colors.red),
+            const SizedBox(height: 16),
+            Text(
+              _error!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.red),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _cargarAlertas,
+              child: const Text('Reintentar'),
+            ),
+          ],
+        ),
+      );
     }
 
     if (alertas.isEmpty) {
@@ -116,15 +408,17 @@ class _AlertasScreenState extends ConsumerState<AlertasScreen>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              tipo == 'criticas' ? Icons.priority_high_outlined : 
-              tipo == 'resueltas' ? Icons.check_circle_outline : Icons.warning_outlined,
-              size: 64, 
-              color: Colors.grey[400]
+              tipo == 'criticas' ? Icons.priority_high_outlined :
+              tipo == 'pendientes' ? Icons.mark_email_unread_outlined : 
+              tipo == 'automaticas' ? Icons.smart_toy_outlined : Icons.notifications_none,
+              size: 64,
+              color: Colors.grey[400],
             ),
             const SizedBox(height: 16),
             Text(
               tipo == 'criticas' ? 'No hay alertas críticas' :
-              tipo == 'resueltas' ? 'No hay alertas resueltas' : 'No hay alertas activas',
+              tipo == 'pendientes' ? 'No hay alertas pendientes' :
+              tipo == 'automaticas' ? 'No hay alertas automáticas' : 'No hay alertas',
               style: TextStyle(fontSize: 18, color: Colors.grey[600]),
             ),
           ],
@@ -133,888 +427,294 @@ class _AlertasScreenState extends ConsumerState<AlertasScreen>
     }
 
     return RefreshIndicator(
-      onRefresh: _loadAlertas,
+      onRefresh: _cargarAlertas,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: alertas.length,
         itemBuilder: (context, index) {
           final alerta = alertas[index];
-          return _buildAlertaCard(alerta, tipo);
+          return _buildAlertaCard(alerta);
         },
       ),
     );
   }
 
-  Widget _buildAlertaCard(AlertaModel alerta, String tipo) {
-    final isCritica = alerta.prioridad == NivelPrioridad.critica;
-    final isResuelta = alerta.fechaResolucion != null;
-    
-    Color cardColor = Colors.white;
-    Color borderColor = Colors.grey[300]!;
-    
-    if (isCritica && !isResuelta) {
+  Widget _buildAlertaCard(Alerta alerta) {
+    final isUrgent = alerta.tipoAlerta == 'emergencia_obstetrica';
+    final isWarning = alerta.tipoAlerta == 'hipertension' || alerta.tipoAlerta == 'preeclampsia';
+    final isInfo = !isUrgent && !isWarning;
+
+    Color cardColor = Colors.blue[50]!;
+    Color iconColor = Colors.blue;
+    IconData iconData = Icons.info;
+
+    if (isUrgent) {
       cardColor = Colors.red[50]!;
-      borderColor = Colors.red[300]!;
-    } else if (alerta.prioridad == NivelPrioridad.alta && !isResuelta) {
+      iconColor = Colors.red;
+      iconData = Icons.priority_high;
+    } else if (isWarning) {
       cardColor = Colors.orange[50]!;
-      borderColor = Colors.orange[300]!;
-    } else if (isResuelta) {
-      cardColor = Colors.green[50]!;
-      borderColor = Colors.green[300]!;
+      iconColor = Colors.orange;
+      iconData = Icons.warning;
     }
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      color: cardColor,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: borderColor, width: 1),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () => _showAlertaDetail(alerta),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: _getPriorityColor(alerta.prioridad).withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      _getAlertIcon(alerta.tipo),
-                      color: _getPriorityColor(alerta.prioridad),
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          alerta.titulo,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          'Gestante ID: ${alerta.gestanteId}',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _getPriorityColor(alerta.prioridad).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      _getPriorityText(alerta.prioridad),
-                      style: TextStyle(
-                        color: _getPriorityColor(alerta.prioridad),
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                alerta.descripcion,
-                style: TextStyle(
-                  color: Colors.grey[700],
-                  fontSize: 14,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  _buildInfoChip(
-                    Icons.calendar_today,
-                    DateFormat('dd/MM/yyyy HH:mm').format(alerta.fechaCreacion),
-                    Colors.blue,
-                  ),
-                  const SizedBox(width: 8),
-                  _buildInfoChip(
-                    Icons.category,
-                    _getTipoText(alerta.tipo),
-                    Colors.purple,
-                  ),
-                  if (isResuelta) ...[
-                    const SizedBox(width: 8),
-                    _buildInfoChip(
-                      Icons.check_circle,
-                      'Resuelta',
-                      Colors.green,
-                    ),
-                  ],
-                ],
-              ),
-              if (alerta.fechaResolucion != null) ...[
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(Icons.check_circle, size: 16, color: Colors.green[600]),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Resuelta: ${DateFormat('dd/MM/yyyy HH:mm').format(alerta.fechaResolucion!)}',
-                      style: TextStyle(
-                        color: Colors.green[600],
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ],
+      color: alerta.resuelta ? Colors.grey[100] : cardColor,
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: alerta.resuelta ? Colors.grey[300] : iconColor.withOpacity(0.2),
+          child: Icon(
+            iconData,
+            color: alerta.resuelta ? Colors.grey : iconColor,
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildInfoChip(IconData icon, String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Color _getPriorityColor(NivelPrioridad prioridad) {
-    switch (prioridad) {
-      case NivelPrioridad.critica:
-        return Colors.red;
-      case NivelPrioridad.alta:
-        return Colors.orange;
-      case NivelPrioridad.media:
-        return Colors.yellow[700]!;
-      case NivelPrioridad.baja:
-        return Colors.blue;
-    }
-  }
-
-  String _getPriorityText(NivelPrioridad prioridad) {
-    switch (prioridad) {
-      case NivelPrioridad.critica:
-        return 'CRÍTICA';
-      case NivelPrioridad.alta:
-        return 'ALTA';
-      case NivelPrioridad.media:
-        return 'MEDIA';
-      case NivelPrioridad.baja:
-        return 'BAJA';
-    }
-  }
-
-  IconData _getAlertIcon(TipoAlerta tipo) {
-    switch (tipo) {
-      case TipoAlerta.presionAlta:
-        return Icons.favorite;
-      case TipoAlerta.presionBaja:
-        return Icons.favorite_border;
-      case TipoAlerta.fiebre:
-        return Icons.thermostat;
-      case TipoAlerta.pesoAnormal:
-        return Icons.monitor_weight;
-      case TipoAlerta.controlVencido:
-        return Icons.schedule;
-      case TipoAlerta.riesgoAlto:
-        return Icons.warning;
-      case TipoAlerta.medicacion:
-        return Icons.medication;
-      case TipoAlerta.laboratorio:
-        return Icons.science;
-      case TipoAlerta.otro:
-        return Icons.info;
-    }
-  }
-
-  String _getTipoText(TipoAlerta tipo) {
-    switch (tipo) {
-      case TipoAlerta.presionAlta:
-        return 'Presión Alta';
-      case TipoAlerta.presionBaja:
-        return 'Presión Baja';
-      case TipoAlerta.fiebre:
-        return 'Fiebre';
-      case TipoAlerta.pesoAnormal:
-        return 'Peso Anormal';
-      case TipoAlerta.controlVencido:
-        return 'Control Vencido';
-      case TipoAlerta.riesgoAlto:
-        return 'Riesgo Alto';
-      case TipoAlerta.medicacion:
-        return 'Medicación';
-      case TipoAlerta.laboratorio:
-        return 'Laboratorio';
-      case TipoAlerta.otro:
-        return 'Otro';
-    }
-  }
-
-  void _showAlertaDetail(AlertaModel alerta) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => AlertaDetailSheet(
-        alerta: alerta,
-        onResolve: () {
-          _loadAlertas();
-        },
-      ),
-    );
-  }
-
-  void _showAddAlertaDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => const AddAlertaDialog(),
-    );
-  }
-
-  void _showFilterDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Filtrar Alertas'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
+        title: Row(
           children: [
-            const Text('Filtros disponibles:'),
-            const SizedBox(height: 16),
-            ListTile(
-              leading: const Icon(Icons.priority_high),
-              title: const Text('Solo críticas'),
-              onTap: () {
-                Navigator.pop(context);
-                _tabController.animateTo(1);
-              },
+            Expanded(
+              child: Text(
+                alerta.mensaje,
+                style: TextStyle(
+                  fontWeight: alerta.resuelta ? FontWeight.normal : FontWeight.bold,
+                  color: alerta.resuelta ? Colors.grey[600] : null,
+                ),
+              ),
             ),
-            ListTile(
-              leading: const Icon(Icons.date_range),
-              title: const Text('Por fecha'),
-              onTap: () {
-                Navigator.pop(context);
-                // Implement date filter
-              },
+            if (!alerta.resuelta)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: iconColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  'NUEVA',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 4),
+            Text(
+              alerta.descripcionDetallada ?? alerta.mensaje,
+              style: TextStyle(
+                color: alerta.resuelta ? Colors.grey[600] : null,
+              ),
             ),
-            ListTile(
-              leading: const Icon(Icons.category),
-              title: const Text('Por tipo'),
-              onTap: () {
-                Navigator.pop(context);
-                // Implement type filter
-              },
+            const SizedBox(height: 4),
+            Text(
+              _formatDate(alerta.fechaCreacion),
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[500],
+              ),
             ),
           ],
         ),
+        trailing: PopupMenuButton(
+          itemBuilder: (context) => [
+            if (!alerta.resuelta)
+              const PopupMenuItem(
+                value: 'mark_read',
+                child: Row(
+                  children: [
+                    Icon(Icons.mark_email_read, size: 20),
+                    SizedBox(width: 8),
+                    Text('Marcar como leída'),
+                  ],
+                ),
+              ),
+            const PopupMenuItem(
+              value: 'edit',
+              child: Row(
+                children: [
+                  Icon(Icons.edit, size: 20),
+                  SizedBox(width: 8),
+                  Text('Editar'),
+                ],
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'details',
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, size: 20),
+                  SizedBox(width: 8),
+                  Text('Ver detalles'),
+                ],
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'delete',
+              child: Row(
+                children: [
+                  Icon(Icons.delete, size: 20, color: Colors.red),
+                  SizedBox(width: 8),
+                  Text('Eliminar', style: TextStyle(color: Colors.red)),
+                ],
+              ),
+            ),
+          ],
+          onSelected: (value) async {
+            if (value == 'mark_read') {
+              await _marcarComoLeida(alerta);
+            } else if (value == 'edit') {
+              await _editarAlerta(alerta);
+            } else if (value == 'details') {
+              _mostrarDetalleAlerta(alerta);
+            } else if (value == 'delete') {
+              await _eliminarAlerta(alerta);
+            }
+          },
+        ),
+        onTap: () => _mostrarDetalleAlerta(alerta),
+        isThreeLine: true,
+      ),
+    );
+  }
+
+  void _mostrarDetalleAlerta(Alerta alerta) {
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              alerta.tipoAlerta == 'emergencia_obstetrica' ? Icons.priority_high :
+              alerta.tipoAlerta == 'hipertension' || alerta.tipoAlerta == 'preeclampsia' ? Icons.warning : Icons.info,
+              color: alerta.tipoAlerta == 'emergencia_obstetrica' ? Colors.red :
+                     alerta.tipoAlerta == 'hipertension' || alerta.tipoAlerta == 'preeclampsia' ? Colors.orange : Colors.blue,
+            ),
+            const SizedBox(width: 8),
+            Expanded(child: Text(alerta.tipoTexto)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Mensaje:', style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 4),
+            Text(alerta.mensaje),
+            const SizedBox(height: 16),
+            Text('Tipo:', style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 4),
+            Text(alerta.tipoTexto),
+            const SizedBox(height: 16),
+            Text('Fecha:', style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 4),
+            Text(_formatDate(alerta.fechaCreacion)),
+            const SizedBox(height: 16),
+            Text('Estado:', style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 4),
+            Text(alerta.resuelta ? 'Resuelta' : 'Pendiente'),
+          ],
+        ),
         actions: [
+          if (!alerta.resuelta)
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _marcarComoLeida(alerta);
+              },
+              child: const Text('Marcar como leída'),
+            ),
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.of(context).pop(),
             child: const Text('Cerrar'),
           ),
         ],
       ),
     );
   }
-}
 
-class AlertaDetailSheet extends StatelessWidget {
-  final AlertaModel alerta;
-  final VoidCallback onResolve;
-
-  const AlertaDetailSheet({
-    super.key,
-    required this.alerta,
-    required this.onResolve,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isResuelta = alerta.fechaResolucion != null;
-    
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.8,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        children: [
-          // Handle
-          Container(
-            width: 40,
-            height: 4,
-            margin: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          // Header
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: _getPriorityColor(alerta.prioridad).withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    _getAlertIcon(alerta.tipo),
-                    color: _getPriorityColor(alerta.prioridad),
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        alerta.titulo,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        'Gestante ID: ${alerta.gestanteId}',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _getPriorityColor(alerta.prioridad).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(
-                    _getPriorityText(alerta.prioridad),
-                    style: TextStyle(
-                      color: _getPriorityColor(alerta.prioridad),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Content
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildDetailSection('Información de la Alerta', [
-                    _buildDetailRow('Tipo', _getTipoText(alerta.tipo)),
-                    _buildDetailRow('Prioridad', _getPriorityText(alerta.prioridad)),
-                    _buildDetailRow('Fecha de Creación', 
-                        DateFormat('dd/MM/yyyy HH:mm').format(alerta.fechaCreacion)),
-                    if (alerta.fechaResolucion != null)
-                      _buildDetailRow('Fecha de Resolución', 
-                          DateFormat('dd/MM/yyyy HH:mm').format(alerta.fechaResolucion!)),
-                  ]),
-                  const SizedBox(height: 20),
-                  _buildDetailSection('Descripción', [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Text(
-                        alerta.descripcion,
-                        style: TextStyle(
-                          color: Colors.grey[700],
-                          fontSize: 16,
-                          height: 1.5,
-                        ),
-                      ),
-                    ),
-                  ]),
-                  if (alerta.observaciones != null) ...[
-                    const SizedBox(height: 20),
-                    _buildDetailSection('Observaciones', [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Text(
-                          alerta.observaciones!,
-                          style: TextStyle(
-                            color: Colors.grey[700],
-                            fontSize: 16,
-                            height: 1.5,
-                          ),
-                        ),
-                      ),
-                    ]),
-                  ],
-                  const SizedBox(height: 20),
-                ],
-              ),
-            ),
-          ),
-          // Actions
-          if (!isResuelta)
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () => _resolveAlert(context),
-                      icon: const Icon(Icons.check_circle),
-                      label: const Text('Resolver'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        // Edit alert
-                      },
-                      icon: const Icon(Icons.edit),
-                      label: const Text('Editar'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
   }
 
-  Widget _buildDetailSection(String title, List<Widget> children) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.orange,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[200]!),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: children,
-          ),
-        ),
-      ],
-    );
+  Future<void> _editarAlerta(Alerta alerta) async {
+    if (!mounted) return;
+
+    try {
+      final result = await Navigator.of(context).pushNamed('/alertas/editar/${alerta.id}', arguments: alerta);
+      if (result == true) {
+        // Recargar alertas si se editó
+        _cargarAlertas();
+      }
+    } catch (e) {
+      appLogger.error('AlertasScreen: Error navegando a editar alerta', error: e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al abrir editor: $e')),
+        );
+      }
+    }
   }
 
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontWeight: FontWeight.w500,
-                color: Colors.black87,
-              ),
-            ),
-          ),
-          const Text(': '),
-          Expanded(
-            child: Text(
-              value,
-              style: TextStyle(color: Colors.grey[700]),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Future<void> _eliminarAlerta(Alerta alerta) async {
+    if (!mounted) return;
 
-  void _resolveAlert(BuildContext context) {
-    showDialog(
+    final confirmar = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Resolver Alerta'),
-        content: const Text('¿Está seguro de que desea marcar esta alerta como resuelta?'),
+        title: const Text('Confirmar eliminación'),
+        content: Text('¿Está seguro de que desea eliminar la alerta "${alerta.mensaje}"?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.of(context).pop(false),
             child: const Text('Cancelar'),
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context); // Close dialog
-              Navigator.pop(context); // Close bottom sheet
-              onResolve();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Alerta resuelta exitosamente')),
-              );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            child: const Text('Resolver'),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Eliminar'),
           ),
         ],
       ),
     );
-  }
 
-  Color _getPriorityColor(NivelPrioridad prioridad) {
-    switch (prioridad) {
-      case NivelPrioridad.critica:
-        return Colors.red;
-      case NivelPrioridad.alta:
-        return Colors.orange;
-      case NivelPrioridad.media:
-        return Colors.yellow[700]!;
-      case NivelPrioridad.baja:
-        return Colors.blue;
-    }
-  }
+    if (confirmar != true) return;
 
-  String _getPriorityText(NivelPrioridad prioridad) {
-    switch (prioridad) {
-      case NivelPrioridad.critica:
-        return 'CRÍTICA';
-      case NivelPrioridad.alta:
-        return 'ALTA';
-      case NivelPrioridad.media:
-        return 'MEDIA';
-      case NivelPrioridad.baja:
-        return 'BAJA';
-    }
-  }
-
-  IconData _getAlertIcon(TipoAlerta tipo) {
-    switch (tipo) {
-      case TipoAlerta.presionAlta:
-        return Icons.favorite;
-      case TipoAlerta.presionBaja:
-        return Icons.favorite_border;
-      case TipoAlerta.fiebre:
-        return Icons.thermostat;
-      case TipoAlerta.pesoAnormal:
-        return Icons.monitor_weight;
-      case TipoAlerta.controlVencido:
-        return Icons.schedule;
-      case TipoAlerta.riesgoAlto:
-        return Icons.warning;
-      case TipoAlerta.medicacion:
-        return Icons.medication;
-      case TipoAlerta.laboratorio:
-        return Icons.science;
-      case TipoAlerta.otro:
-        return Icons.info;
-    }
-  }
-
-  String _getTipoText(TipoAlerta tipo) {
-    switch (tipo) {
-      case TipoAlerta.presionAlta:
-        return 'Presión Alta';
-      case TipoAlerta.presionBaja:
-        return 'Presión Baja';
-      case TipoAlerta.fiebre:
-        return 'Fiebre';
-      case TipoAlerta.pesoAnormal:
-        return 'Peso Anormal';
-      case TipoAlerta.controlVencido:
-        return 'Control Vencido';
-      case TipoAlerta.riesgoAlto:
-        return 'Riesgo Alto';
-      case TipoAlerta.medicacion:
-        return 'Medicación';
-      case TipoAlerta.laboratorio:
-        return 'Laboratorio';
-      case TipoAlerta.otro:
-        return 'Otro';
-    }
-  }
-}
-
-class AddAlertaDialog extends StatefulWidget {
-  const AddAlertaDialog({super.key});
-
-  @override
-  State<AddAlertaDialog> createState() => _AddAlertaDialogState();
-}
-
-class _AddAlertaDialogState extends State<AddAlertaDialog> {
-  final _formKey = GlobalKey<FormState>();
-  final _tituloController = TextEditingController();
-  final _descripcionController = TextEditingController();
-  
-  TipoAlerta _tipoSeleccionado = TipoAlerta.otro;
-  NivelPrioridad _prioridadSeleccionada = NivelPrioridad.media;
-  String? _gestanteSeleccionada;
-
-  @override
-  void dispose() {
-    _tituloController.dispose();
-    _descripcionController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Container(
-        width: MediaQuery.of(context).size.width * 0.9,
-        constraints: const BoxConstraints(maxHeight: 600),
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Nueva Alerta Médica',
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.orange,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: Form(
-                key: _formKey,
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      DropdownButtonFormField<String>(
-                        value: _gestanteSeleccionada,
-                        decoration: const InputDecoration(
-                          labelText: 'Gestante',
-                          border: OutlineInputBorder(),
-                        ),
-                        items: const [
-                          DropdownMenuItem(
-                            value: '1',
-                            child: Text('María García - CC: 12345678'),
-                          ),
-                          DropdownMenuItem(
-                            value: '2',
-                            child: Text('Ana López - CC: 87654321'),
-                          ),
-                        ],
-                        onChanged: (value) {
-                          setState(() => _gestanteSeleccionada = value);
-                        },
-                        validator: (value) {
-                          if (value == null) {
-                            return 'Por favor seleccione una gestante';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _tituloController,
-                        decoration: const InputDecoration(
-                          labelText: 'Título de la Alerta',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Por favor ingrese un título';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      DropdownButtonFormField<TipoAlerta>(
-                        value: _tipoSeleccionado,
-                        decoration: const InputDecoration(
-                          labelText: 'Tipo de Alerta',
-                          border: OutlineInputBorder(),
-                        ),
-                        items: TipoAlerta.values.map((tipo) => 
-                          DropdownMenuItem(
-                            value: tipo,
-                            child: Text(_getTipoText(tipo)),
-                          ),
-                        ).toList(),
-                        onChanged: (value) {
-                          setState(() => _tipoSeleccionado = value!);
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      DropdownButtonFormField<NivelPrioridad>(
-                        value: _prioridadSeleccionada,
-                        decoration: const InputDecoration(
-                          labelText: 'Prioridad',
-                          border: OutlineInputBorder(),
-                        ),
-                        items: NivelPrioridad.values.map((prioridad) => 
-                          DropdownMenuItem(
-                            value: prioridad,
-                            child: Text(_getPriorityText(prioridad)),
-                          ),
-                        ).toList(),
-                        onChanged: (value) {
-                          setState(() => _prioridadSeleccionada = value!);
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _descripcionController,
-                        decoration: const InputDecoration(
-                          labelText: 'Descripción',
-                          border: OutlineInputBorder(),
-                        ),
-                        maxLines: 4,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Por favor ingrese una descripción';
-                          }
-                          return null;
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancelar'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _saveAlerta,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: const Text('Guardar'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _getTipoText(TipoAlerta tipo) {
-    switch (tipo) {
-      case TipoAlerta.presionAlta:
-        return 'Presión Alta';
-      case TipoAlerta.presionBaja:
-        return 'Presión Baja';
-      case TipoAlerta.fiebre:
-        return 'Fiebre';
-      case TipoAlerta.pesoAnormal:
-        return 'Peso Anormal';
-      case TipoAlerta.controlVencido:
-        return 'Control Vencido';
-      case TipoAlerta.riesgoAlto:
-        return 'Riesgo Alto';
-      case TipoAlerta.medicacion:
-        return 'Medicación';
-      case TipoAlerta.laboratorio:
-        return 'Laboratorio';
-      case TipoAlerta.otro:
-        return 'Otro';
-    }
-  }
-
-  String _getPriorityText(NivelPrioridad prioridad) {
-    switch (prioridad) {
-      case NivelPrioridad.critica:
-        return 'CRÍTICA';
-      case NivelPrioridad.alta:
-        return 'ALTA';
-      case NivelPrioridad.media:
-        return 'MEDIA';
-      case NivelPrioridad.baja:
-        return 'BAJA';
-    }
-  }
-
-  void _saveAlerta() {
-    if (_formKey.currentState!.validate()) {
-      // Here you would typically save the alert using the service
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Alerta creada exitosamente')),
-      );
+    try {
+      final apiService = ref.read(apiServiceProvider);
+      final alertaService = AlertaService(apiService);
+      final success = await alertaService.eliminarAlerta(alerta.id);
+      
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Alerta eliminada exitosamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        _cargarAlertas(); // Recargar la lista
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error al eliminar la alerta'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      appLogger.error('AlertasScreen: Error eliminando alerta', error: e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al eliminar alerta: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 }

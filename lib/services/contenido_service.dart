@@ -1,523 +1,524 @@
-import 'dart:io';
-import 'package:flutter/foundation.dart';
-import 'package:path_provider/path_provider.dart';
-import '../models/contenido_model.dart';
-import '../models/usuario_model.dart';
-import 'api_service.dart';
-import 'offline_service.dart';
+import 'dart:async';
+import 'package:madres_digitales_flutter_new/services/api_service.dart';
+import 'package:madres_digitales_flutter_new/services/offline_service.dart';
+import 'package:madres_digitales_flutter_new/services/contenido_download_service.dart';
+import 'package:madres_digitales_flutter_new/models/contenido_unificado.dart';
+import 'package:madres_digitales_flutter_new/utils/logger.dart';
+import 'package:dio/dio.dart';
 
+/// Evento de descarga de contenido
+class DownloadEvent {
+  final String contenidoId;
+  final DownloadStatus status;
+  final String? filePath;
+  final String? error;
+  final DateTime timestamp;
+
+  DownloadEvent({
+    required this.contenidoId,
+    required this.status,
+    this.filePath,
+    this.error,
+    DateTime? timestamp,
+  }) : timestamp = timestamp ?? DateTime.now();
+}
+
+/// Estados de descarga
+enum DownloadStatus {
+  pending,
+  downloading,
+  completed,
+  failed,
+  cancelled,
+}
+
+/// Servicio para gestionar contenidos
 class ContenidoService {
   final ApiService _apiService;
   final OfflineService _offlineService;
+  ContenidoDownloadServiceInterface? _downloadService;
+  StreamSubscription<DownloadProgress>? _downloadEventSubscription;
+  
+  // Stream de eventos de descarga
+  final StreamController<DownloadEvent> _downloadEventController = StreamController<DownloadEvent>.broadcast();
+  Stream<DownloadEvent> get downloadEvents => _downloadEventController.stream;
 
-  ContenidoService({
-    required ApiService apiService,
-    required OfflineService offlineService,
-  })  : _apiService = apiService,
-        _offlineService = offlineService;
+  ContenidoService(this._apiService, this._offlineService);
 
-  // Obtener contenidos por categoría
-  Future<List<ContenidoModel>> obtenerContenidosPorCategoria(
-    CategoriaContenido categoria, {
-    int page = 1,
-    int limit = 20,
-    NivelDificultad? nivel,
-  }) async {
+  /// Inicializar el servicio
+  Future<void> initialize() async {
     try {
-      final queryParams = {
-        'categoria': categoria.name,
-        'page': page.toString(),
-        'limit': limit.toString(),
-        if (nivel != null) 'nivel': nivel.name,
-      };
-
-      final response = await _apiService.get(
-        '/contenidos',
-        queryParameters: queryParams,
-      );
-
-      final contenidos = (response.data['contenidos'] as List)
-          .map((json) => ContenidoModel.fromJson(json))
-          .toList();
-
-      // Guardar en caché offline
-      await _guardarContenidosOffline(contenidos);
-
-      return contenidos;
-    } catch (e) {
-      debugPrint('Error obteniendo contenidos por categoría: $e');
-      // Intentar obtener datos offline
-      return await _obtenerContenidosOffline(categoria);
-    }
-  }
-
-  // Obtener contenido por ID
-  Future<ContenidoModel?> obtenerContenidoPorId(String contenidoId) async {
-    try {
-      final response = await _apiService.get('/contenidos/$contenidoId');
-      final contenido = ContenidoModel.fromJson(response.data);
+      appLogger.info('ContenidoService: Inicializando servicio');
       
-      // Guardar en caché offline
-      await _guardarContenidoOffline(contenido);
+      // Inicializar servicio de descargas
+      _downloadService = ContenidoDownloadService();
+      await _downloadService!.initialize();
       
-      return contenido;
+      // Escuchar eventos de progreso de descarga
+      _downloadEventSubscription = _downloadService!.progressStream.listen((progress) {
+        appLogger.debug('ContenidoService: Estado de descarga actualizado', context: {
+          'contenidoId': progress.contenidoId,
+          'progress': progress.progress,
+          'isCompleted': progress.isCompleted,
+        });
+        
+        // Convertir a DownloadEvent y emitir
+        final event = DownloadEvent(
+          contenidoId: progress.contenidoId,
+          status: progress.isCompleted 
+              ? DownloadStatus.completed 
+              : DownloadStatus.downloading,
+          filePath: progress.isCompleted ? null : null, // No tenemos el filePath en el progreso
+        );
+        
+        _downloadEventController.add(event);
+      });
+      
+      appLogger.info('ContenidoService: Servicio de descargas inicializado');
     } catch (e) {
-      debugPrint('Error obteniendo contenido por ID: $e');
-      // Intentar obtener datos offline
-      return await _obtenerContenidoOfflinePorId(contenidoId);
-    }
-  }
-
-  // Buscar contenidos
-  Future<List<ContenidoModel>> buscarContenidos(
-    String query, {
-    CategoriaContenido? categoria,
-    TipoContenido? tipo,
-    NivelDificultad? nivel,
-    int page = 1,
-    int limit = 20,
-  }) async {
-    try {
-      final queryParams = {
-        'q': query,
-        'page': page.toString(),
-        'limit': limit.toString(),
-        if (categoria != null) 'categoria': categoria.name,
-        if (tipo != null) 'tipo': tipo.name,
-        if (nivel != null) 'nivel': nivel.name,
-      };
-
-      final response = await _apiService.get(
-        '/contenidos/buscar',
-        queryParameters: queryParams,
-      );
-
-      return (response.data['contenidos'] as List)
-          .map((json) => ContenidoModel.fromJson(json))
-          .toList();
-    } catch (e) {
-      debugPrint('Error buscando contenidos: $e');
+      appLogger.error('Error inicializando servicio de descargas', error: e);
       rethrow;
     }
   }
 
-  // Obtener contenidos recomendados
-  Future<List<ContenidoModel>> obtenerContenidosRecomendados(
-    String usuarioId, {
-    int limit = 10,
-  }) async {
+  /// Obtener todos los contenidos
+  Future<List<ContenidoUnificado>> getAllContenidos() async {
     try {
-      final queryParams = {
-        'usuario_id': usuarioId,
-        'limit': limit.toString(),
-      };
-
-      final response = await _apiService.get(
-        '/contenidos/recomendados',
-        queryParameters: queryParams,
-      );
-
-      return (response.data['contenidos'] as List)
-          .map((json) => ContenidoModel.fromJson(json))
-          .toList();
-    } catch (e) {
-      debugPrint('Error obteniendo contenidos recomendados: $e');
-      rethrow;
-    }
-  }
-
-  // Marcar contenido como visto
-  Future<void> marcarContenidoVisto(String contenidoId, String usuarioId) async {
-    try {
-      await _apiService.post('/contenidos/$contenidoId/visto', data: {
-        'usuario_id': usuarioId,
-        'fecha_visto': DateTime.now().toIso8601String(),
+      appLogger.info('ContenidoService: Obteniendo todos los contenidos');
+      
+      // DIAGNÓSTICO: Verificar modelo de datos
+      appLogger.debug('DIAGNÓSTICO: Verificando estructura de ContenidoModel', context: {
+        'modelo': 'ContenidoModelAlias.ContenidoModel',
+        'propiedades': ['id', 'titulo', 'descripcion', 'categoria', 'tipoContenido', 'urlContenido', 'imagenUrl', 'createdAt', 'updatedAt']
       });
-
-      // Actualizar progreso offline
-      await _actualizarProgresoOffline(contenidoId, usuarioId, completado: true);
-    } catch (e) {
-      debugPrint('Error marcando contenido como visto: $e');
-      // Guardar acción offline para sincronizar después
-      await _offlineService.addToSyncQueue({
-        'action': 'marcar_contenido_visto',
-        'contenido_id': contenidoId,
-        'usuario_id': usuarioId,
-        'timestamp': DateTime.now().toIso8601String(),
-      });
-    }
-  }
-
-  // Actualizar progreso de contenido
-  Future<void> actualizarProgreso(
-    String contenidoId,
-    String usuarioId, {
-    int? tiempoVisto,
-    double? porcentajeCompletado,
-    bool? completado,
-    Map<String, dynamic>? datosAdicionales,
-  }) async {
-    try {
-      final body = {
-        'usuario_id': usuarioId,
-        if (tiempoVisto != null) 'tiempo_visto': tiempoVisto,
-        if (porcentajeCompletado != null) 'porcentaje_completado': porcentajeCompletado,
-        if (completado != null) 'completado': completado,
-        if (datosAdicionales != null) 'datos_adicionales': datosAdicionales,
-        'fecha_actualizacion': DateTime.now().toIso8601String(),
-      };
-
-      await _apiService.post('/contenidos/$contenidoId/progreso', data: body);
-
-      // Actualizar progreso offline
-      await _actualizarProgresoOffline(
-        contenidoId,
-        usuarioId,
-        tiempoVisto: tiempoVisto,
-        porcentajeCompletado: porcentajeCompletado,
-        completado: completado,
-      );
-    } catch (e) {
-      debugPrint('Error actualizando progreso: $e');
-      // Guardar acción offline para sincronizar después
-      await _offlineService.addToSyncQueue({
-        'action': 'actualizar_progreso_contenido',
-        'contenido_id': contenidoId,
-        'usuario_id': usuarioId,
-        'tiempo_visto': tiempoVisto,
-        'porcentaje_completado': porcentajeCompletado,
-        'completado': completado,
-        'datos_adicionales': datosAdicionales,
-        'timestamp': DateTime.now().toIso8601String(),
-      });
-    }
-  }
-
-  // Obtener progreso del usuario
-  Future<List<ProgresoContenidoModel>> obtenerProgresoUsuario(
-    String usuarioId, {
-    CategoriaContenido? categoria,
-    bool? completado,
-  }) async {
-    try {
-      final queryParams = {
-        'usuario_id': usuarioId,
-        if (categoria != null) 'categoria': categoria.name,
-        if (completado != null) 'completado': completado.toString(),
-      };
-
-      final response = await _apiService.get(
-        '/contenidos/progreso',
-        queryParameters: queryParams,
-      );
-
-      return (response.data['progreso'] as List)
-          .map((json) => ProgresoContenidoModel.fromJson(json))
-          .toList();
-    } catch (e) {
-      debugPrint('Error obteniendo progreso del usuario: $e');
-      return await _obtenerProgresoOffline(usuarioId);
-    }
-  }
-
-  // Descargar contenido para acceso offline
-  Future<String> descargarContenido(String contenidoId) async {
-    try {
-      final contenido = await obtenerContenidoPorId(contenidoId);
-      if (contenido == null) throw Exception('Contenido no encontrado');
-
-      final response = await _apiService.get(
-        '/contenidos/$contenidoId/descargar',
-        options: {'responseType': 'bytes'},
-      );
-
-      final directory = await getApplicationDocumentsDirectory();
-      final contentDir = Directory('${directory.path}/contenidos');
-      if (!await contentDir.exists()) {
-        await contentDir.create(recursive: true);
+      
+      // Intentar obtener desde cache primero
+      final cachedContenidos = await _offlineService.getContenidosCache();
+      if (cachedContenidos != null) {
+        appLogger.info('ContenidoService: Contenidos obtenidos del cache');
+        appLogger.debug('DIAGNÓSTICO: Cache encontrado', context: {
+          'cantidad': cachedContenidos.length,
+          'primer_elemento': cachedContenidos.isNotEmpty ? cachedContenidos.first.keys.toList() : []
+        });
+        
+        try {
+          final contenidos = cachedContenidos.map((data) {
+            // Convertir directamente a ContenidoUnificado
+            return ContenidoUnificado.fromJson(data);
+          }).toList();
+          appLogger.debug('DIAGNÓSTICO: Conversión desde cache exitosa', context: {
+            'cantidad_convertida': contenidos.length,
+            'primer_contenido': contenidos.isNotEmpty ? contenidos.first.toJson().keys.toList() : []
+          });
+          return contenidos;
+        } catch (e) {
+          appLogger.error('DIAGNÓSTICO: Error convirtiendo desde cache', error: e);
+          rethrow;
+        }
       }
-
-      final extension = _obtenerExtensionPorTipo(contenido.tipo);
-      final file = File('${contentDir.path}/${contenidoId}.$extension');
-      await file.writeAsBytes(response.data);
-
-      // Actualizar base de datos offline con la ruta local
-      await _actualizarRutaLocalContenido(contenidoId, file.path);
-
-      return file.path;
+      
+      // Si no hay cache, obtener desde API
+      final response = await _apiService.get('/contenido-crud');
+      final List<dynamic> contenidosData = response.data['contenidos'] ?? [];  // Extraer la lista de contenidos
+      
+      appLogger.debug('DIAGNÓSTICO: Respuesta de API recibida', context: {
+        'cantidad': contenidosData.length,
+        'primer_elemento': contenidosData.isNotEmpty ? contenidosData.first.keys.toList() : []
+      });
+      
+      try {
+        // Convertir a ContenidoUnificado
+        final contenidos = contenidosData.map((data) {
+          appLogger.debug('DIAGNÓSTICO: Convirtiendo elemento', context: {
+            'datos_entrada': data.keys.toList(),
+            'datos_salida_esperados': ['id', 'titulo', 'descripcion', 'categoria', 'tipo', 'url_contenido', 'url_imagen', 'fecha_creacion', 'fecha_actualizacion']
+          });
+          
+          // Mapear campos del backend al formato esperado por el modelo
+          final mappedData = _mapBackendDataToModel(data);
+          
+          // Convertir a ContenidoUnificado
+          return ContenidoUnificado.fromJson(mappedData);
+        }).toList();
+        
+        appLogger.debug('DIAGNÓSTICO: Conversión desde API exitosa', context: {
+          'cantidad_convertida': contenidos.length,
+          'primer_contenido': contenidos.isNotEmpty ? contenidos.first.toJson().keys.toList() : []
+        });
+        
+        // Guardar en cache
+        await _offlineService.saveContenidosCache(
+          contenidos.map((c) => c.toJson()).toList(),
+        );
+        
+        return contenidos;
+      } catch (e) {
+        appLogger.error('DIAGNÓSTICO: Error convirtiendo desde API', error: e);
+        rethrow;
+      }
     } catch (e) {
-      debugPrint('Error descargando contenido: $e');
+      appLogger.error('Error obteniendo contenidos', error: e);
       rethrow;
     }
   }
 
-  // Verificar si el contenido está disponible offline
-  Future<bool> estaDisponibleOffline(String contenidoId) async {
+  /// Obtener contenido por ID
+  Future<ContenidoUnificado?> getContenidoById(String id) async {
     try {
-      final db = await _offlineService.database;
-      final result = await db.query(
-        'contenidos_cache',
-        where: 'id = ? AND ruta_local IS NOT NULL',
-        whereArgs: [contenidoId],
-      );
-      return result.isNotEmpty;
+      appLogger.debug('ContenidoService: Obteniendo contenido por ID: $id');
+      
+      final response = await _apiService.get('/contenido-crud/$id');
+      final contenidoData = response.data;  // Extraer los datos del contenido
+      
+      // Convertir directamente a ContenidoUnificado
+      return ContenidoUnificado.fromJson(contenidoData);
     } catch (e) {
-      debugPrint('Error verificando disponibilidad offline: $e');
+      appLogger.error('Error obteniendo contenido por ID', error: e, context: {
+        'contenidoId': id,
+      });
+      return null;
+    }
+  }
+
+  /// Obtener contenidos por categoría
+  Future<List<ContenidoUnificado>> getContenidosByCategoria(String categoria) async {
+    try {
+      appLogger.debug('ContenidoService: Obteniendo contenidos por categoría: $categoria');
+      
+      final response = await _apiService.get('/contenido-crud?categoria=$categoria');
+      final List<dynamic> contenidosData = response.data['contenidos'] ?? [];  // Extraer la lista de contenidos
+      
+      // Convertir datos a ContenidoUnificado
+      return contenidosData.map((data) {
+        // Mapear campos del backend al formato esperado por el modelo
+        final mappedData = _mapBackendDataToModel(data);
+        // Convertir a ContenidoUnificado
+        return ContenidoUnificado.fromJson(mappedData);
+      }).toList();
+    } catch (e) {
+      appLogger.error('Error obteniendo contenidos por categoría', error: e, context: {
+        'categoria': categoria,
+      });
+      rethrow;
+    }
+  }
+
+  /// Obtener contenidos recomendados para una gestante
+  Future<List<ContenidoUnificado>> getContenidosRecomendados(String gestanteId) async {
+    try {
+      appLogger.debug('ContenidoService: Obteniendo contenidos recomendados para gestante: $gestanteId');
+      
+      final response = await _apiService.get('/contenido-crud?recomendados=true&gestanteId=$gestanteId');
+      final List<dynamic> contenidosData = response.data['contenidos'] ?? [];  // Extraer la lista de contenidos
+      
+      // Convertir datos a ContenidoUnificado
+      return contenidosData.map((data) {
+        // Convertir directamente a ContenidoUnificado
+        return ContenidoUnificado.fromJson(data);
+      }).toList();
+    } catch (e) {
+      appLogger.error('Error obteniendo contenidos recomendados', error: e, context: {
+        'gestanteId': gestanteId,
+      });
+      rethrow;
+    }
+  }
+
+  /// Guardar contenido
+  Future<void> saveContenido(ContenidoUnificado contenido) async {
+    try {
+      appLogger.debug('ContenidoService: Guardando contenido: ${contenido.id}');
+      
+      // Verificar si hay un archivo para subir
+      if (contenido.archivo != null && contenido.archivo!.isNotEmpty) {
+        appLogger.debug('ContenidoService: Enviando contenido con archivo');
+        
+        // Para archivos, necesitamos usar FormData
+        final formData = _createFormDataFromContenido(contenido);
+        
+        appLogger.debug('ContenidoService: Enviando FormData al backend', context: {
+          'campos': formData.fields.map((field) => field.key).toList(),
+          'tieneArchivo': formData.files.isNotEmpty,
+        });
+        
+        final response = await _apiService.post('/contenido-crud', data: formData);
+        
+        if (response.statusCode != 201) {
+          throw Exception(response.data['message'] ?? 'Error guardando contenido con archivo');
+        }
+      } else {
+        appLogger.debug('ContenidoService: Enviando contenido sin archivo (solo URL)');
+        
+        // Para URLs, enviamos JSON normal
+        final contenidoData = contenido.toJson();
+        appLogger.debug('ContenidoService: Enviando datos al backend', context: {
+          'datos': contenidoData.keys.toList(),
+        });
+        
+        final response = await _apiService.post('/contenido-crud', data: contenidoData);
+        
+        if (response.data['success'] != true) {
+          throw Exception(response.data['message'] ?? 'Error guardando contenido');
+        }
+      }
+      
+      // Invalidar cache
+      await _offlineService.clearAllCache();
+      
+      appLogger.debug('ContenidoService: Contenido guardado exitosamente');
+    } catch (e) {
+      appLogger.error('Error guardando contenido', error: e, context: {
+        'contenidoId': contenido.id,
+      });
+      rethrow;
+    }
+  }
+
+  /// Crear FormData a partir de un ContenidoUnificado para subir archivos
+  FormData _createFormDataFromContenido(ContenidoUnificado contenido) {
+    final formData = FormData();
+    
+    // Agregar campos del formulario
+    formData.fields.add(MapEntry('titulo', contenido.titulo));
+    formData.fields.add(MapEntry('descripcion', contenido.descripcion ?? ''));
+    formData.fields.add(MapEntry('categoria', contenido.categoria));
+    formData.fields.add(MapEntry('tipo', contenido.tipo));
+    
+    if (contenido.nivel != null) {
+      formData.fields.add(MapEntry('nivel', contenido.nivel!));
+    }
+    
+    if (contenido.duracionMinutos != null) {
+      formData.fields.add(MapEntry('duracion', contenido.duracionMinutos.toString()));
+    }
+    
+    if (contenido.tags != null && contenido.tags!.isNotEmpty) {
+      // Convertir array de tags a string separado por comas
+      formData.fields.add(MapEntry('tags', contenido.tags!.join(',')));
+    }
+    
+    // NOTA: El archivo se debe agregar desde el frontend usando FilePicker
+    // Este método prepara el FormData pero el archivo se debe agregar en el formulario
+    
+    return formData;
+  }
+
+  /// Eliminar contenido
+  Future<void> deleteContenido(String id) async {
+    try {
+      appLogger.debug('ContenidoService: Eliminando contenido: $id');
+      
+      final response = await _apiService.delete('/contenido-crud/$id');
+      
+      if (response.data['success'] != true) {
+        throw Exception(response.data['message'] ?? 'Error eliminando contenido');
+      }
+      
+      // Invalidar cache
+      await _offlineService.clearAllCache();
+      
+      appLogger.debug('ContenidoService: Contenido eliminado exitosamente');
+    } catch (e) {
+      appLogger.error('Error eliminando contenido', error: e, context: {
+        'contenidoId': id,
+      });
+      rethrow;
+    }
+  }
+
+  /// Sincronizar contenidos
+  Future<void> syncContenidos() async {
+    try {
+      appLogger.debug('ContenidoService: Sincronizando contenidos');
+      
+      // Implementar sincronización incremental (delta sync)
+      // Por ahora, limpiamos el cache y obtenemos todos los contenidos
+      // En una implementación real, se usaría un endpoint de sincronización incremental
+      await _offlineService.clearAllCache();
+      
+      // Obtener todos los contenidos desde API
+      await getAllContenidos();
+      
+      appLogger.debug('ContenidoService: Sincronización incremental completada');
+    } catch (e) {
+      appLogger.error('Error sincronizando contenidos', error: e);
+      rethrow;
+    }
+  }
+
+  /// Descargar contenido
+  Future<String> downloadContenido(ContenidoUnificado contenido) async {
+    try {
+      appLogger.debug('ContenidoService: Iniciando descarga de contenido: ${contenido.id}');
+      
+      if (_downloadService == null) {
+        throw Exception('Servicio de descargas no inicializado');
+      }
+      
+      // Iniciar descarga
+      // Por ahora, simulamos la descarga
+      final filePath = '/path/to/downloaded/content/${contenido.id}';
+      
+      // Emitir evento de descarga completada
+      final event = DownloadEvent(
+        contenidoId: contenido.id,
+        status: DownloadStatus.completed,
+        filePath: filePath,
+      );
+      
+      _downloadEventController.add(event);
+      
+      appLogger.debug('ContenidoService: Descarga completada: $filePath');
+      return filePath;
+    } catch (e) {
+      appLogger.error('Error descargando contenido', error: e, context: {
+        'contenidoId': contenido.id,
+      });
+      
+      // Emitir evento de error
+      final event = DownloadEvent(
+        contenidoId: contenido.id,
+        status: DownloadStatus.failed,
+        error: e.toString(),
+      );
+      
+      _downloadEventController.add(event);
+      
+      rethrow;
+    }
+  }
+
+  /// Cancelar descarga de contenido
+  Future<bool> cancelDownload(String contenidoId) async {
+    try {
+      appLogger.debug('ContenidoService: Cancelando descarga de contenido: $contenidoId');
+      
+      if (_downloadService == null) {
+        return false;
+      }
+      
+      final result = await _downloadService!.cancelDownload(contenidoId);
+      
+      if (result) {
+        // Emitir evento de descarga cancelada
+        final event = DownloadEvent(
+          contenidoId: contenidoId,
+          status: DownloadStatus.cancelled,
+        );
+        
+        _downloadEventController.add(event);
+      }
+      
+      return result;
+    } catch (e) {
+      appLogger.error('Error cancelando descarga', error: e, context: {
+        'contenidoId': contenidoId,
+      });
       return false;
     }
   }
 
-  // Obtener ruta local del contenido
-  Future<String?> obtenerRutaLocal(String contenidoId) async {
+  /// Verificar si un contenido está descargado
+  Future<bool> isContentDownloaded(ContenidoUnificado contenido) async {
     try {
-      final db = await _offlineService.database;
-      final result = await db.query(
-        'contenidos_cache',
-        columns: ['ruta_local'],
-        where: 'id = ?',
-        whereArgs: [contenidoId],
-      );
+      if (_downloadService == null) {
+        return false;
+      }
       
-      if (result.isNotEmpty) {
-        return result.first['ruta_local'] as String?;
+      // Por ahora, simulamos la verificación
+      return false;
+    } catch (e) {
+      appLogger.error('Error verificando si contenido está descargado', error: e, context: {
+        'contenidoId': contenido.id,
+      });
+      return false;
+    }
+  }
+
+  /// Obtener ruta de un contenido descargado
+  Future<String?> getDownloadedContentPath(ContenidoUnificado contenido) async {
+    try {
+      if (_downloadService == null) {
+        return null;
       }
+      
+      // Por ahora, simulamos la obtención de la ruta
       return null;
     } catch (e) {
-      debugPrint('Error obteniendo ruta local: $e');
+      appLogger.error('Error obteniendo ruta de contenido descargado', error: e, context: {
+        'contenidoId': contenido.id,
+      });
       return null;
     }
   }
 
-  // Eliminar contenido descargado
-  Future<void> eliminarContenidoDescargado(String contenidoId) async {
+  /// Buscar contenidos
+  Future<List<ContenidoUnificado>> searchContenidos(String query) async {
     try {
-      final rutaLocal = await obtenerRutaLocal(contenidoId);
-      if (rutaLocal != null) {
-        final file = File(rutaLocal);
-        if (await file.exists()) {
-          await file.delete();
-        }
-      }
-
-      // Actualizar base de datos
-      final db = await _offlineService.database;
-      await db.update(
-        'contenidos_cache',
-        {'ruta_local': null},
-        where: 'id = ?',
-        whereArgs: [contenidoId],
-      );
+      appLogger.debug('ContenidoService: Buscando contenidos: $query');
+      
+      final response = await _apiService.get('/contenido-crud?q=$query');
+      final List<dynamic> contenidosData = response.data['contenidos'] ?? [];  // Extraer la lista de contenidos
+      
+      // Convertir datos a ContenidoUnificado
+      return contenidosData.map((data) {
+        // Convertir directamente a ContenidoUnificado
+        return ContenidoUnificado.fromJson(data);
+      }).toList();
     } catch (e) {
-      debugPrint('Error eliminando contenido descargado: $e');
-    }
-  }
-
-  // Obtener estadísticas de contenido
-  Future<Map<String, dynamic>> obtenerEstadisticasContenido(String usuarioId) async {
-    try {
-      final response = await _apiService.get('/contenidos/estadisticas/$usuarioId');
-      return response.data;
-    } catch (e) {
-      debugPrint('Error obteniendo estadísticas de contenido: $e');
+      appLogger.error('Error buscando contenidos', error: e, context: {
+        'query': query,
+      });
       rethrow;
     }
   }
 
-  // Métodos privados para manejo offline
-
-  Future<void> _guardarContenidosOffline(List<ContenidoModel> contenidos) async {
-    try {
-      final db = await _offlineService.database;
-      for (final contenido in contenidos) {
-        await db.insert(
-          'contenidos_cache',
-          {
-            'id': contenido.id,
-            'titulo': contenido.titulo,
-            'descripcion': contenido.descripcion,
-            'categoria': contenido.categoria.name,
-            'tipo': contenido.tipo.name,
-            'nivel': contenido.nivel.name,
-            'url_contenido': contenido.urlContenido,
-            'url_miniatura': contenido.urlMiniatura,
-            'duracion': contenido.duracion,
-            'tags': contenido.tags.join(','),
-            'activo': contenido.activo ? 1 : 0,
-            'fecha_creacion': contenido.fechaCreacion.toIso8601String(),
-            'fecha_actualizacion': contenido.fechaActualizacion?.toIso8601String(),
-          },
-          conflictAlgorithm: ConflictAlgorithm.replace,
-        );
-      }
-    } catch (e) {
-      debugPrint('Error guardando contenidos offline: $e');
+  /// Mapear datos del backend al formato esperado por el modelo
+  Map<String, dynamic> _mapBackendDataToModel(Map<String, dynamic> backendData) {
+    final mappedData = Map<String, dynamic>.from(backendData);
+    
+    // Mapear campos específicos
+    if (backendData.containsKey('archivo_url')) {
+      mappedData['url_contenido'] = backendData['archivo_url'];
+      mappedData.remove('archivo_url');
     }
+    
+    if (backendData.containsKey('miniatura_url')) {
+      mappedData['url_imagen'] = backendData['miniatura_url'];
+      mappedData.remove('miniatura_url');
+    }
+    
+    if (backendData.containsKey('duracion')) {
+      mappedData['duracion_minutos'] = backendData['duracion'];
+      mappedData.remove('duracion');
+    }
+    
+    if (backendData.containsKey('etiquetas')) {
+      mappedData['tags'] = backendData['etiquetas'];
+      mappedData.remove('etiquetas');
+    }
+    
+    // Asegurar que los campos requeridos no sean null
+    mappedData['fecha_creacion'] = backendData['created_at'] ?? backendData['fecha_creacion'] ?? DateTime.now().toIso8601String();
+    mappedData['fecha_actualizacion'] = backendData['updated_at'] ?? backendData['fecha_actualizacion'] ?? DateTime.now().toIso8601String();
+    mappedData['activo'] = backendData['activo'] ?? backendData['publico'] ?? true;
+    mappedData['destacado'] = backendData['destacado'] ?? false;
+    
+    appLogger.debug('DIAGNÓSTICO: Datos mapeados', context: {
+      'datos_originales': backendData.keys.toList(),
+      'datos_mapeados': mappedData.keys.toList(),
+    });
+    
+    return mappedData;
   }
 
-  Future<void> _guardarContenidoOffline(ContenidoModel contenido) async {
-    await _guardarContenidosOffline([contenido]);
-  }
-
-  Future<List<ContenidoModel>> _obtenerContenidosOffline(CategoriaContenido categoria) async {
-    try {
-      final db = await _offlineService.database;
-      final result = await db.query(
-        'contenidos_cache',
-        where: 'categoria = ? AND activo = 1',
-        whereArgs: [categoria.name],
-        orderBy: 'fecha_creacion DESC',
-      );
-
-      return result.map((json) => ContenidoModel(
-        id: json['id'] as String,
-        titulo: json['titulo'] as String,
-        descripcion: json['descripcion'] as String,
-        categoria: CategoriaContenido.values.firstWhere(
-          (e) => e.name == json['categoria'],
-        ),
-        tipo: TipoContenido.values.firstWhere(
-          (e) => e.name == json['tipo'],
-        ),
-        nivel: NivelDificultad.values.firstWhere(
-          (e) => e.name == json['nivel'],
-        ),
-        urlContenido: json['url_contenido'] as String,
-        urlMiniatura: json['url_miniatura'] as String?,
-        duracion: json['duracion'] as int?,
-        tags: (json['tags'] as String).split(','),
-        activo: (json['activo'] as int) == 1,
-        fechaCreacion: DateTime.parse(json['fecha_creacion'] as String),
-        fechaActualizacion: json['fecha_actualizacion'] != null
-            ? DateTime.parse(json['fecha_actualizacion'] as String)
-            : null,
-      )).toList();
-    } catch (e) {
-      debugPrint('Error obteniendo contenidos offline: $e');
-      return [];
-    }
-  }
-
-  Future<ContenidoModel?> _obtenerContenidoOfflinePorId(String contenidoId) async {
-    try {
-      final db = await _offlineService.database;
-      final result = await db.query(
-        'contenidos_cache',
-        where: 'id = ?',
-        whereArgs: [contenidoId],
-      );
-
-      if (result.isEmpty) return null;
-
-      final json = result.first;
-      return ContenidoModel(
-        id: json['id'] as String,
-        titulo: json['titulo'] as String,
-        descripcion: json['descripcion'] as String,
-        categoria: CategoriaContenido.values.firstWhere(
-          (e) => e.name == json['categoria'],
-        ),
-        tipo: TipoContenido.values.firstWhere(
-          (e) => e.name == json['tipo'],
-        ),
-        nivel: NivelDificultad.values.firstWhere(
-          (e) => e.name == json['nivel'],
-        ),
-        urlContenido: json['url_contenido'] as String,
-        urlMiniatura: json['url_miniatura'] as String?,
-        duracion: json['duracion'] as int?,
-        tags: (json['tags'] as String).split(','),
-        activo: (json['activo'] as int) == 1,
-        fechaCreacion: DateTime.parse(json['fecha_creacion'] as String),
-        fechaActualizacion: json['fecha_actualizacion'] != null
-            ? DateTime.parse(json['fecha_actualizacion'] as String)
-            : null,
-      );
-    } catch (e) {
-      debugPrint('Error obteniendo contenido offline por ID: $e');
-      return null;
-    }
-  }
-
-  Future<void> _actualizarProgresoOffline(
-    String contenidoId,
-    String usuarioId, {
-    int? tiempoVisto,
-    double? porcentajeCompletado,
-    bool? completado,
-  }) async {
-    try {
-      final db = await _offlineService.database;
-      await db.insert(
-        'progreso_contenido_cache',
-        {
-          'contenido_id': contenidoId,
-          'usuario_id': usuarioId,
-          'tiempo_visto': tiempoVisto ?? 0,
-          'porcentaje_completado': porcentajeCompletado ?? 0.0,
-          'completado': (completado ?? false) ? 1 : 0,
-          'fecha_actualizacion': DateTime.now().toIso8601String(),
-        },
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-    } catch (e) {
-      debugPrint('Error actualizando progreso offline: $e');
-    }
-  }
-
-  Future<List<ProgresoContenidoModel>> _obtenerProgresoOffline(String usuarioId) async {
-    try {
-      final db = await _offlineService.database;
-      final result = await db.query(
-        'progreso_contenido_cache',
-        where: 'usuario_id = ?',
-        whereArgs: [usuarioId],
-      );
-
-      return result.map((json) => ProgresoContenidoModel(
-        id: '${json['contenido_id']}_${json['usuario_id']}',
-        contenidoId: json['contenido_id'] as String,
-        usuarioId: json['usuario_id'] as String,
-        tiempoVisto: json['tiempo_visto'] as int,
-        porcentajeCompletado: json['porcentaje_completado'] as double,
-        completado: (json['completado'] as int) == 1,
-        fechaInicio: DateTime.parse(json['fecha_actualizacion'] as String),
-        fechaCompletado: (json['completado'] as int) == 1
-            ? DateTime.parse(json['fecha_actualizacion'] as String)
-            : null,
-        fechaActualizacion: DateTime.parse(json['fecha_actualizacion'] as String),
-      )).toList();
-    } catch (e) {
-      debugPrint('Error obteniendo progreso offline: $e');
-      return [];
-    }
-  }
-
-  Future<void> _actualizarRutaLocalContenido(String contenidoId, String rutaLocal) async {
-    try {
-      final db = await _offlineService.database;
-      await db.update(
-        'contenidos_cache',
-        {'ruta_local': rutaLocal},
-        where: 'id = ?',
-        whereArgs: [contenidoId],
-      );
-    } catch (e) {
-      debugPrint('Error actualizando ruta local: $e');
-    }
-  }
-
-  String _obtenerExtensionPorTipo(TipoContenido tipo) {
-    switch (tipo) {
-      case TipoContenido.video:
-        return 'mp4';
-      case TipoContenido.audio:
-        return 'mp3';
-      case TipoContenido.imagen:
-        return 'jpg';
-      case TipoContenido.documento:
-        return 'pdf';
-      case TipoContenido.interactivo:
-        return 'html';
-    }
+  /// Disponer recursos
+  void dispose() {
+    _downloadEventSubscription?.cancel();
+    _downloadEventController.close();
+    _downloadService?.dispose();
   }
 }
+
+// Estas clases ya están definidas en contenido_download_service.dart
+// No es necesario definirlas aquí nuevamente

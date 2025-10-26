@@ -1,506 +1,499 @@
-import 'package:dio/dio.dart';
-import '../models/gestante_model.dart';
-import 'api_service.dart';
-import 'location_service.dart';
-import 'offline_service.dart';
-import 'notification_service.dart';
+import 'package:madres_digitales_flutter_new/services/api_service.dart';
+import 'package:madres_digitales_flutter_new/services/gestante_service.dart';
+import 'package:madres_digitales_flutter_new/utils/logger.dart';
+
+class Municipio {
+  final String id;
+  final String nombre;
+
+  Municipio({required this.id, required this.nombre});
+
+  factory Municipio.fromJson(Map<String, dynamic> json) {
+    return Municipio(
+      id: json['id'] ?? '',
+      nombre: json['nombre'] ?? '',
+    );
+  }
+}
+
+class Madrina {
+  final String id;
+  final String nombre;
+
+  Madrina({required this.id, required this.nombre});
+
+  factory Madrina.fromJson(Map<String, dynamic> json) {
+    return Madrina(
+      id: json['id'] ?? '',
+      nombre: json['nombre'] ?? '',
+    );
+  }
+}
+
+class Alerta {
+  final String id;
+  final String gestanteId;
+  final String? madrinaId;
+  final String tipoAlerta;
+  final String nivelPrioridad;
+  final String mensaje;
+  final List<String> sintomas;
+  final bool resuelta;
+  final DateTime? fechaResolucion;
+  final String? generadoPorId;
+  final String estado;
+  final String? descripcionDetallada;
+  final int? scoreRiesgo;
+  final bool esAutomatica;
+  final Map<String, dynamic>? signosVitales;
+  final DateTime fechaCreacion;
+  final DateTime fechaActualizacion;
+  final Gestante? gestante;
+  final Madrina? madrina;
+
+  Alerta({
+    required this.id,
+    required this.gestanteId,
+    this.madrinaId,
+    required this.tipoAlerta,
+    required this.nivelPrioridad,
+    required this.mensaje,
+    this.sintomas = const [],
+    this.resuelta = false,
+    this.fechaResolucion,
+    this.generadoPorId,
+    this.estado = 'pendiente',
+    this.descripcionDetallada,
+    this.scoreRiesgo,
+    this.esAutomatica = false,
+    this.signosVitales,
+    required this.fechaCreacion,
+    required this.fechaActualizacion,
+    this.gestante,
+    this.madrina,
+  });
+
+  factory Alerta.fromJson(Map<String, dynamic> json) {
+    return Alerta(
+      id: json['id'] ?? '',
+      gestanteId: json['gestante_id'] ?? '',
+      madrinaId: json['madrina_id'],
+      tipoAlerta: json['tipo_alerta'] ?? '',
+      nivelPrioridad: json['nivel_prioridad'] ?? 'baja',
+      mensaje: json['mensaje'] ?? '',
+      sintomas: json['sintomas'] != null ? List<String>.from(json['sintomas']) : [],
+      resuelta: json['resuelta'] ?? false,
+      fechaResolucion: json['fecha_resolucion'] != null 
+          ? DateTime.parse(json['fecha_resolucion']) 
+          : null,
+      generadoPorId: json['generado_por_id'],
+      estado: json['estado'] ?? 'pendiente',
+      descripcionDetallada: json['descripcion_detallada'],
+      scoreRiesgo: json['score_riesgo'],
+      esAutomatica: json['es_automatica'] ?? false,
+      signosVitales: json['signos_vitales'],
+      fechaCreacion: json['fecha_creacion'] != null 
+          ? DateTime.parse(json['fecha_creacion']) 
+          : DateTime.now(),
+      fechaActualizacion: json['fecha_actualizacion'] != null 
+          ? DateTime.parse(json['fecha_actualizacion']) 
+          : DateTime.now(),
+      gestante: json['gestante'] != null ? Gestante.fromJson(json['gestante']) : null,
+      madrina: json['madrina'] != null ? Madrina.fromJson(json['madrina']) : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'gestante_id': gestanteId,
+      'madrina_id': madrinaId,
+      'tipo_alerta': tipoAlerta,
+      'nivel_prioridad': nivelPrioridad,
+      'mensaje': mensaje,
+      'sintomas': sintomas,
+      'resuelta': resuelta,
+      'fecha_resolucion': fechaResolucion?.toIso8601String(),
+      'generado_por_id': generadoPorId,
+      'estado': estado,
+      'descripcion_detallada': descripcionDetallada,
+      'score_riesgo': scoreRiesgo,
+      'es_automatica': esAutomatica,
+      'signos_vitales': signosVitales,
+      'fecha_creacion': fechaCreacion.toIso8601String(),
+      'fecha_actualizacion': fechaActualizacion.toIso8601String(),
+    };
+  }
+
+  // Getters útiles
+  bool get esCritica => nivelPrioridad == 'critica';
+  bool get esAlta => nivelPrioridad == 'alta';
+  bool get esPendiente => estado == 'pendiente';
+  
+  String get prioridadTexto {
+    switch (nivelPrioridad) {
+      case 'critica': return 'CRÍTICA';
+      case 'alta': return 'ALTA';
+      case 'media': return 'MEDIA';
+      case 'baja': return 'BAJA';
+      default: return 'DESCONOCIDA';
+    }
+  }
+
+  String get tipoTexto {
+    switch (tipoAlerta) {
+      case 'emergencia_obstetrica': return 'Emergencia Obstétrica';
+      case 'hipertension': return 'Hipertensión';
+      case 'preeclampsia': return 'Preeclampsia';
+      case 'sepsis': return 'Sepsis Materna';
+      case 'hemorragia': return 'Hemorragia';
+      case 'shock_hipovolemico': return 'Shock Hipovolémico';
+      case 'parto_prematuro': return 'Parto Prematuro';
+      case 'manual': return 'Alerta Manual';
+      default: return tipoAlerta;
+    }
+  }
+}
 
 class AlertaService {
   final ApiService _apiService;
-  final LocationService _locationService;
-  final OfflineService _offlineService;
-  final NotificationService _notificationService;
-  
-  AlertaService({
-    required ApiService apiService,
-    required LocationService locationService,
-    required OfflineService offlineService,
-    required NotificationService notificationService,
-  }) : _apiService = apiService,
-       _locationService = locationService,
-       _offlineService = offlineService,
-       _notificationService = notificationService;
-  
-  // Obtener todas las alertas
-  Future<List<AlertaModel>> obtenerAlertas({
-    int? page,
-    int? limit,
-    String? gestanteId,
-    String? tipoAlerta,
+  final GestanteService? _gestanteService;
+
+  AlertaService(this._apiService, [this._gestanteService]);
+
+  Future<List<Alerta>> obtenerAlertas({
     String? nivelPrioridad,
-    bool? resuelta,
-    DateTime? fechaInicio,
-    DateTime? fechaFin,
+    String? tipoAlerta,
+    String? estado,
+    bool? esAutomatica,
+    DateTime? fechaDesde,
+    DateTime? fechaHasta,
+    int page = 1,
+    int limit = 20,
   }) async {
     try {
-      final queryParams = <String, dynamic>{};
-      if (page != null) queryParams['page'] = page;
-      if (limit != null) queryParams['limit'] = limit;
-      if (gestanteId != null) queryParams['gestanteId'] = gestanteId;
-      if (tipoAlerta != null) queryParams['tipoAlerta'] = tipoAlerta;
-      if (nivelPrioridad != null) queryParams['nivelPrioridad'] = nivelPrioridad;
-      if (resuelta != null) queryParams['resuelta'] = resuelta;
-      if (fechaInicio != null) queryParams['fechaInicio'] = fechaInicio.toIso8601String();
-      if (fechaFin != null) queryParams['fechaFin'] = fechaFin.toIso8601String();
+      appLogger.info('AlertaService: Obteniendo alertas filtradas');
       
-      final response = await _apiService.get('/alertas', queryParams: queryParams);
+      final queryParams = <String, dynamic>{
+        'page': page.toString(),
+        'limit': limit.toString(),
+      };
+      
+      if (nivelPrioridad != null) queryParams['nivel_prioridad'] = nivelPrioridad;
+      if (tipoAlerta != null) queryParams['tipo_alerta'] = tipoAlerta;
+      if (estado != null) queryParams['estado'] = estado;
+      if (esAutomatica != null) queryParams['es_automatica'] = esAutomatica.toString();
+      if (fechaDesde != null) queryParams['fecha_desde'] = fechaDesde.toIso8601String();
+      if (fechaHasta != null) queryParams['fecha_hasta'] = fechaHasta.toIso8601String();
+      
+      String url = '/alertas-automaticas/alertas';
+      if (queryParams.isNotEmpty) {
+        final queryString = queryParams.entries.map((e) => '${e.key}=${e.value}').join('&');
+        url += '?$queryString';
+      }
+      final response = await _apiService.get(url);
       
       if (response.data['success'] == true) {
-        final List<dynamic> alertasData = response.data['data'];
-        return alertasData.map((json) => AlertaModel.fromJson(json)).toList();
-      } else {
-        throw Exception(response.data['message'] ?? 'Error al obtener alertas');
-      }
-    } catch (e) {
-      // Intentar obtener alertas offline
-      if (e is DioException && e.type == DioExceptionType.connectionError) {
-        return await _offlineService.getOfflineAlertas(
-          gestanteId: gestanteId,
-          resuelta: resuelta,
-        );
-      }
-      rethrow;
-    }
-  }
-  
-  // Obtener alerta por ID
-  Future<AlertaModel> obtenerAlertaPorId(String id) async {
-    try {
-      final response = await _apiService.get('/alertas/$id');
-      
-      if (response.data['success'] == true) {
-        return AlertaModel.fromJson(response.data['data']);
-      } else {
-        throw Exception(response.data['message'] ?? 'Error al obtener alerta');
-      }
-    } catch (e) {
-      rethrow;
-    }
-  }
-  
-  // Crear nueva alerta
-  Future<AlertaModel> crearAlerta(AlertaModel alerta) async {
-    try {
-      final alertaData = alerta.toJson();
-      
-      // Obtener ubicación actual si no se especificó
-      if (alerta.ubicacionLatitud == null || alerta.ubicacionLongitud == null) {
-        final ubicacion = await _locationService.getCurrentLocation();
-        if (ubicacion != null) {
-          alertaData['ubicacionLatitud'] = ubicacion.latitude;
-          alertaData['ubicacionLongitud'] = ubicacion.longitude;
+        final List<dynamic> alertasData = response.data['data']['alertas'] as List<dynamic>;
+        
+        // Si tenemos un servicio de gestantes, obtener los datos completos
+        if (_gestanteService != null) {
+          final alertas = <Alerta>[];
+          final gestantesMap = <String, Gestante>{};
+          
+          // Primero obtener todas las gestantes para minimizar llamadas
+          try {
+            final gestantes = await _gestanteService!.obtenerGestantes();
+            for (final gestante in gestantes) {
+              gestantesMap[gestante.id] = gestante;
+            }
+          } catch (e) {
+            appLogger.info('No se pudieron cargar las gestantes para alertas: $e');
+          }
+          
+          // Luego procesar las alertas con los datos de gestantes
+          for (final data in alertasData) {
+            final alertaData = Map<String, dynamic>.from(data);
+            final gestanteId = alertaData['gestante_id']?.toString();
+            
+            if (gestanteId != null && gestantesMap.containsKey(gestanteId)) {
+              alertaData['gestante'] = gestantesMap[gestanteId]!.toJson();
+            }
+            
+            alertas.add(Alerta.fromJson(alertaData));
+          }
+          
+          return alertas;
         }
+        
+        // Si no hay servicio de gestantes, retornar las alertas sin datos adicionales
+        return alertasData.map((data) => Alerta.fromJson(data)).toList();
+      } else {
+        throw Exception(response.data['error'] ?? 'Error obteniendo alertas');
+      }
+    } catch (e) {
+      appLogger.error('Error obteniendo alertas', error: e);
+      rethrow;
+    }
+  }
+
+  Future<Alerta?> obtenerAlertaPorId(String id) async {
+    try {
+      appLogger.info('AlertaService: Obteniendo alerta por ID: $id');
+      final response = await _apiService.get('/alertas/$id');
+      return Alerta.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      appLogger.error('Error obteniendo alerta por ID', error: e, context: {
+        'id': id,
+      });
+      return null;
+    }
+  }
+
+  Future<Alerta> crearAlerta({
+    required String gestanteId,
+    required String tipoAlerta,
+    required String nivelPrioridad,
+    required String mensaje,
+    List<String>? sintomas,
+    String? descripcionDetallada,
+    List<double>? coordenadas,
+  }) async {
+    try {
+      appLogger.info('AlertaService: Creando alerta manual');
+      
+      final alertaData = {
+        'gestante_id': gestanteId,
+        'tipo_alerta': tipoAlerta,
+        'nivel_prioridad': nivelPrioridad,
+        'mensaje': mensaje,
+        'sintomas': sintomas ?? [],
+        'descripcion_detallada': descripcionDetallada,
+        'es_automatica': false,
+      };
+      
+      if (coordenadas != null && coordenadas.length == 2) {
+        alertaData['coordenadas_alerta'] = coordenadas;
       }
       
       final response = await _apiService.post('/alertas', data: alertaData);
       
       if (response.data['success'] == true) {
-        final nuevaAlerta = AlertaModel.fromJson(response.data['data']);
-        
-        // Enviar notificación inmediata para alertas críticas
-        if (nuevaAlerta.esUrgente) {
-          await _enviarNotificacionAlerta(nuevaAlerta);
-        }
-        
-        return nuevaAlerta;
+        return Alerta.fromJson(response.data['data']);
       } else {
-        throw Exception(response.data['message'] ?? 'Error al crear alerta');
+        throw Exception(response.data['error'] ?? 'Error creando alerta');
       }
     } catch (e) {
-      // Si no hay conectividad, guardar offline
-      if (e is DioException && e.type == DioExceptionType.connectionError) {
-        await _offlineService.saveOfflineData('alertas', alerta.toJson());
-        
-        // Enviar notificación local
-        await _enviarNotificacionLocal(alerta);
-        
-        return alerta;
-      }
+      appLogger.error('Error creando alerta', error: e);
       rethrow;
     }
   }
-  
-  // Actualizar alerta
-  Future<AlertaModel> actualizarAlerta(String id, AlertaModel alerta) async {
+
+  Future<Alerta> actualizarAlerta(String id, Map<String, dynamic> alertaData) async {
     try {
-      final response = await _apiService.put('/alertas/$id', data: alerta.toJson());
-      
-      if (response.data['success'] == true) {
-        final alertaActualizada = AlertaModel.fromJson(response.data['data']);
-        
-        // Si se resolvió la alerta, enviar notificación de resolución
-        if (alertaActualizada.resuelta && !alerta.resuelta) {
-          await _notificationService.showNotification(
-            title: 'Alerta Resuelta',
-            body: 'La alerta "${alertaActualizada.mensaje}" ha sido resuelta',
-          );
-        }
-        
-        return alertaActualizada;
-      } else {
-        throw Exception(response.data['message'] ?? 'Error al actualizar alerta');
-      }
-    } catch (e) {
-      // Si no hay conectividad, guardar offline
-      if (e is DioException && e.type == DioExceptionType.connectionError) {
-        await _offlineService.saveOfflineData('alertas_update', {
-          'id': id,
-          'data': alerta.toJson(),
-        });
-        return alerta;
-      }
-      rethrow;
-    }
-  }
-  
-  // Resolver alerta
-  Future<AlertaModel> resolverAlerta(String id, String comentarios) async {
-    try {
-      final response = await _apiService.put('/alertas/$id/resolver', data: {
-        'resolucionComentarios': comentarios,
-        'fechaResolucion': DateTime.now().toIso8601String(),
+      appLogger.info('AlertaService: Actualizando alerta', context: {
+        'id': id,
       });
-      
-      if (response.data['success'] == true) {
-        final alertaResuelta = AlertaModel.fromJson(response.data['data']);
-        
-        // Enviar notificación de resolución
-        await _notificationService.showNotification(
-          title: 'Alerta Resuelta',
-          body: 'La alerta ha sido marcada como resuelta',
-        );
-        
-        return alertaResuelta;
-      } else {
-        throw Exception(response.data['message'] ?? 'Error al resolver alerta');
-      }
+      final response = await _apiService.put('/alertas/$id', data: alertaData);
+      return Alerta.fromJson(response.data as Map<String, dynamic>);
     } catch (e) {
-      // Si no hay conectividad, guardar offline
-      if (e is DioException && e.type == DioExceptionType.connectionError) {
-        await _offlineService.saveOfflineData('alertas_resolver', {
-          'id': id,
-          'comentarios': comentarios,
-          'fechaResolucion': DateTime.now().toIso8601String(),
-        });
-        return AlertaModel(
-          id: id,
-          gestanteId: '',
-          tipoAlerta: '',
-          nivelPrioridad: '',
-          mensaje: '',
-          resuelta: true,
-          fechaResolucion: DateTime.now(),
-          resolucionComentarios: comentarios,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        );
-      }
+      appLogger.error('Error actualizando alerta', error: e, context: {
+        'id': id,
+      });
       rethrow;
     }
   }
-  
-  // Obtener alertas por ubicación
-  Future<List<AlertaModel>> obtenerAlertasPorUbicacion({
-    required double latitud,
-    required double longitud,
-    required double radioKm,
-    String? nivelPrioridad,
-    bool? resuelta,
-  }) async {
+
+  Future<bool> resolverAlerta(String id) async {
     try {
-      final queryParams = {
-        'latitud': latitud,
-        'longitud': longitud,
-        'radio': radioKm,
-        if (nivelPrioridad != null) 'nivelPrioridad': nivelPrioridad,
-        if (resuelta != null) 'resuelta': resuelta,
-      };
-      
-      final response = await _apiService.get('/alertas/ubicacion', queryParams: queryParams);
-      
-      if (response.data['success'] == true) {
-        final List<dynamic> alertasData = response.data['data'];
-        return alertasData.map((json) => AlertaModel.fromJson(json)).toList();
-      } else {
-        throw Exception(response.data['message'] ?? 'Error al buscar alertas por ubicación');
-      }
+      appLogger.info('AlertaService: Resolviendo alerta', context: {'id': id});
+      final response = await _apiService.put('/alertas/$id/resolver');
+      return response.data['success'] == true;
     } catch (e) {
-      // Búsqueda offline por ubicación
-      if (e is DioException && e.type == DioExceptionType.connectionError) {
-        final alertasOffline = await _offlineService.getOfflineAlertas();
-        return alertasOffline.where((alerta) {
-          if (alerta.tieneUbicacion) {
-            final distancia = _locationService.calculateDistance(
-              latitud,
-              longitud,
-              alerta.ubicacionLatitud!,
-              alerta.ubicacionLongitud!,
-            );
-            return distancia <= radioKm;
-          }
-          return false;
-        }).toList();
-      }
+      appLogger.error('Error resolviendo alerta', error: e, context: {'id': id});
       rethrow;
     }
   }
-  
-  // Obtener alertas críticas
-  Future<List<AlertaModel>> obtenerAlertasCriticas({
-    double? latitud,
-    double? longitud,
-    double? radioKm,
-  }) async {
+
+  Future<List<Gestante>> obtenerGestantesDisponibles() async {
     try {
-      final queryParams = <String, dynamic>{
-        'nivelPrioridad': 'CRITICA',
-        'resuelta': false,
-      };
+      appLogger.info('AlertaService: Obteniendo gestantes disponibles para alertas');
       
-      if (latitud != null && longitud != null) {
-        queryParams['latitud'] = latitud;
-        queryParams['longitud'] = longitud;
-        if (radioKm != null) queryParams['radio'] = radioKm;
+      // Si tenemos un servicio de gestantes, usarlo directamente
+      if (_gestanteService != null) {
+        final gestantes = await _gestanteService!.obtenerGestantes();
+        return gestantes.where((g) => g.activa).toList();
       }
       
-      final response = await _apiService.get('/alertas/criticas', queryParams: queryParams);
+      // Si no, usar el endpoint específico
+      final response = await _apiService.get('/gestantes/disponibles-para-alertas');
       
       if (response.data['success'] == true) {
-        final List<dynamic> alertasData = response.data['data'];
-        final alertasCriticas = alertasData.map((json) => AlertaModel.fromJson(json)).toList();
-        
-        // Enviar notificaciones para alertas críticas no notificadas
-        for (final alerta in alertasCriticas) {
-          await _enviarNotificacionAlerta(alerta);
-        }
-        
-        return alertasCriticas;
+        final List<dynamic> gestantesData = response.data['data'] as List<dynamic>;
+        return gestantesData.map((data) => Gestante.fromJson(data)).toList();
       } else {
-        throw Exception(response.data['message'] ?? 'Error al obtener alertas críticas');
+        throw Exception(response.data['error'] ?? 'Error obteniendo gestantes');
       }
     } catch (e) {
-      if (e is DioException && e.type == DioExceptionType.connectionError) {
-        final alertasOffline = await _offlineService.getOfflineAlertas();
-        return alertasOffline.where((a) => a.nivelPrioridad == 'CRITICA' && !a.resuelta).toList();
-      }
+      appLogger.error('Error obteniendo gestantes disponibles', error: e);
       rethrow;
     }
   }
-  
-  // Obtener alertas pendientes por gestante
-  Future<List<AlertaModel>> obtenerAlertasPendientes(String gestanteId) async {
-    try {
-      final response = await _apiService.get('/alertas/pendientes/$gestanteId');
-      
-      if (response.data['success'] == true) {
-        final List<dynamic> alertasData = response.data['data'];
-        return alertasData.map((json) => AlertaModel.fromJson(json)).toList();
-      } else {
-        throw Exception(response.data['message'] ?? 'Error al obtener alertas pendientes');
-      }
-    } catch (e) {
-      if (e is DioException && e.type == DioExceptionType.connectionError) {
-        final alertasOffline = await _offlineService.getOfflineAlertas(gestanteId: gestanteId);
-        return alertasOffline.where((a) => !a.resuelta).toList();
-      }
-      rethrow;
-    }
-  }
-  
-  // Generar alerta automática basada en control prenatal
-  Future<AlertaModel?> generarAlertaAutomatica({
-    required String gestanteId,
-    required String controlId,
-    required Map<String, dynamic> signosVitales,
+
+  Future<Map<String, dynamic>> evaluarSignosVitales({
+    double? presionSistolica,
+    double? presionDiastolica,
+    double? frecuenciaCardiaca,
+    double? frecuenciaRespiratoria,
+    double? temperatura,
+    int? semanasGestacion,
+    List<String>? sintomas,
   }) async {
     try {
-      AlertaModel? alerta;
+      appLogger.info('AlertaService: Evaluando signos vitales');
       
-      // Verificar presión arterial alta
-      final presionSistolica = signosVitales['presionSistolica'] as int?;
-      final presionDiastolica = signosVitales['presionDiastolica'] as int?;
+      final data = <String, dynamic>{};
+      if (presionSistolica != null) data['presion_sistolica'] = presionSistolica;
+      if (presionDiastolica != null) data['presion_diastolica'] = presionDiastolica;
+      if (frecuenciaCardiaca != null) data['frecuencia_cardiaca'] = frecuenciaCardiaca;
+      if (frecuenciaRespiratoria != null) data['frecuencia_respiratoria'] = frecuenciaRespiratoria;
+      if (temperatura != null) data['temperatura'] = temperatura;
+      if (semanasGestacion != null) data['semanas_gestacion'] = semanasGestacion;
+      if (sintomas != null) data['sintomas'] = sintomas;
       
-      if (presionSistolica != null && presionDiastolica != null) {
-        if (presionSistolica >= 140 || presionDiastolica >= 90) {
-          final nivelPrioridad = (presionSistolica >= 160 || presionDiastolica >= 110) ? 'CRITICA' : 'ALTA';
-          
-          alerta = AlertaModel(
-            id: DateTime.now().millisecondsSinceEpoch.toString(),
-            gestanteId: gestanteId,
-            controlId: controlId,
-            tipoAlerta: 'PRESION_ALTA',
-            nivelPrioridad: nivelPrioridad,
-            mensaje: 'Presión arterial elevada: $presionSistolica/$presionDiastolica mmHg',
-            descripcionDetallada: 'Se detectó hipertensión arterial durante el control prenatal. Requiere evaluación médica inmediata.',
-            resuelta: false,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-          );
-        }
-      }
-      
-      // Verificar temperatura
-      final temperatura = signosVitales['temperatura'] as double?;
-      if (temperatura != null && temperatura >= 37.5) {
-        final nivelPrioridad = temperatura >= 39.0 ? 'ALTA' : 'MEDIA';
-        
-        alerta = AlertaModel(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          gestanteId: gestanteId,
-          controlId: controlId,
-          tipoAlerta: 'FIEBRE',
-          nivelPrioridad: nivelPrioridad,
-          mensaje: 'Temperatura elevada: ${temperatura}°C',
-          descripcionDetallada: 'Se detectó fiebre durante el control prenatal. Monitorear evolución.',
-          resuelta: false,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        );
-      }
-      
-      // Si se generó una alerta, crearla
-      if (alerta != null) {
-        return await crearAlerta(alerta);
-      }
-      
-      return null;
-    } catch (e) {
-      print('Error generando alerta automática: $e');
-      return null;
-    }
-  }
-  
-  // Obtener estadísticas de alertas
-  Future<Map<String, dynamic>> obtenerEstadisticasAlertas({
-    DateTime? fechaInicio,
-    DateTime? fechaFin,
-    String? departamento,
-    String? municipio,
-  }) async {
-    try {
-      final queryParams = <String, dynamic>{};
-      if (fechaInicio != null) queryParams['fechaInicio'] = fechaInicio.toIso8601String();
-      if (fechaFin != null) queryParams['fechaFin'] = fechaFin.toIso8601String();
-      if (departamento != null) queryParams['departamento'] = departamento;
-      if (municipio != null) queryParams['municipio'] = municipio;
-      
-      final response = await _apiService.get('/alertas/estadisticas', queryParams: queryParams);
+      final response = await _apiService.post('/alertas-automaticas/evaluar-signos-vitales', data: data);
       
       if (response.data['success'] == true) {
         return response.data['data'];
       } else {
-        throw Exception(response.data['message'] ?? 'Error al obtener estadísticas');
+        throw Exception(response.data['error'] ?? 'Error evaluando signos vitales');
       }
     } catch (e) {
-      if (e is DioException && e.type == DioExceptionType.connectionError) {
-        // Calcular estadísticas básicas offline
-        final alertasOffline = await _offlineService.getOfflineAlertas();
-        return {
-          'total': alertasOffline.length,
-          'criticas': alertasOffline.where((a) => a.nivelPrioridad == 'CRITICA').length,
-          'pendientes': alertasOffline.where((a) => !a.resuelta).length,
-          'resueltas': alertasOffline.where((a) => a.resuelta).length,
-        };
-      }
+      appLogger.error('Error evaluando signos vitales', error: e);
       rethrow;
     }
   }
-  
-  // Monitorear alertas en tiempo real
-  Stream<List<AlertaModel>> monitorearAlertas({
-    String? gestanteId,
-    String? nivelPrioridad,
-  }) async* {
-    while (true) {
-      try {
-        final alertas = await obtenerAlertas(
-          gestanteId: gestanteId,
-          nivelPrioridad: nivelPrioridad,
-          resuelta: false,
-        );
-        yield alertas;
-        
-        // Esperar 30 segundos antes de la próxima consulta
-        await Future.delayed(const Duration(seconds: 30));
-      } catch (e) {
-        print('Error monitoreando alertas: $e');
-        await Future.delayed(const Duration(minutes: 1));
-      }
-    }
-  }
-  
-  // Enviar notificación para alerta
-  Future<void> _enviarNotificacionAlerta(AlertaModel alerta) async {
+
+  Future<Map<String, dynamic>> obtenerEstadisticasAlertas({
+    DateTime? fechaInicio,
+    DateTime? fechaFin,
+  }) async {
     try {
-      await _notificationService.showMedicalAlert(
-        title: _obtenerTituloAlerta(alerta.tipoAlerta),
-        message: alerta.mensaje,
-        priority: alerta.nivelPrioridad,
-        gestanteId: alerta.gestanteId,
-      );
-    } catch (e) {
-      print('Error enviando notificación de alerta: $e');
-    }
-  }
-  
-  // Enviar notificación local (offline)
-  Future<void> _enviarNotificacionLocal(AlertaModel alerta) async {
-    try {
-      await _notificationService.showNotification(
-        title: '${_obtenerTituloAlerta(alerta.tipoAlerta)} (Offline)',
-        body: alerta.mensaje,
-      );
-    } catch (e) {
-      print('Error enviando notificación local: $e');
-    }
-  }
-  
-  // Obtener título de alerta según tipo
-  String _obtenerTituloAlerta(String tipoAlerta) {
-    switch (tipoAlerta) {
-      case 'PRESION_ALTA':
-        return 'Hipertensión Arterial';
-      case 'PRESION_BAJA':
-        return 'Hipotensión Arterial';
-      case 'FIEBRE':
-        return 'Temperatura Elevada';
-      case 'PESO_ANORMAL':
-        return 'Peso Anormal';
-      case 'FRECUENCIA_CARDIACA_ANORMAL':
-        return 'Frecuencia Cardíaca Anormal';
-      case 'CONTROL_VENCIDO':
-        return 'Control Prenatal Vencido';
-      case 'EMBARAZO_ALTO_RIESGO':
-        return 'Embarazo de Alto Riesgo';
-      default:
-        return 'Alerta Médica';
-    }
-  }
-  
-  // Sincronizar alertas offline
-  Future<void> sincronizarAlertasOffline() async {
-    try {
-      await _offlineService.syncPendingData();
-    } catch (e) {
-      print('Error sincronizando alertas offline: $e');
-    }
-  }
-  
-  // Eliminar alertas antiguas resueltas
-  Future<void> limpiarAlertasAntiguas({int diasAntiguedad = 30}) async {
-    try {
-      final fechaLimite = DateTime.now().subtract(Duration(days: diasAntiguedad));
+      appLogger.info('AlertaService: Obteniendo estadísticas de alertas');
       
-      final response = await _apiService.delete('/alertas/limpiar', queryParams: {
-        'fechaLimite': fechaLimite.toIso8601String(),
-        'soloResueltas': true,
+      final queryParams = <String, dynamic>{};
+      if (fechaInicio != null) queryParams['fecha_inicio'] = fechaInicio.toIso8601String();
+      if (fechaFin != null) queryParams['fecha_fin'] = fechaFin.toIso8601String();
+      
+      String url = '/alertas-automaticas/stats';
+      if (queryParams.isNotEmpty) {
+        final queryString = queryParams.entries.map((e) => '${e.key}=${e.value}').join('&');
+        url += '?$queryString';
+      }
+      final response = await _apiService.get(url);
+      
+      if (response.data['success'] == true) {
+        return response.data['data'];
+      } else {
+        throw Exception(response.data['error'] ?? 'Error obteniendo estadísticas');
+      }
+    } catch (e) {
+      appLogger.error('Error obteniendo estadísticas de alertas', error: e);
+      rethrow;
+    }
+  }
+
+  // Constantes para tipos de alerta
+  static const List<String> tiposAlerta = [
+    'manual',
+    'emergencia_obstetrica',
+    'hipertension',
+    'preeclampsia',
+    'sepsis',
+    'hemorragia',
+    'shock_hipovolemico',
+    'parto_prematuro',
+  ];
+
+  static const List<String> nivelesPrioridad = [
+    'baja',
+    'media',
+    'alta',
+    'critica',
+  ];
+
+  static const List<String> sintomasComunes = [
+    'dolor_cabeza_severo',
+    'vision_borrosa',
+    'dolor_epigastrico',
+    'nauseas_vomitos_severos',
+    'edema_facial',
+    'edema_manos',
+    'sangrado_vaginal_abundante',
+    'contracciones_regulares',
+    'dolor_abdominal_intenso',
+    'fiebre',
+    'escalofrios',
+    'malestar_general',
+    'confusion_mental',
+    'ausencia_movimiento_fetal',
+    'disminucion_movimientos_fetales',
+    'ruptura_membranas',
+    'presion_pelvica',
+    'mareo',
+    'debilidad',
+  ];
+
+  Future<bool> eliminarAlerta(String id) async {
+    try {
+      appLogger.info('AlertaService: Eliminando alerta', context: {
+        'id': id,
       });
-      
-      if (response.data['success'] != true) {
-        throw Exception(response.data['message'] ?? 'Error al limpiar alertas');
-      }
+      await _apiService.delete('/alertas/$id');
+      return true;
     } catch (e) {
-      print('Error limpiando alertas antiguas: $e');
+      appLogger.error('Error eliminando alerta', error: e, context: {
+        'id': id,
+      });
+      return false;
+    }
+  }
+
+  Future<bool> marcarComoLeida(String id) async {
+    try {
+      appLogger.info('AlertaService: Marcando alerta como leída', context: {
+        'id': id,
+      });
+      // Marcar alerta como leída
+      final response = await _apiService.put('/alertas/$id', data: {'leida': true});
+      final responseData = response.data;
+      if (responseData is Map<String, dynamic>) {
+        return responseData['success'] == true;
+      }
+      return responseData != null;
+    } catch (e) {
+      appLogger.error('Error marcando alerta como leída', error: e, context: {
+        'id': id,
+      });
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> enviarAlertaSOS({required String gestanteId, required String motivo}) async {
+    try {
+      appLogger.info('AlertaService: Enviando alerta SOS para gestante: $gestanteId');
+      final response = await _apiService.post('/alertas/sos', data: {
+        'gestanteId': gestanteId,
+        'motivo': motivo,
+        'timestamp': DateTime.now().toIso8601String(),
+      });
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      appLogger.error('Error enviando alerta SOS', error: e, context: {
+        'gestanteId': gestanteId,
+        'motivo': motivo,
+      });
+      rethrow;
     }
   }
 }

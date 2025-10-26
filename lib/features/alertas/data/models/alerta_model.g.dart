@@ -7,12 +7,12 @@ part of 'alerta_model.dart';
 // **************************************************************************
 
 AlertaModel _$AlertaModelFromJson(Map<String, dynamic> json) => AlertaModel(
-  id: json['id'] as String,
-  gestanteId: json['gestanteId'] as String,
-  tipoAlerta: json['tipoAlerta'] as String,
-  nivelPrioridad: json['nivelPrioridad'] as String,
-  mensaje: json['mensaje'] as String,
-);
+      id: json['id'] as String,
+      gestanteId: json['gestanteId'] as String,
+      tipoAlerta: json['tipoAlerta'] as String,
+      nivelPrioridad: json['nivelPrioridad'] as String,
+      mensaje: json['mensaje'] as String,
+    );
 
 Map<String, dynamic> _$AlertaModelToJson(AlertaModel instance) =>
     <String, dynamic>{

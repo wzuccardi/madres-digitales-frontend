@@ -1,174 +1,143 @@
-import 'package:json_annotation/json_annotation.dart';
-import 'package:equatable/equatable.dart';
+import 'contenido_unificado.dart';  // Corrección: Importar ContenidoUnificado que sí existe
 
-part 'contenido_model.g.dart';
-
-@JsonSerializable()
-class ContenidoModel extends Equatable {
+class ContenidoModel {
   final String id;
   final String titulo;
   final String descripcion;
   final String categoria;
   final String tipoContenido;
   final String? urlContenido;
-  final String? urlImagen;
-  final String? urlVideo;
-  final String? contenidoTexto;
-  final int duracionMinutos;
-  final String nivelDificultad;
-  final List<String> etiquetas;
-  final bool activo;
-  final int orden;
+  final String? imagenUrl;
   final DateTime createdAt;
   final DateTime updatedAt;
-  
-  const ContenidoModel({
+
+  ContenidoModel({
     required this.id,
     required this.titulo,
     required this.descripcion,
     required this.categoria,
     required this.tipoContenido,
     this.urlContenido,
-    this.urlImagen,
-    this.urlVideo,
-    this.contenidoTexto,
-    required this.duracionMinutos,
-    required this.nivelDificultad,
-    required this.etiquetas,
-    required this.activo,
-    required this.orden,
+    this.imagenUrl,
     required this.createdAt,
     required this.updatedAt,
   });
-  
-  factory ContenidoModel.fromJson(Map<String, dynamic> json) => _$ContenidoModelFromJson(json);
-  Map<String, dynamic> toJson() => _$ContenidoModelToJson(this);
-  
-  bool get esVideo => tipoContenido == 'VIDEO' && urlVideo != null;
-  bool get esArticulo => tipoContenido == 'ARTICULO';
-  bool get esInfografia => tipoContenido == 'INFOGRAFIA';
-  bool get esAudio => tipoContenido == 'AUDIO';
-  
-  String get duracionFormateada {
-    if (duracionMinutos < 60) {
-      return '$duracionMinutos min';
-    } else {
-      final horas = duracionMinutos ~/ 60;
-      final minutos = duracionMinutos % 60;
-      return minutos > 0 ? '${horas}h ${minutos}min' : '${horas}h';
-    }
+
+  factory ContenidoModel.fromJson(Map<String, dynamic> json) {
+    return ContenidoModel(
+      id: json['id'] ?? '',
+      titulo: json['titulo'] ?? '',
+      descripcion: json['descripcion'] ?? '',
+      categoria: json['categoria'] ?? '',
+      tipoContenido: json['tipoContenido'] ?? '',
+      urlContenido: json['urlContenido'],
+      imagenUrl: json['imagenUrl'],
+      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : DateTime.now(),
+      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : DateTime.now(),
+    );
   }
-  
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'titulo': titulo,
+      'descripcion': descripcion,
+      'categoria': categoria,
+      'tipoContenido': tipoContenido,
+      'urlContenido': urlContenido,
+      'imagenUrl': imagenUrl,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+    };
+  }
+
+  /// Crear copia
+  ContenidoModel copyWith({
+    String? id,
+    String? titulo,
+    String? descripcion,
+    String? categoria,
+    String? tipoContenido,
+    String? urlContenido,
+    String? imagenUrl,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return ContenidoModel(
+      id: id ?? this.id,
+      titulo: titulo ?? this.titulo,
+      descripcion: descripcion ?? this.descripcion,
+      categoria: categoria ?? this.categoria,
+      tipoContenido: tipoContenido ?? this.tipoContenido,
+      urlContenido: urlContenido ?? this.urlContenido,
+      imagenUrl: imagenUrl ?? this.imagenUrl,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
   @override
-  List<Object?> get props => [
-    id,
-    titulo,
-    descripcion,
-    categoria,
-    tipoContenido,
-    urlContenido,
-    urlImagen,
-    urlVideo,
-    contenidoTexto,
-    duracionMinutos,
-    nivelDificultad,
-    etiquetas,
-    activo,
-    orden,
-    createdAt,
-    updatedAt,
-  ];
-}
+  String toString() {
+    return 'ContenidoModel(id: $id, titulo: $titulo, categoria: $categoria)';
+  }
 
-@JsonSerializable()
-class ProgresoContenidoModel extends Equatable {
-  final String id;
-  final String usuarioId;
-  final String contenidoId;
-  final bool completado;
-  final int porcentajeProgreso;
-  final int tiempoVisualizacion;
-  final DateTime? fechaCompletado;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-  
-  // Relaciones
-  final ContenidoModel? contenido;
-  
-  const ProgresoContenidoModel({
-    required this.id,
-    required this.usuarioId,
-    required this.contenidoId,
-    required this.completado,
-    required this.porcentajeProgreso,
-    required this.tiempoVisualizacion,
-    this.fechaCompletado,
-    required this.createdAt,
-    required this.updatedAt,
-    this.contenido,
-  });
-  
-  factory ProgresoContenidoModel.fromJson(Map<String, dynamic> json) => _$ProgresoContenidoModelFromJson(json);
-  Map<String, dynamic> toJson() => _$ProgresoContenidoModelToJson(this);
-  
   @override
-  List<Object?> get props => [
-    id,
-    usuarioId,
-    contenidoId,
-    completado,
-    porcentajeProgreso,
-    tiempoVisualizacion,
-    fechaCompletado,
-    createdAt,
-    updatedAt,
-  ];
-}
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    
+    return other is ContenidoModel &&
+      other.id == id &&
+      other.titulo == titulo &&
+      other.descripcion == descripcion &&
+      other.categoria == categoria &&
+      other.tipoContenido == tipoContenido &&
+      other.urlContenido == urlContenido &&
+      other.imagenUrl == imagenUrl &&
+      other.createdAt == createdAt &&
+      other.updatedAt == updatedAt;
+  }
 
-// Enums para categorías de contenido
-enum CategoriaContenido {
-  @JsonValue('EMBARAZO')
-  embarazo,
-  @JsonValue('PARTO')
-  parto,
-  @JsonValue('POSPARTO')
-  posparto,
-  @JsonValue('LACTANCIA')
-  lactancia,
-  @JsonValue('NUTRICION')
-  nutricion,
-  @JsonValue('EJERCICIO')
-  ejercicio,
-  @JsonValue('SALUD_MENTAL')
-  saludMental,
-  @JsonValue('CUIDADO_BEBE')
-  cuidadoBebe,
-  @JsonValue('PLANIFICACION_FAMILIAR')
-  planificacionFamiliar,
-  @JsonValue('EMERGENCIAS')
-  emergencias,
-}
+  @override
+  int get hashCode {
+    return id.hashCode ^
+      titulo.hashCode ^
+      descripcion.hashCode ^
+      categoria.hashCode ^
+      tipoContenido.hashCode ^
+      urlContenido.hashCode ^
+      imagenUrl.hashCode ^
+      createdAt.hashCode ^
+      updatedAt.hashCode;
+  }
 
-// Enums para tipos de contenido
-enum TipoContenido {
-  @JsonValue('VIDEO')
-  video,
-  @JsonValue('ARTICULO')
-  articulo,
-  @JsonValue('INFOGRAFIA')
-  infografia,
-  @JsonValue('AUDIO')
-  audio,
-  @JsonValue('INTERACTIVO')
-  interactivo,
-}
+  // Método para convertir ContenidoUnificado a ContenidoModel
+  factory ContenidoModel.fromContenidoUnificado(ContenidoUnificado contenido) {
+    return ContenidoModel(
+      id: contenido.id,
+      titulo: contenido.titulo,
+      descripcion: contenido.descripcion ?? '', // Corrección: descripcion es String? en ContenidoUnificado
+      categoria: contenido.categoria,
+      tipoContenido: contenido.tipo, // Corrección: usar tipo en lugar de tipoContenido
+      urlContenido: contenido.urlContenido,
+      imagenUrl: contenido.urlImagen, // Corrección: usar urlImagen en lugar de imagenUrl
+      createdAt: contenido.fechaCreacion, // Mapear fechaCreacion a createdAt
+      updatedAt: contenido.fechaActualizacion, // Corrección: usar fechaActualizacion en lugar de updatedAt
+    );
+  }
 
-// Enums para nivel de dificultad
-enum NivelDificultad {
-  @JsonValue('BASICO')
-  basico,
-  @JsonValue('INTERMEDIO')
-  intermedio,
-  @JsonValue('AVANZADO')
-  avanzado,
+  // Método para convertir ContenidoModel a ContenidoUnificado
+  ContenidoUnificado toContenidoUnificado() {
+    return ContenidoUnificado(
+      id: id,
+      titulo: titulo,
+      descripcion: descripcion,
+      categoria: categoria,
+      tipo: tipoContenido, // Corrección: usar tipoContenido en lugar de tipoContenido
+      urlContenido: urlContenido,
+      urlImagen: imagenUrl, // Corrección: usar imagenUrl en lugar de urlImagen
+      fechaCreacion: createdAt, // Mapear createdAt a fechaCreacion
+      fechaActualizacion: updatedAt, // Corrección: usar updatedAt en lugar de fechaActualizacion
+      activo: true, // Asignar activo por defecto
+    );
+  }
 }

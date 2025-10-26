@@ -1,302 +1,226 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/contenido_model.dart';
-import '../services/contenido_service.dart';
+import 'package:madres_digitales_flutter_new/models/contenido_unificado.dart';
+import 'package:madres_digitales_flutter_new/utils/logger.dart';
+import 'package:madres_digitales_flutter_new/providers/service_providers.dart';
+// Hot reload trigger - 2025-10-24 02:46
 
-// Service provider
-final contenidoServiceProvider = Provider<ContenidoService>((ref) {
-  return ContenidoService();
-});
-
-// State providers for content
-final contenidosProvider = StateNotifierProvider<ContenidosNotifier, AsyncValue<List<ContenidoModel>>>((ref) {
-  return ContenidosNotifier(ref.read(contenidoServiceProvider));
-});
-
-final contenidosPorCategoriaProvider = StateNotifierProvider.family<ContenidosPorCategoriaNotifier, AsyncValue<List<ContenidoModel>>, CategoriaContenido>((ref, categoria) {
-  return ContenidosPorCategoriaNotifier(ref.read(contenidoServiceProvider), categoria);
-});
-
-final contenidosRecomendadosProvider = StateNotifierProvider.family<ContenidosRecomendadosNotifier, AsyncValue<List<ContenidoModel>>, String>((ref, gestanteId) {
-  return ContenidosRecomendadosNotifier(ref.read(contenidoServiceProvider), gestanteId);
-});
-
-final contenidoDetailProvider = StateNotifierProvider.family<ContenidoDetailNotifier, AsyncValue<ContenidoModel?>, String>((ref, contenidoId) {
-  return ContenidoDetailNotifier(ref.read(contenidoServiceProvider), contenidoId);
-});
-
-final progresoContenidoProvider = StateNotifierProvider.family<ProgresoContenidoNotifier, AsyncValue<ProgresoContenidoModel?>, ContenidoProgressParams>((ref, params) {
-  return ProgresoContenidoNotifier(ref.read(contenidoServiceProvider), params);
-});
-
-// Search and filter providers
-final contenidoSearchProvider = StateProvider<String>((ref) => '');
-
-final contenidoFilterProvider = StateProvider<ContenidoFilter>((ref) => ContenidoFilter());
-
-final filteredContenidosProvider = Provider<AsyncValue<List<ContenidoModel>>>((ref) {
-  final contenidos = ref.watch(contenidosProvider);
-  final searchQuery = ref.watch(contenidoSearchProvider);
-  final filter = ref.watch(contenidoFilterProvider);
+/// Provider para todos los contenidos
+final contenidosProvider = FutureProvider<List<ContenidoUnificado>>((ref) async {
+  appLogger.debug('ContenidoProvider: Obteniendo todos los contenidos');
   
-  return contenidos.when(
-    data: (contenidosList) {
-      var filtered = contenidosList.asMap().entries.map((entry) => entry.value).toList();
-      
-      // Apply search filter
-      if (searchQuery.isNotEmpty) {
-        filtered = filtered.where((contenido) {
-          return contenido.titulo.toLowerCase().contains(searchQuery.toLowerCase()) ||
-                 contenido.descripcion.toLowerCase().contains(searchQuery.toLowerCase()) ||
-                 contenido.tags.any((tag) => tag.toLowerCase().contains(searchQuery.toLowerCase()));
-        }).toList();
-      }
-      
-      // Apply category filter
-      if (filter.categoria != null) {
-        filtered = filtered.where((contenido) => contenido.categoria == filter.categoria).toList();
-      }
-      
-      // Apply type filter
-      if (filter.tipo != null) {
-        filtered = filtered.where((contenido) => contenido.tipo == filter.tipo).toList();
-      }
-      
-      // Apply difficulty filter
-      if (filter.dificultad != null) {
-        filtered = filtered.where((contenido) => contenido.nivelDificultad == filter.dificultad).toList();
-      }
-      
-      // Apply duration filter
-      if (filter.duracionMaxima != null) {
-        filtered = filtered.where((contenido) => 
-          contenido.duracionMinutos != null && 
-          contenido.duracionMinutos! <= filter.duracionMaxima!
-        ).toList();
-      }
-      
-      // Apply favorites filter
-      if (filter.soloFavoritos) {
-        filtered = filtered.where((contenido) => contenido.esFavorito).toList();
-      }
-      
-      return AsyncValue.data(filtered);
-    },
-    loading: () => const AsyncValue.loading(),
-    error: (error, stack) => AsyncValue.error(error, stack),
-  );
-});
-
-// Parameters class for progress
-class ContenidoProgressParams {
-  final String gestanteId;
-  final String contenidoId;
-  
-  ContenidoProgressParams({
-    required this.gestanteId,
-    required this.contenidoId,
-  });
-  
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is ContenidoProgressParams &&
-        other.gestanteId == gestanteId &&
-        other.contenidoId == contenidoId;
+  try {
+    final service = await ref.read(contenidoServiceProvider.future);
+    final contenidos = await service.getAllContenidos();
+    
+    appLogger.debug('ContenidoProvider: ${contenidos.length} contenidos obtenidos');
+    return contenidos;
+  } catch (e) {
+    appLogger.error('ContenidoProvider: Error obteniendo contenidos', error: e);
+    return [];
   }
-  
-  @override
-  int get hashCode => gestanteId.hashCode ^ contenidoId.hashCode;
-}
+});
 
-// Filter class
-class ContenidoFilter {
-  final CategoriaContenido? categoria;
-  final TipoContenido? tipo;
-  final NivelDificultad? dificultad;
-  final int? duracionMaxima;
-  final bool soloFavoritos;
-  final bool soloDescargados;
+/// Provider para contenidos por categoría
+final contenidosPorCategoriaProvider = FutureProvider.family<List<ContenidoUnificado>, String>((ref, categoria) async {
+  appLogger.debug('ContenidoProvider: Obteniendo contenidos de la categoría: $categoria');
   
-  ContenidoFilter({
-    this.categoria,
-    this.tipo,
-    this.dificultad,
-    this.duracionMaxima,
-    this.soloFavoritos = false,
-    this.soloDescargados = false,
-  });
+  try {
+    final service = await ref.read(contenidoServiceProvider.future);
+    final contenidos = await service.getContenidosByCategoria(categoria);
+    
+    appLogger.debug('ContenidoProvider: ${contenidos.length} contenidos obtenidos de la categoría $categoria');
+    return contenidos;
+  } catch (e) {
+    appLogger.error('ContenidoProvider: Error obteniendo contenidos de la categoría $categoria', error: e);
+    return [];
+  }
+});
+
+/// Provider para contenido específico por ID
+final contenidoPorIdProvider = FutureProvider.family<ContenidoUnificado?, String>((ref, contenidoId) async {
+  appLogger.debug('ContenidoProvider: Obteniendo contenido con ID: $contenidoId');
   
-  ContenidoFilter copyWith({
-    CategoriaContenido? categoria,
-    TipoContenido? tipo,
-    NivelDificultad? dificultad,
-    int? duracionMaxima,
-    bool? soloFavoritos,
-    bool? soloDescargados,
-  }) {
-    return ContenidoFilter(
-      categoria: categoria ?? this.categoria,
-      tipo: tipo ?? this.tipo,
-      dificultad: dificultad ?? this.dificultad,
-      duracionMaxima: duracionMaxima ?? this.duracionMaxima,
-      soloFavoritos: soloFavoritos ?? this.soloFavoritos,
-      soloDescargados: soloDescargados ?? this.soloDescargados,
-    );
+  try {
+    final service = await ref.read(contenidoServiceProvider.future);
+    final contenido = await service.getContenidoById(contenidoId);
+    
+    if (contenido != null) {
+      appLogger.debug('ContenidoProvider: Contenido obtenido: ${contenido.titulo}');
+      return contenido;
+    } else {
+      appLogger.warn('ContenidoProvider: Contenido con ID $contenidoId no encontrado');
+      return null;
+    }
+  } catch (e) {
+    appLogger.error('ContenidoProvider: Error obteniendo contenido con ID $contenidoId', error: e);
+    return null;
+  }
+});
+
+/// Provider para contenidos recomendados para una gestante
+final contenidosRecomendadosProvider = FutureProvider.family<List<ContenidoUnificado>, String>((ref, gestanteId) async {
+  appLogger.debug('ContenidoProvider: Obteniendo contenidos recomendados para gestante: $gestanteId');
+  
+  try {
+    final service = await ref.read(contenidoServiceProvider.future);
+    
+    // En una implementación real, aquí se llamaría a un método específico
+    // Por ahora, obtenemos todos los contenidos y filtramos
+    final contenidos = await service.getAllContenidos();
+    
+    // Simular recomendaciones basadas en la gestante
+    final recomendados = contenidos.take(5).toList();
+    
+    appLogger.debug('ContenidoProvider: ${recomendados.length} contenidos recomendados obtenidos');
+    return recomendados;
+  } catch (e) {
+    appLogger.error('ContenidoProvider: Error obteniendo contenidos recomendados', error: e);
+    return [];
+  }
+});
+
+/// Provider para búsqueda de contenidos
+final busquedaContenidosProvider = FutureProvider.family<List<ContenidoUnificado>, String>((ref, query) async {
+  appLogger.debug('ContenidoProvider: Buscando contenidos con query: $query');
+  
+  try {
+    final service = await ref.read(contenidoServiceProvider.future);
+    final contenidos = await service.getAllContenidos();
+    
+    // Filtrar contenidos que coincidan con la búsqueda
+    final resultados = contenidos.where((contenido) {
+      return contenido.titulo.toLowerCase().contains(query.toLowerCase()) ||
+             (contenido.descripcion?.toLowerCase().contains(query.toLowerCase()) ?? false) ||
+             contenido.categoria.toLowerCase().contains(query.toLowerCase());
+    }).toList();
+    
+    appLogger.debug('ContenidoProvider: ${resultados.length} resultados encontrados');
+    return resultados;
+  } catch (e) {
+    appLogger.error('ContenidoProvider: Error buscando contenidos', error: e);
+    return [];
+  }
+});
+
+/// Provider para estado de carga de contenidos
+final contenidoLoadingProvider = StateNotifierProvider<ContenidoLoadingNotifier, bool>((ref) {
+  return ContenidoLoadingNotifier();
+});
+
+/// Notificador para estado de carga de contenidos
+class ContenidoLoadingNotifier extends StateNotifier<bool> {
+  ContenidoLoadingNotifier() : super(false);
+  
+  void setLoading(bool loading) {
+    state = loading;
+    appLogger.debug('ContenidoLoadingNotifier: Estado de carga actualizado a $loading');
   }
 }
 
-// State Notifiers
-class ContenidosNotifier extends StateNotifier<AsyncValue<List<ContenidoModel>>> {
-  final ContenidoService _service;
+/// Provider para mensajes de error de contenidos
+final contenidoErrorProvider = StateNotifierProvider<ContenidoErrorNotifier, String?>((ref) {
+  return ContenidoErrorNotifier();
+});
+
+/// Notificador para mensajes de error de contenidos
+class ContenidoErrorNotifier extends StateNotifier<String?> {
+  ContenidoErrorNotifier() : super(null);
   
-  ContenidosNotifier(this._service) : super(const AsyncValue.loading()) {
-    loadContenidos();
-  }
-  
-  Future<void> loadContenidos() async {
-    state = const AsyncValue.loading();
-    try {
-      final contenidos = await _service.obtenerContenidos();
-      state = AsyncValue.data(contenidos);
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
+  void setError(String? error) {
+    state = error;
+    if (error != null) {
+      appLogger.error('ContenidoErrorNotifier: Error establecido: $error');
     }
   }
   
-  Future<void> toggleFavorito(String contenidoId) async {
-    try {
-      await _service.marcarComoFavorito(contenidoId);
-      await loadContenidos(); // Reload the list
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
-  
-  Future<void> downloadContenido(String contenidoId) async {
-    try {
-      await _service.descargarContenido(contenidoId);
-      await loadContenidos(); // Reload the list
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
-  
-  void refresh() {
-    loadContenidos();
+  void clearError() {
+    state = null;
+    appLogger.debug('ContenidoErrorNotifier: Error limpiado');
   }
 }
 
-class ContenidosPorCategoriaNotifier extends StateNotifier<AsyncValue<List<ContenidoModel>>> {
-  final ContenidoService _service;
-  final CategoriaContenido _categoria;
+/// Provider para operación de guardado de contenido
+final guardarContenidoProvider = FutureProvider.family<bool, ContenidoUnificado>((ref, contenido) async {
+  appLogger.debug('ContenidoProvider: Guardando contenido: ${contenido.titulo}');
   
-  ContenidosPorCategoriaNotifier(this._service, this._categoria) : super(const AsyncValue.loading()) {
-    loadContenidosPorCategoria();
+  try {
+    // Establecer estado de carga
+    ref.read(contenidoLoadingProvider.notifier).setLoading(true);
+    ref.read(contenidoErrorProvider.notifier).clearError();
+    
+    final service = await ref.read(contenidoServiceProvider.future);
+    
+    // Convertir a formato esperado por el servicio
+    await service.saveContenido(contenido);
+    
+    // Limpiar estado de carga
+    ref.read(contenidoLoadingProvider.notifier).setLoading(false);
+    
+    appLogger.debug('ContenidoProvider: Contenido guardado exitosamente');
+    return true;
+  } catch (e) {
+    // Establecer error y limpiar estado de carga
+    ref.read(contenidoErrorProvider.notifier).setError(e.toString());
+    ref.read(contenidoLoadingProvider.notifier).setLoading(false);
+    
+    appLogger.error('ContenidoProvider: Error guardando contenido', error: e);
+    return false;
   }
-  
-  Future<void> loadContenidosPorCategoria() async {
-    state = const AsyncValue.loading();
-    try {
-      final contenidos = await _service.obtenerContenidosPorCategoria(_categoria);
-      state = AsyncValue.data(contenidos);
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
-  
-  void refresh() {
-    loadContenidosPorCategoria();
-  }
-}
+});
 
-class ContenidosRecomendadosNotifier extends StateNotifier<AsyncValue<List<ContenidoModel>>> {
-  final ContenidoService _service;
-  final String _gestanteId;
+/// Provider para operación de eliminación de contenido
+final eliminarContenidoProvider = FutureProvider.family<bool, String>((ref, contenidoId) async {
+  appLogger.debug('ContenidoProvider: Eliminando contenido con ID: $contenidoId');
   
-  ContenidosRecomendadosNotifier(this._service, this._gestanteId) : super(const AsyncValue.loading()) {
-    loadContenidosRecomendados();
+  try {
+    // Establecer estado de carga
+    ref.read(contenidoLoadingProvider.notifier).setLoading(true);
+    ref.read(contenidoErrorProvider.notifier).clearError();
+    
+    final service = await ref.read(contenidoServiceProvider.future);
+    await service.deleteContenido(contenidoId);
+    
+    // Limpiar estado de carga
+    ref.read(contenidoLoadingProvider.notifier).setLoading(false);
+    
+    appLogger.debug('ContenidoProvider: Contenido eliminado exitosamente');
+    return true;
+  } catch (e) {
+    // Establecer error y limpiar estado de carga
+    ref.read(contenidoErrorProvider.notifier).setError(e.toString());
+    ref.read(contenidoLoadingProvider.notifier).setLoading(false);
+    
+    appLogger.error('ContenidoProvider: Error eliminando contenido', error: e);
+    return false;
   }
-  
-  Future<void> loadContenidosRecomendados() async {
-    state = const AsyncValue.loading();
-    try {
-      final contenidos = await _service.obtenerContenidosRecomendados(_gestanteId);
-      state = AsyncValue.data(contenidos);
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
-  
-  void refresh() {
-    loadContenidosRecomendados();
-  }
-}
+});
 
-class ContenidoDetailNotifier extends StateNotifier<AsyncValue<ContenidoModel?>> {
-  final ContenidoService _service;
-  final String _contenidoId;
+/// Provider para sincronización de contenidos
+final sincronizarContenidosProvider = FutureProvider<bool>((ref) async {
+  appLogger.debug('ContenidoProvider: Sincronizando contenidos');
   
-  ContenidoDetailNotifier(this._service, this._contenidoId) : super(const AsyncValue.loading()) {
-    loadContenido();
+  try {
+    // Establecer estado de carga
+    ref.read(contenidoLoadingProvider.notifier).setLoading(true);
+    ref.read(contenidoErrorProvider.notifier).clearError();
+    
+    final service = await ref.read(contenidoServiceProvider.future);
+    await service.syncContenidos();
+    
+    // Limpiar estado de carga
+    ref.read(contenidoLoadingProvider.notifier).setLoading(false);
+    
+    // Invalidar providers para forzar recarga
+    ref.invalidate(contenidosProvider);
+    
+    appLogger.debug('ContenidoProvider: Contenidos sincronizados exitosamente');
+    return true;
+  } catch (e) {
+    // Establecer error y limpiar estado de carga
+    ref.read(contenidoErrorProvider.notifier).setError(e.toString());
+    ref.read(contenidoLoadingProvider.notifier).setLoading(false);
+    
+    appLogger.error('ContenidoProvider: Error sincronizando contenidos', error: e);
+    return false;
   }
-  
-  Future<void> loadContenido() async {
-    state = const AsyncValue.loading();
-    try {
-      final contenido = await _service.obtenerContenidoPorId(_contenidoId);
-      state = AsyncValue.data(contenido);
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
-  
-  Future<void> marcarComoVisto(String gestanteId) async {
-    try {
-      await _service.marcarComoVisto(_contenidoId, gestanteId);
-      await loadContenido(); // Reload to get updated view count
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
-  
-  void refresh() {
-    loadContenido();
-  }
-}
-
-class ProgresoContenidoNotifier extends StateNotifier<AsyncValue<ProgresoContenidoModel?>> {
-  final ContenidoService _service;
-  final ContenidoProgressParams _params;
-  
-  ProgresoContenidoNotifier(this._service, this._params) : super(const AsyncValue.loading()) {
-    loadProgreso();
-  }
-  
-  Future<void> loadProgreso() async {
-    state = const AsyncValue.loading();
-    try {
-      final progreso = await _service.obtenerProgresoContenido(_params.gestanteId, _params.contenidoId);
-      state = AsyncValue.data(progreso);
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
-  
-  Future<void> actualizarProgreso(double porcentaje, int tiempoVisto) async {
-    try {
-      await _service.actualizarProgresoContenido(
-        _params.gestanteId,
-        _params.contenidoId,
-        porcentaje,
-        tiempoVisto,
-      );
-      await loadProgreso(); // Reload to get updated progress
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
-  
-  void refresh() {
-    loadProgreso();
-  }
-}
+});
