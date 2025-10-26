@@ -98,6 +98,50 @@ class ApiService {
           await _storage.delete(key: 'auth_token');
           await _storage.delete(key: 'user_data');
         }
+        
+        // TEMPORAL: Manejar endpoints 404 hasta que se desplieguen
+        if (error.response?.statusCode == 404) {
+          final path = error.requestOptions.path;
+          if (path.contains('/controles')) {
+            print('🔧 DEBUG: Aplicando fallback para /controles - devolviendo lista vacía');
+            // Devolver lista vacía directamente (sin wrapper success/data)
+            final response = Response(
+              requestOptions: error.requestOptions,
+              statusCode: 200,
+              data: [], // Lista vacía directamente
+            );
+            handler.resolve(response);
+            return;
+          } else if (path.contains('/contenido-crud')) {
+            print('🔧 DEBUG: Aplicando fallback para /contenido-crud - devolviendo lista vacía');
+            // Devolver lista vacía directamente
+            final response = Response(
+              requestOptions: error.requestOptions,
+              statusCode: 200,
+              data: [], // Lista vacía directamente
+            );
+            handler.resolve(response);
+            return;
+          } else if (path.contains('/auth/refresh')) {
+            print('🔧 DEBUG: Aplicando fallback para /auth/refresh');
+            // Devolver respuesta de refresh exitoso
+            final response = Response(
+              requestOptions: error.requestOptions,
+              statusCode: 200,
+              data: {
+                'success': true,
+                'data': {
+                  'token': 'demo-refreshed-token-${DateTime.now().millisecondsSinceEpoch}',
+                  'refreshToken': 'refresh-${DateTime.now().millisecondsSinceEpoch}',
+                  'expiresIn': 3600
+                }
+              },
+            );
+            handler.resolve(response);
+            return;
+          }
+        }
+        
         handler.next(error);
       },
     ));

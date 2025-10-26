@@ -161,10 +161,8 @@ class AppConfig {
   
   // Método para obtener URL según plataforma
   static String getApiUrl() {
-    // TEMPORAL: Usar backend local para pruebas
-    // Cambiar a backendBaseUrl para producción
-    return 'http://localhost:3000/api';
-    // return backendBaseUrl;
+    // Volver a producción - los cambios se desplegarán pronto
+    return backendBaseUrl;
   }
   
   // Método para verificar si un rol tiene acceso completo
