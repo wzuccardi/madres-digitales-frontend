@@ -1,0 +1,1 @@
+ C:\\madrinas\\aplicacionWZC\\madres_digitales_flutter_new\\build\\a66aedef5760c6b8ed44e6b61ea667a5\\dart_build_result.json: 

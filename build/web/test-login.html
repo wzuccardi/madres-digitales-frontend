@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Login - Madres Digitales</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }
+        .button:hover { background: #0056b3; }
+        .result { margin: 20px 0; padding: 15px; border-radius: 5px; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .info { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Login - Madres Digitales</h1>
+        
+        <div class="info">
+            <h3>Credenciales de Super Admin:</h3>
+            <p><strong>Email:</strong> wzuccardi@gmail.com</p>
+            <p><strong>Password:</strong> 73102604722</p>
+        </div>
+        
+        <button class="button" onclick="testBackendLogin()">🔐 Test Backend Login (Puerto 3000)</button>
+        <button class="button" onclick="testFlutterLogin()">📱 Test Flutter Login (Puerto 3008)</button>
+        <button class="button" onclick="simulateLogin()">🎭 Simulate Successful Login</button>
+        <button class="button" onclick="clearStorage()">🗑️ Clear Storage</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function showResult(message, type = 'info') {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `<div class="result ${type}">${message}</div>`;
+        }
+
+        async function testBackendLogin() {
+            showResult('🔄 Testing backend login...', 'info');
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'wzuccardi@gmail.com',
+                        password: '73102604722'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult(`✅ Backend login successful!<br>
+                        <strong>User:</strong> ${data.user.nombre}<br>
+                        <strong>Role:</strong> ${data.user.rol}<br>
+                        <strong>Token:</strong> ${data.token.substring(0, 50)}...<br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>`, 'success');
+                } else {
+                    showResult(`❌ Backend login failed: ${data.error || 'Unknown error'}<br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Backend login error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testFlutterLogin() {
+            showResult('🔄 Testing Flutter login...', 'info');
+            
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'wzuccardi@gmail.com',
+                        password: '73102604722'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult(`✅ Flutter login successful!<br>
+                        <strong>User:</strong> ${data.user.nombre}<br>
+                        <strong>Role:</strong> ${data.user.rol}<br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>`, 'success');
+                } else {
+                    showResult(`❌ Flutter login failed: ${data.error || 'Unknown error'}<br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Flutter login error: ${error.message}<br>
+                    This is expected - Flutter is trying to make requests to port 3008 instead of 3000`, 'error');
+            }
+        }
+
+        async function simulateLogin() {
+            showResult('🎭 Simulating successful login...', 'info');
+            
+            try {
+                // First get a real token from backend
+                const response = await fetch('http://localhost:3000/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'wzuccardi@gmail.com',
+                        password: '73102604722'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Store in localStorage (Flutter secure storage equivalent for web)
+                    localStorage.setItem('auth_token', data.token);
+                    localStorage.setItem('user_data', JSON.stringify(data.user));
+                    
+                    showResult(`✅ Login simulated successfully!<br>
+                        <strong>Token stored in localStorage</strong><br>
+                        <strong>User:</strong> ${data.user.nombre}<br>
+                        <strong>Role:</strong> ${data.user.rol}<br>
+                        <br>
+                        🔄 <strong>Now refresh the Flutter app to see the Super Admin button!</strong>`, 'success');
+                } else {
+                    showResult(`❌ Failed to get token: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Simulation error: ${error.message}`, 'error');
+            }
+        }
+
+        function clearStorage() {
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('user_data');
+            showResult('🗑️ Storage cleared. Refresh the Flutter app to see the login screen.', 'info');
+        }
+
+        // Auto-test on load
+        window.onload = function() {
+            showResult('🚀 Ready to test login functionality!', 'info');
+        };
+    </script>
+</body>
+</html>
