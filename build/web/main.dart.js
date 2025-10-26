@@ -120209,35 +120209,36 @@ case 5:return A.p(null,r)
 case 1:return A.o(p.at(-1),r)}})
 return A.q($async$Fq,r)},
 BZ(a,b){return this.aNJ(a,b)},
-aNJ(a,b){var s=0,r=A.r(t.y),q,p=2,o=[],n=this,m,l,k,j,i,h,g,f
+aNJ(a,b){var s=0,r=A.r(t.y),q,p=2,o=[],n=this,m,l,k,j,i,h,g,f,e
 var $async$BZ=A.n(function(c,d){if(c===1){o.push(d)
 s=p}while(true)switch(s){case 0:p=4
 A.bS().$1("\ud83d\udd10 AuthService: Intentando login para "+a)
-j=A.cR($.aew()+"/auth/login",0,null)
-i=t.N
-h=A.X(["Content-Type","application/json","Accept","application/json"],i,i)
+i=A.cR($.aew()+"/auth/login",0,null)
+h=t.N
+g=A.X(["Content-Type","application/json","Accept","application/json"],h,h)
 s=7
-return A.k(A.b5U(j,B.aE.hD(A.X(["email",a,"password",b],i,i)),h),$async$BZ)
+return A.k(A.b5U(i,B.aE.hD(A.X(["email",a,"password",b],h,h)),g),$async$BZ)
 case 7:m=d
 s=m.b===200?8:10
 break
-case 8:j=m
-l=B.aE.dO(0,A.aen(A.aea(j.e)).dO(0,j.w))
+case 8:i=m
+l=B.aE.dO(0,A.aen(A.aea(i.e)).dO(0,i.w))
 s=J.c(J.a5(l,"success"),!0)?11:13
 break
-case 11:n.b=J.a5(l,"token")
-n.c=J.a5(l,"refreshToken")
-n.d=J.a5(l,"user")
+case 11:k=J.a5(l,"data")
+n.b=J.a5(k,"token")
+n.c=J.a5(k,"refreshToken")
+n.d=J.a5(k,"usuario")
 A.bS().$1("\ud83d\udce6 AuthService: Datos recibidos del backend:")
 A.bS().$1("   - Token: "+(n.b!=null?"\u2705":"\u274c"))
 A.bS().$1("   - RefreshToken: "+(n.c!=null?"\u2705":"\u274c"))
 A.bS().$1("   - User data: "+A.h(n.d))
-j=n.d
-A.bS().$1("   - ROL recibido: "+A.h(j==null?null:J.a5(j,"rol")))
+i=n.d
+A.bS().$1("   - ROL recibido: "+A.h(i==null?null:J.a5(i,"rol")))
 s=14
 return A.k(n.ln(),$async$BZ)
-case 14:j=n.d
-A.bS().$1("\u2705 AuthService: Login exitoso para "+A.h(j==null?null:J.a5(j,"nombre")))
+case 14:i=n.d
+A.bS().$1("\u2705 AuthService: Login exitoso para "+A.h(i==null?null:J.a5(i,"nombre")))
 A.bS().$1("   - isAdmin(): "+B.b.m(A.b(["admin","super_admin"],t.s),n.gqp()))
 A.bS().$1("   - isSuperAdmin(): "+(n.gqp()==="super_admin"))
 q=!0
@@ -120259,9 +120260,9 @@ case 9:p=2
 s=6
 break
 case 4:p=3
-f=o.pop()
-k=A.Q(f)
-A.bS().$1("\u274c AuthService: Error en login: "+A.h(k))
+e=o.pop()
+j=A.Q(e)
+A.bS().$1("\u274c AuthService: Error en login: "+A.h(j))
 q=!1
 s=1
 break
@@ -121185,65 +121186,67 @@ case 1:return A.o(p.at(-1),r)}})
 return A.q($async$uS,r)},
 EM(){var s=null,r=null,q=null
 return this.aq3()},
-aq3(){var s=0,r=A.r(t.jS),q,p=2,o=[],n=this,m,l,k,j,i,h,g,f,e,d,c,b,a,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1
-var $async$EM=A.n(function(b2,b3){if(b2===1){o.push(b3)
-s=p}while(true)switch(s){case 0:a8=null
-a9=null
-b0=null
+aq3(){var s=0,r=A.r(t.jS),q,p=2,o=[],n=this,m,l,k,j,i,h,g,f,e,d,c,b,a,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3
+var $async$EM=A.n(function(b4,b5){if(b4===1){o.push(b5)
+s=p}while(true)switch(s){case 0:b0=null
+b1=null
+b2=null
 p=4
-a4=$.a8()
-a4.aH(0,"\ud83d\ude80 DashboardService: Iniciando obtenci\xf3n de estad\xedsticas de la API real")
-a4.aH(0,"\ud83c\udf10 DashboardService: URL base: "+n.b)
+a5=$.a8()
+a5.aH(0,"\ud83d\ude80 DashboardService: Iniciando obtenci\xf3n de estad\xedsticas de la API real")
+a5.aH(0,"\ud83c\udf10 DashboardService: URL base: "+n.b)
 m="/dashboard/estadisticas"
-a4.aH(0,"\ud83d\udccd DashboardService: Endpoint: "+A.h(m))
-a5=t.z
-l=A.z(t.N,a5)
-if(a9!=null)J.bb(l,"municipio_id",a9)
-if(b0!=null&&a8!=null){J.bb(l,"fecha_inicio",b0.cr())
-J.bb(l,"fecha_fin",a8.cr())}a4.aH(0,"\ud83d\udccb DashboardService: Par\xe1metros: "+A.h(l))
-a4.aH(0,"\u23f3 DashboardService: Realizando llamada a la API...")
+a5.aH(0,"\ud83d\udccd DashboardService: Endpoint: "+A.h(m))
+a6=t.z
+l=A.z(t.N,a6)
+if(b1!=null)J.bb(l,"municipio_id",b1)
+if(b2!=null&&b0!=null){J.bb(l,"fecha_inicio",b2.cr())
+J.bb(l,"fecha_fin",b0.cr())}a5.aH(0,"\ud83d\udccb DashboardService: Par\xe1metros: "+A.h(l))
+a5.aH(0,"\u23f3 DashboardService: Realizando llamada a la API...")
 s=7
-return A.k(n.d.qt(0,m,l,a5),$async$EM)
-case 7:k=b3
-a4.aH(0,"\ud83d\udce8 DashboardService: Respuesta recibida - Status: "+A.h(k.c))
-a4.aH(0,"\ufffd DashbooardService: Respuesta recibida - Data Type: "+J.a6(k.a).j(0))
-a4.aH(0,"\ufffd DashboaardService: Respuesta recibida - Data: "+A.h(k.a))
-if(k.c===200&&k.a!=null){a5=t.a
-if(!a5.b(k.a)){a4.jZ(0,"\u274c DashboardService: La respuesta no es un Map<String, dynamic>")
-a4=A.c4("La respuesta de la API no tiene el formato esperado: "+J.a6(k.a).j(0))
-throw A.e(a4)}j=a5.a(k.a)
-a4.aH(0,"\ud83d\udd0d DashboardService: Procesando datos de la API...")
-a4.aH(0,"\ud83d\udc65 DashboardService: total_gestantes: "+A.h(J.a5(j,"total_gestantes")))
-a4.aH(0,"\ud83c\udfe5 DashboardService: controles_realizados: "+A.h(J.a5(j,"controles_realizados")))
-a4.aH(0,"\u26a0\ufe0f DashboardService: alertas_activas: "+A.h(J.a5(j,"alertas_activas")))
-i=A.b(["total_gestantes","controles_realizados","alertas_activas"],t.s)
-for(a4=i,a5=a4.length,a6=0;a6<a4.length;a4.length===a5||(0,A.R)(a4),++a6){h=a4[a6]
-if(!J.iA(j,h))$.a8().q6(B.vD,"\u274c DashboardService: Campo requerido faltante: "+A.h(h),null,null,null)
-else if(J.a5(j,h)==null)$.a8().q6(B.vC,"\u26a0\ufe0f DashboardService: Campo requerido es null: "+A.h(h),null,null,null)}g=n.rk(J.a5(j,"total_gestantes"),"total_gestantes")
-f=n.rk(J.a5(j,"controles_realizados"),"controles_realizados")
-e=n.rk(J.a5(j,"alertas_activas"),"alertas_activas")
-d=n.rk(J.a5(j,"contenidos_vistos"),"contenidos_vistos")
-c=n.rk(J.a5(j,"proximos_controles"),"proximos_controles")
-b=n.azz(J.a5(j,"tasa_cumplimiento"),"tasa_cumplimiento")
-a=n.rk(J.a5(j,"total_medicos"),"total_medicos")
-a0=n.rk(J.a5(j,"total_ips"),"total_ips")
-a1=new A.iG(g,f,e,d,c,b,a,a0,new A.bi(Date.now(),0,!1),null)
-a4=$.a8()
-a4.aH(0,"\u2705 DashboardService: Estad\xedsticas procesadas exitosamente")
-a4.aH(0,"\ud83d\udcca DashboardService: Stats finales: "+A.h(a1))
-q=a1
+return A.k(n.d.qt(0,m,l,a6),$async$EM)
+case 7:k=b5
+a5.aH(0,"\ud83d\udce8 DashboardService: Respuesta recibida - Status: "+A.h(k.c))
+a5.aH(0,"\ufffd DashbooardService: Respuesta recibida - Data Type: "+J.a6(k.a).j(0))
+a5.aH(0,"\ufffd DashboaardService: Respuesta recibida - Data: "+A.h(k.a))
+if(k.c===200&&k.a!=null){a6=t.a
+if(!a6.b(k.a)){a5.jZ(0,"\u274c DashboardService: La respuesta no es un Map<String, dynamic>")
+a5=A.c4("La respuesta de la API no tiene el formato esperado: "+J.a6(k.a).j(0))
+throw A.e(a5)}j=a6.a(k.a)
+a5.aH(0,"\ud83d\udd0d DashboardService: Procesando datos de la API...")
+a7=t.nA.a(J.a5(j,"data"))
+i=a7==null?j:a7
+a5.aH(0,"\ud83d\udc65 DashboardService: totalGestantes: "+A.h(J.a5(i,"totalGestantes")))
+a5.aH(0,"\ud83c\udfe5 DashboardService: controlesRealizados: "+A.h(J.a5(i,"controlesRealizados")))
+a5.aH(0,"\u26a0\ufe0f DashboardService: alertasActivas: "+A.h(J.a5(i,"alertasActivas")))
+h=A.b(["totalGestantes","controlesRealizados","alertasActivas"],t.s)
+for(a5=h,a6=a5.length,a8=0;a8<a5.length;a5.length===a6||(0,A.R)(a5),++a8){g=a5[a8]
+if(!J.iA(i,g))$.a8().q6(B.vD,"\u274c DashboardService: Campo requerido faltante: "+A.h(g),null,null,null)
+else if(J.a5(i,g)==null)$.a8().q6(B.vC,"\u26a0\ufe0f DashboardService: Campo requerido es null: "+A.h(g),null,null,null)}f=n.rk(J.a5(i,"totalGestantes"),"totalGestantes")
+e=n.rk(J.a5(i,"controlesRealizados"),"controlesRealizados")
+d=n.rk(J.a5(i,"alertasActivas"),"alertasActivas")
+c=n.rk(J.a5(i,"contenidosVistos"),"contenidosVistos")
+b=n.rk(J.a5(i,"proximosCitas"),"proximosCitas")
+a=n.azz(J.a5(i,"tasaCumplimiento"),"tasaCumplimiento")
+a0=n.rk(J.a5(i,"totalMedicos"),"totalMedicos")
+a1=n.rk(J.a5(i,"totalIps"),"totalIps")
+a2=new A.iG(f,e,d,c,b,a,a0,a1,new A.bi(Date.now(),0,!1),null)
+a5=$.a8()
+a5.aH(0,"\u2705 DashboardService: Estad\xedsticas procesadas exitosamente")
+a5.aH(0,"\ud83d\udcca DashboardService: Stats finales: "+A.h(a2))
+q=a2
 s=1
-break}else{a2="Error en la respuesta de la API: "+A.h(k.c)
-a4.jZ(0,"\u274c DashboardService: "+A.h(a2))
-a4=A.c4(a2)
-throw A.e(a4)}p=2
+break}else{a3="Error en la respuesta de la API: "+A.h(k.c)
+a5.jZ(0,"\u274c DashboardService: "+A.h(a3))
+a5=A.c4(a3)
+throw A.e(a5)}p=2
 s=6
 break
 case 4:p=3
-b1=o.pop()
-a3=A.Q(b1)
-$.a8().c1(0,"\ud83d\udca5 DashboardService: Error obteniendo estad\xedsticas de la API",a3)
-throw b1
+b3=o.pop()
+a4=A.Q(b3)
+$.a8().c1(0,"\ud83d\udca5 DashboardService: Error obteniendo estad\xedsticas de la API",a4)
+throw b3
 s=6
 break
 case 3:s=2

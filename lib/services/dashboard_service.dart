@@ -277,30 +277,34 @@ class DashboardService {
         final data = response.data as Map<String, dynamic>;
         
         appLogger.info('🔍 DashboardService: Procesando datos de la API...');
-        appLogger.info('👥 DashboardService: total_gestantes: ${data['total_gestantes']}');
-        appLogger.info('🏥 DashboardService: controles_realizados: ${data['controles_realizados']}');
-        appLogger.info('⚠️ DashboardService: alertas_activas: ${data['alertas_activas']}');
+        
+        // Extraer los datos de la respuesta (el backend devuelve data.data)
+        final statsData = data['data'] as Map<String, dynamic>? ?? data;
+        
+        appLogger.info('👥 DashboardService: totalGestantes: ${statsData['totalGestantes']}');
+        appLogger.info('🏥 DashboardService: controlesRealizados: ${statsData['controlesRealizados']}');
+        appLogger.info('⚠️ DashboardService: alertasActivas: ${statsData['alertasActivas']}');
         
         // Verificar campos requeridos
-        final requiredFields = ['total_gestantes', 'controles_realizados', 'alertas_activas'];
+        final requiredFields = ['totalGestantes', 'controlesRealizados', 'alertasActivas'];
         for (final field in requiredFields) {
-          if (!data.containsKey(field)) {
+          if (!statsData.containsKey(field)) {
             appLogger.error('❌ DashboardService: Campo requerido faltante: $field');
-          } else if (data[field] == null) {
+          } else if (statsData[field] == null) {
             appLogger.warn('⚠️ DashboardService: Campo requerido es null: $field');
           }
         }
         
         // Convertir datos de la API a DashboardStats con validación
-        final totalGestantes = _parseIntSafely(data['total_gestantes'], 'total_gestantes');
-        final controlesRealizados = _parseIntSafely(data['controles_realizados'], 'controles_realizados');
-        final alertasActivas = _parseIntSafely(data['alertas_activas'], 'alertas_activas');
-        final contenidosVistos = _parseIntSafely(data['contenidos_vistos'], 'contenidos_vistos');
-        final proximosControles = _parseIntSafely(data['proximos_controles'], 'proximos_controles');
-        final tasaCumplimiento = _parseDoubleSafely(data['tasa_cumplimiento'], 'tasa_cumplimiento');
+        final totalGestantes = _parseIntSafely(statsData['totalGestantes'], 'totalGestantes');
+        final controlesRealizados = _parseIntSafely(statsData['controlesRealizados'], 'controlesRealizados');
+        final alertasActivas = _parseIntSafely(statsData['alertasActivas'], 'alertasActivas');
+        final contenidosVistos = _parseIntSafely(statsData['contenidosVistos'], 'contenidosVistos');
+        final proximosControles = _parseIntSafely(statsData['proximosCitas'], 'proximosCitas');
+        final tasaCumplimiento = _parseDoubleSafely(statsData['tasaCumplimiento'], 'tasaCumplimiento');
         
-        final totalMedicos = _parseIntSafely(data['total_medicos'], 'total_medicos');
-        final totalIps = _parseIntSafely(data['total_ips'], 'total_ips');
+        final totalMedicos = _parseIntSafely(statsData['totalMedicos'], 'totalMedicos');
+        final totalIps = _parseIntSafely(statsData['totalIps'], 'totalIps');
         
         final stats = DashboardStats(
           totalGestantes: totalGestantes,
