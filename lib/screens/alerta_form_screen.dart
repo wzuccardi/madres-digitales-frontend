@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:madres_digitales_flutter_new/services/alerta_service.dart';
+import 'package:madres_digitales_flutter_new/services/gestante_service.dart';
 import 'package:madres_digitales_flutter_new/providers/service_providers.dart';
 import 'package:madres_digitales_flutter_new/utils/logger.dart';
 
@@ -20,7 +21,7 @@ class _AlertaFormScreenState extends ConsumerState<AlertaFormScreen> {
   String _tipoAlerta = 'manual';
   String _nivelPrioridad = 'media';
   final List<String> _sintomasSeleccionados = [];
-  List<dynamic> _gestantesDisponibles = [];
+  List<Gestante> _gestantesDisponibles = [];
   bool _isLoading = false;
   bool _isLoadingGestantes = true;
 
@@ -190,18 +191,18 @@ class _AlertaFormScreenState extends ConsumerState<AlertaFormScreen> {
                               ),
                               items: _gestantesDisponibles.map((gestante) {
                                 return DropdownMenuItem<String>(
-                                  value: gestante['id'],
+                                  value: gestante.id,
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Text(
-                                        gestante['nombre'] ?? '',
+                                        gestante.nombre,
                                         style: const TextStyle(fontWeight: FontWeight.bold),
                                       ),
-                                      if (gestante['documento'] != null && gestante['documento'].isNotEmpty)
+                                      if (gestante.documento.isNotEmpty)
                                         Text(
-                                          'CC: ${gestante['documento']}',
+                                          'CC: ${gestante.documento}',
                                           style: TextStyle(
                                             fontSize: 12,
                                             color: Colors.grey[600],
