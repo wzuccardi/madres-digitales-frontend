@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
-import '../../utils/logger.dart';
+import '../../utils/logger.dart' show appLogger;
 
 class AudioPlayerWidget extends StatefulWidget {
   final String audioPath; // Puede ser URL o path local
@@ -95,14 +95,14 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
         await _audioPlayer.resume();
       }
 
-      AppLogger.info('Audio inicializado: ${widget.audioPath}');
+      appLogger.info('Audio inicializado: ${widget.audioPath}');
     } catch (e) {
       setState(() {
         _hasError = true;
         _errorMessage = e.toString();
         _isLoading = false;
       });
-      AppLogger.error('Error inicializando audio: $e');
+      appLogger.error('Error inicializando audio: $e');
     }
   }
 
@@ -114,7 +114,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
         await _audioPlayer.resume();
       }
     } catch (e) {
-      AppLogger.error('Error reproduciendo/pausando audio: $e');
+      appLogger.error('Error reproduciendo/pausando audio: $e');
     }
   }
 
@@ -125,7 +125,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
         _position = Duration.zero;
       });
     } catch (e) {
-      AppLogger.error('Error deteniendo audio: $e');
+      appLogger.error('Error deteniendo audio: $e');
     }
   }
 
@@ -133,7 +133,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
     try {
       await _audioPlayer.seek(position);
     } catch (e) {
-      AppLogger.error('Error buscando posición: $e');
+      appLogger.error('Error buscando posición: $e');
     }
   }
 

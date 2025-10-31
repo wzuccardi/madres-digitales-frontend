@@ -3,6 +3,23 @@
 
 import 'package:flutter/material.dart';
 
+// Métodos de parsing seguro para evitar errores de tipo
+int _parseInt(dynamic value) {
+  if (value == null) return 0;
+  if (value is int) return value;
+  if (value is double) return value.toInt();
+  if (value is String) return int.tryParse(value) ?? 0;
+  return 0;
+}
+
+double _parseDouble(dynamic value) {
+  if (value == null) return 0.0;
+  if (value is double) return value;
+  if (value is int) return value.toDouble();
+  if (value is String) return double.tryParse(value) ?? 0.0;
+  return 0.0;
+}
+
 // Modelo para Municipio con estadísticas integradas
 class MunicipioIntegrado {
   final String id;
@@ -65,13 +82,13 @@ class MunicipioIntegrado {
       longitud: json['longitud']?.toDouble(),
       created_at: DateTime.parse(json['created_at'] as String),
       updated_at: DateTime.parse(json['updated_at'] as String? ?? json['created_at'] as String),
-      totalGestantes: estadisticas['gestantes'] as int? ?? 0,
-      totalMedicos: estadisticas['medicos'] as int? ?? 0,
-      totalIPS: estadisticas['ips'] as int? ?? 0,
-      totalMadrinas: estadisticas['madrinas'] as int? ?? 0,
-      gestantesActivas: estadisticas['gestantes_activas'] as int? ?? 0,
-      gestantesRiesgoAlto: estadisticas['gestantes_riesgo_alto'] as int? ?? 0,
-      alertasActivas: estadisticas['alertas_activas'] as int? ?? 0,
+      totalGestantes: _parseInt(estadisticas['gestantes']),
+      totalMedicos: _parseInt(estadisticas['medicos']),
+      totalIPS: _parseInt(estadisticas['ips']),
+      totalMadrinas: _parseInt(estadisticas['madrinas']),
+      gestantesActivas: _parseInt(estadisticas['gestantes_activas']),
+      gestantesRiesgoAlto: _parseInt(estadisticas['gestantes_riesgo_alto']),
+      alertasActivas: _parseInt(estadisticas['alertas_activas']),
       ips: json['ips'] != null 
           ? (json['ips'] as List).map((e) => IPSIntegrada.fromJson(e)).toList()
           : null,
@@ -161,16 +178,13 @@ class IPSIntegrada {
   });
 
   factory IPSIntegrada.fromJson(Map<String, dynamic> json) {
-    // Extraer coordenadas si vienen en formato GeoJSON
+    // Extraer coordenadas del formato del backend
     double? lat, lng;
     if (json['coordenadas'] != null) {
       final coordenadas = json['coordenadas'];
-      if (coordenadas is Map && coordenadas['coordinates'] is List) {
-        final coords = coordenadas['coordinates'] as List;
-        if (coords.length >= 2) {
-          lng = coords[0]?.toDouble();
-          lat = coords[1]?.toDouble();
-        }
+      if (coordenadas is Map) {
+        lat = coordenadas['latitud']?.toDouble();
+        lng = coordenadas['longitud']?.toDouble();
       }
     }
 
@@ -182,17 +196,25 @@ class IPSIntegrada {
       direccion: json['direccion'] as String,
       telefono: json['telefono'] as String?,
       email: json['email'] as String?,
-      nivelAtencion: json['nivel_atencion'] as String? ?? 'primario',
+      // CORREGIDO: El backend envía 'nivel' no 'nivel_atencion'
+      nivelAtencion: json['nivel'] as String? ?? json['nivel_atencion'] as String? ?? 'I',
       municipioId: json['municipio_id'] as String?,
-      municipioNombre: json['municipio_nombre'] as String?,
+      // CORREGIDO: El backend envía 'municipio' como string
+      municipioNombre: json['municipio'] as String? ?? json['municipio_nombre'] as String?,
       latitud: lat ?? json['latitud']?.toDouble(),
       longitud: lng ?? json['longitud']?.toDouble(),
-      activa: json['activa'] as bool? ?? true,
-      created_at: DateTime.parse(json['created_at'] as String),
-      updated_at: DateTime.parse(json['updated_at'] as String? ?? json['created_at'] as String),
-      totalMedicos: estadisticas['medicos'] as int? ?? 0,
-      totalGestantesAsignadas: estadisticas['gestantes_asignadas'] as int? ?? 0,
-      controlesRealizados: estadisticas['controles_realizados'] as int? ?? 0,
+      // CORREGIDO: El backend puede usar 'activo' en lugar de 'activa'
+      activa: json['activa'] as bool? ?? json['activo'] as bool? ?? true,
+      created_at: json['created_at'] != null 
+          ? DateTime.parse(json['created_at'] as String)
+          : DateTime.now(),
+      updated_at: json['updated_at'] != null 
+          ? DateTime.parse(json['updated_at'] as String)
+          : DateTime.now(),
+      // CORREGIDO: El backend envía 'medicosAsignados' y 'gestantesAsignadas'
+      totalMedicos: _parseInt(json['medicosAsignados']) != 0 ? _parseInt(json['medicosAsignados']) : _parseInt(estadisticas['medicos']),
+      totalGestantesAsignadas: _parseInt(json['gestantesAsignadas']) != 0 ? _parseInt(json['gestantesAsignadas']) : _parseInt(estadisticas['gestantes_asignadas']),
+      controlesRealizados: _parseInt(estadisticas['controles_realizados']),
       especialidades: json['especialidades'] != null 
           ? List<String>.from(json['especialidades'])
           : [],
@@ -311,18 +333,29 @@ class MedicoIntegrado {
       telefono: json['telefono'] as String?,
       email: json['email'] as String?,
       especialidad: json['especialidad'] as String? ?? 'Medicina General',
-      registroMedico: json['registro_medico'] as String?,
+      // CORREGIDO: El backend envía 'registroMedico' (camelCase)
+      registroMedico: json['registroMedico'] as String? ?? json['registro_medico'] as String?,
       ipsId: json['ips_id'] as String?,
-      ipsNombre: json['ips_nombre'] as String?,
+      // CORREGIDO: El backend envía 'ips' como string, no objeto
+      ipsNombre: json['ips'] as String? ?? json['ips_nombre'] as String?,
       municipioId: json['municipio_id'] as String?,
-      municipioNombre: json['municipio_nombre'] as String?,
+      // CORREGIDO: El backend envía 'municipio' como string, no objeto
+      municipioNombre: json['municipio'] as String? ?? json['municipio_nombre'] as String?,
       activo: json['activo'] as bool? ?? true,
-      created_at: DateTime.parse(json['created_at'] as String),
-      updated_at: DateTime.parse(json['updated_at'] as String? ?? json['created_at'] as String),
-      totalGestantesAsignadas: estadisticas['gestantes_asignadas'] as int? ?? 0,
-      controlesRealizados: estadisticas['controles_realizados'] as int? ?? 0,
-      controlesEsteMes: estadisticas['controles_este_mes'] as int? ?? 0,
-      promedioControlesPorGestante: estadisticas['promedio_controles']?.toDouble(),
+      // CORREGIDO: El backend envía 'fechaCreacion' (camelCase)
+      created_at: json['fechaCreacion'] != null 
+          ? DateTime.parse(json['fechaCreacion'] as String)
+          : json['created_at'] != null 
+              ? DateTime.parse(json['created_at'] as String)
+              : DateTime.now(),
+      updated_at: json['updated_at'] != null 
+          ? DateTime.parse(json['updated_at'] as String)
+          : DateTime.now(),
+      // CORREGIDO: El backend envía 'gestantesAsignadas' (camelCase)
+      totalGestantesAsignadas: _parseInt(json['gestantesAsignadas']) != 0 ? _parseInt(json['gestantesAsignadas']) : _parseInt(estadisticas['gestantes_asignadas']),
+      controlesRealizados: _parseInt(estadisticas['controles_realizados']),
+      controlesEsteMes: _parseInt(estadisticas['controles_este_mes']),
+      promedioControlesPorGestante: _parseDouble(estadisticas['promedio_controles']),
       horariosAtencion: json['horarios_atencion'] as Map<String, dynamic>?,
     );
   }
@@ -422,16 +455,16 @@ class ResumenIntegrado {
 
   factory ResumenIntegrado.fromJson(Map<String, dynamic> json) {
     return ResumenIntegrado(
-      totalMunicipios: json['total_municipios'] as int? ?? 0,
-      municipiosActivos: json['municipios_activos'] as int? ?? 0,
-      totalIPS: json['total_ips'] as int? ?? 0,
-      ipsActivas: json['ips_activas'] as int? ?? 0,
-      totalMedicos: json['total_medicos'] as int? ?? 0,
-      medicosActivos: json['medicos_activos'] as int? ?? 0,
-      totalGestantes: json['total_gestantes'] as int? ?? 0,
-      gestantesActivas: json['gestantes_activas'] as int? ?? 0,
-      alertasActivas: json['alertas_activas'] as int? ?? 0,
-      controlesEsteMes: json['controles_este_mes'] as int? ?? 0,
+      totalMunicipios: _parseInt(json['total_municipios']),
+      municipiosActivos: _parseInt(json['municipios_activos']),
+      totalIPS: _parseInt(json['total_ips']),
+      ipsActivas: _parseInt(json['ips_activas']),
+      totalMedicos: _parseInt(json['total_medicos']),
+      medicosActivos: _parseInt(json['medicos_activos']),
+      totalGestantes: _parseInt(json['total_gestantes']),
+      gestantesActivas: _parseInt(json['gestantes_activas']),
+      alertasActivas: _parseInt(json['alertas_activas']),
+      controlesEsteMes: _parseInt(json['controles_este_mes']),
       distribucionNivelesAtencion: Map<String, int>.from(
         json['distribucion_niveles_atencion'] as Map<String, dynamic>? ?? {}
       ),

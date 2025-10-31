@@ -1,5 +1,4 @@
-import 'dart:async';
-import 'package:flutter/foundation.dart';
+﻿import 'dart:async';
 import 'package:madres_digitales_flutter_new/services/api_service.dart';
 import 'package:madres_digitales_flutter_new/services/permission_cache_service.dart';
 import 'package:madres_digitales_flutter_new/utils/logger.dart';
@@ -13,13 +12,13 @@ class PermissionService {
   // NUEVO: Stream subscription para eventos del cache
   StreamSubscription<PermissionCacheEvent>? _cacheEventSubscription;
   
-  // NUEVO: Mapa para control de concurrencia en verificación de permisos
+  // NUEVO: Mapa para control de concurrencia en verificaciÃ³n de permisos
   final Map<String, Completer<bool>> _permissionChecks = {};
   
-  // NUEVO: Tiempo mínimo entre verificaciones del mismo permiso (5 segundos)
+  // NUEVO: Tiempo mÃ­nimo entre verificaciones del mismo permiso (5 segundos)
   static const Duration _minTimeBetweenChecks = Duration(seconds: 5);
   
-  // NUEVO: Mapa para registrar tiempo de última verificación
+  // NUEVO: Mapa para registrar tiempo de Ãºltima verificaciÃ³n
   final Map<String, DateTime> _lastCheckTimes = {};
 
   PermissionService(this._apiService) {
@@ -58,40 +57,35 @@ class PermissionService {
 
   /// Verificar si tiene permiso sobre una gestante con cache y control de concurrencia
   Future<bool> tienePermisoSobreGestante(String gestanteId, String accion) async {
-    debugPrint('🔐 PermissionService: Verificando permiso "$accion" para gestante $gestanteId');
     
-    // NUEVO: Crear clave única para la verificación
+    // NUEVO: Crear clave Ãºnica para la verificaciÃ³n
     final checkKey = '${gestanteId}_$accion';
     
-    // NUEVO: Verificar si ya hay una verificación en progreso
+    // NUEVO: Verificar si ya hay una verificaciÃ³n en progreso
     if (_permissionChecks.containsKey(checkKey)) {
-      debugPrint('🔐 PermissionService: Verificación ya en progreso, esperando resultado...');
       try {
         return await _permissionChecks[checkKey]!.future;
       } catch (e) {
-        debugPrint('❌ PermissionService: Error en verificación previa: $e');
-        // Si la verificación previa falló, continuar con nueva verificación
+        // Si la verificaciÃ³n previa fallÃ³, continuar con nueva verificaciÃ³n
       }
     }
     
-    // NUEVO: Verificar si pasó tiempo mínimo desde última verificación
+    // NUEVO: Verificar si pasÃ³ tiempo mÃ­nimo desde Ãºltima verificaciÃ³n
     final lastCheckTime = _lastCheckTimes[checkKey];
     if (lastCheckTime != null) {
       final tiempoDesdeUltimaVerificacion = DateTime.now().difference(lastCheckTime);
       if (tiempoDesdeUltimaVerificacion < _minTimeBetweenChecks) {
-        debugPrint('🔐 PermissionService: Verificación muy reciente, usando cache...');
         
         // Intentar obtener del cache sin forzar recarga
         final cachedPermissions = await _cacheService.getPermissions(gestanteId);
         if (cachedPermissions != null) {
           final tienePermiso = cachedPermissions.contains(accion);
-          debugPrint('🔐 PermissionService: Permiso desde cache reciente: $tienePermiso');
           return tienePermiso;
         }
       }
     }
     
-    // NUEVO: Crear completer para la verificación
+    // NUEVO: Crear completer para la verificaciÃ³n
     final completer = Completer<bool>();
     _permissionChecks[checkKey] = completer;
     
@@ -101,9 +95,8 @@ class PermissionService {
       
       if (cachedPermissions != null) {
         final tienePermiso = cachedPermissions.contains(accion);
-        debugPrint('🔐 PermissionService: Permiso desde cache: $tienePermiso');
         
-        // NUEVO: Actualizar tiempo de última verificación
+        // NUEVO: Actualizar tiempo de Ãºltima verificaciÃ³n
         _lastCheckTimes[checkKey] = DateTime.now();
         
         // NUEVO: Liberar completer
@@ -113,8 +106,7 @@ class PermissionService {
         return tienePermiso;
       }
       
-      // NUEVO: Si no está en cache, verificar desde API
-      debugPrint('🔐 PermissionService: Verificando desde API...');
+      // NUEVO: Si no estÃ¡ en cache, verificar desde API
       final response = await _apiService.get('/api/permisos/verificar', queryParameters: {
         'gestanteId': gestanteId,
         'accion': accion,
@@ -126,15 +118,13 @@ class PermissionService {
             ? Set<String>.from(response.data['data']['permisos'])
             : <String>{};
         
-        debugPrint('🔐 PermissionService: Permiso desde API: $tienePermiso');
         
         // NUEVO: Guardar en cache
         if (tienePermiso && permisos.isNotEmpty) {
           await _cacheService.savePermissions(gestanteId, permisos);
-          debugPrint('🔐 PermissionService: Permisos guardados en cache');
         }
         
-        // NUEVO: Actualizar tiempo de última verificación
+        // NUEVO: Actualizar tiempo de Ãºltima verificaciÃ³n
         _lastCheckTimes[checkKey] = DateTime.now();
         
         // NUEVO: Liberar completer
@@ -143,10 +133,9 @@ class PermissionService {
         
         return tienePermiso;
       } else {
-        throw Exception('Respuesta inválida del servidor');
+        throw Exception('Respuesta invÃ¡lida del servidor');
       }
     } catch (e) {
-      debugPrint('❌ PermissionService: Error verificando permiso: $e');
       'Error verificando permiso'.error(error: e, context: {
         'gestanteId': gestanteId,
         'accion': accion,
@@ -160,22 +149,19 @@ class PermissionService {
     }
   }
 
-  /// NUEVO: Invalidar cache de permisos para una gestante específica
+  /// NUEVO: Invalidar cache de permisos para una gestante especÃ­fica
   Future<void> invalidarPermisosGestante(String gestanteId) async {
-    debugPrint('🔐 PermissionService: Invalidando permisos para gestante $gestanteId');
     
     try {
       await _cacheService.invalidatePermissions(gestanteId);
       
-      // NUEVO: Limpiar tiempo de última verificación para esta gestante
+      // NUEVO: Limpiar tiempo de Ãºltima verificaciÃ³n para esta gestante
       final keysToRemove = _lastCheckTimes.keys.where((key) => key.startsWith('${gestanteId}_')).toList();
       for (final key in keysToRemove) {
         _lastCheckTimes.remove(key);
       }
       
-      debugPrint('🔐 PermissionService: Permisos invalidados correctamente');
     } catch (e) {
-      debugPrint('❌ PermissionService: Error invalidando permisos: $e');
       'Error invalidando permisos'.error(error: e, context: {
         'gestanteId': gestanteId,
       });
@@ -184,35 +170,29 @@ class PermissionService {
 
   /// NUEVO: Invalidar todo el cache de permisos
   Future<void> invalidarTodosLosPermisos() async {
-    debugPrint('🔐 PermissionService: Invalidando todo el cache de permisos');
     
     try {
       await _cacheService.invalidateAllPermissions();
       
-      // NUEVO: Limpiar todos los tiempos de última verificación
+      // NUEVO: Limpiar todos los tiempos de Ãºltima verificaciÃ³n
       _lastCheckTimes.clear();
       
-      debugPrint('🔐 PermissionService: Todo el cache invalidado correctamente');
     } catch (e) {
-      debugPrint('❌ PermissionService: Error invalidando todo el cache: $e');
       'Error invalidando todo el cache'.error(error: e);
     }
   }
 
   /// NUEVO: Limpiar cache expirado
   Future<void> limpiarCacheExpirado() async {
-    debugPrint('🔐 PermissionService: Limpiando cache expirado');
     
     try {
       await _cacheService.cleanExpiredCache();
-      debugPrint('🔐 PermissionService: Cache expirado limpiado correctamente');
     } catch (e) {
-      debugPrint('❌ PermissionService: Error limpiando cache expirado: $e');
       'Error limpiando cache expirado'.error(error: e);
     }
   }
 
-  /// NUEVO: Obtener estadísticas del cache
+  /// NUEVO: Obtener estadÃ­sticas del cache
   Future<Map<String, dynamic>> obtenerEstadisticasCache() async {
     try {
       final cacheStats = await _cacheService.getCacheStats();
@@ -223,21 +203,19 @@ class PermissionService {
         'lastCheckTimesCount': _lastCheckTimes.length,
       };
     } catch (e) {
-      debugPrint('❌ PermissionService: Error obteniendo estadísticas del cache: $e');
-      'Error obteniendo estadísticas del cache'.error(error: e);
+      'Error obteniendo estadÃ­sticas del cache'.error(error: e);
       return {};
     }
   }
 
   /// NUEVO: Forzar recarga de permisos desde API
   Future<bool> recargarPermisosDesdeAPI(String gestanteId) async {
-    debugPrint('🔐 PermissionService: Forzando recarga de permisos desde API para gestante $gestanteId');
     
     try {
       // NUEVO: Invalidar cache para forzar recarga
       await _cacheService.invalidatePermissions(gestanteId);
       
-      // NUEVO: Limpiar tiempos de última verificación para esta gestante
+      // NUEVO: Limpiar tiempos de Ãºltima verificaciÃ³n para esta gestante
       final keysToRemove = _lastCheckTimes.keys.where((key) => key.startsWith('${gestanteId}_')).toList();
       for (final key in keysToRemove) {
         _lastCheckTimes.remove(key);
@@ -254,15 +232,13 @@ class PermissionService {
         // NUEVO: Guardar en cache
         if (permisos.isNotEmpty) {
           await _cacheService.savePermissions(gestanteId, permisos);
-          debugPrint('🔐 PermissionService: Permisos recargados y guardados en cache');
         }
         
         return true;
       } else {
-        throw Exception('Respuesta inválida del servidor');
+        throw Exception('Respuesta invÃ¡lida del servidor');
       }
     } catch (e) {
-      debugPrint('❌ PermissionService: Error recargando permisos desde API: $e');
       'Error recargando permisos desde API'.error(error: e, context: {
         'gestanteId': gestanteId,
       });
@@ -270,9 +246,8 @@ class PermissionService {
     }
   }
 
-  /// NUEVO: Verificar múltiples permisos a la vez
+  /// NUEVO: Verificar mÃºltiples permisos a la vez
   Future<Map<String, bool>> verificarMultiplesPermisos(String gestanteId, List<String> acciones) async {
-    debugPrint('🔐 PermissionService: Verificando múltiples permisos para gestante $gestanteId');
     
     final resultados = <String, bool>{};
     
@@ -281,7 +256,7 @@ class PermissionService {
       final cachedPermissions = await _cacheService.getPermissions(gestanteId);
       
       if (cachedPermissions != null) {
-        // NUEVO: Verificar cuáles permisos están en cache
+        // NUEVO: Verificar cuÃ¡les permisos estÃ¡n en cache
         final permisosEnCache = <String>{};
         final permisosFaltantes = <String>[];
         
@@ -295,7 +270,6 @@ class PermissionService {
           }
         }
         
-        debugPrint('🔐 PermissionService: ${permisosEnCache.length} permisos encontrados en cache, ${permisosFaltantes.length} faltantes');
         
         // NUEVO: Si faltan permisos, verificarlos individualmente
         if (permisosFaltantes.isNotEmpty) {
@@ -312,8 +286,7 @@ class PermissionService {
       
       return resultados;
     } catch (e) {
-      debugPrint('❌ PermissionService: Error verificando múltiples permisos: $e');
-      'Error verificando múltiples permisos'.error(error: e, context: {
+      'Error verificando mÃºltiples permisos'.error(error: e, context: {
         'gestanteId': gestanteId,
         'acciones': acciones,
       });

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../services/medico_service.dart';
 import '../shared/widgets/app_bar_with_logo.dart';
@@ -37,10 +37,10 @@ class _MedicosScreenState extends State<MedicosScreen> {
   }
 
   Future<void> _loadMedicos() async {
-    appLogger.info('_MedicosScreenState: Iniciando carga de médicos');
+    appLogger.info('_MedicosScreenState: Iniciando carga de mÃ©dicos');
     
     if (_isDisposed) {
-      appLogger.error('_MedicosScreenState: Widget dispuesto, cancelando carga de médicos');
+      appLogger.error('_MedicosScreenState: Widget dispuesto, cancelando carga de mÃ©dicos');
       return;
     }
     
@@ -53,9 +53,9 @@ class _MedicosScreenState extends State<MedicosScreen> {
     });
     
     try {
-      appLogger.info('_MedicosScreenState: Obteniendo médicos del servicio');
+      appLogger.info('_MedicosScreenState: Obteniendo mÃ©dicos del servicio');
       final medicos = await _medicoService.getAllMedicos();
-      appLogger.info('_MedicosScreenState: Médicos obtenidos: ${medicos.length}');
+      appLogger.info('_MedicosScreenState: MÃ©dicos obtenidos: ${medicos.length}');
       
       // Usar WidgetsBinding para evitar setState durante build
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -65,13 +65,13 @@ class _MedicosScreenState extends State<MedicosScreen> {
             _filteredMedicosList = medicos;
             _isLoading = false;
           });
-          appLogger.info('_MedicosScreenState: Estado actualizado con médicos cargados');
+          appLogger.info('_MedicosScreenState: Estado actualizado con mÃ©dicos cargados');
         } else {
           appLogger.error('_MedicosScreenState: Widget no montado o dispuesto, no se actualiza estado');
         }
       });
     } catch (e) {
-      appLogger.error('_MedicosScreenState: Error cargando médicos', error: e);
+      appLogger.error('_MedicosScreenState: Error cargando mÃ©dicos', error: e);
       
       // Usar WidgetsBinding para evitar setState durante build
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -80,7 +80,7 @@ class _MedicosScreenState extends State<MedicosScreen> {
           appLogger.info('_MedicosScreenState: Estado de carga actualizado a false');
           
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error al cargar médicos: $e')),
+            SnackBar(content: Text('Error al cargar mÃ©dicos: $e')),
           );
         } else {
           appLogger.error('_MedicosScreenState: Widget no montado o dispuesto en catch');
@@ -90,7 +90,7 @@ class _MedicosScreenState extends State<MedicosScreen> {
   }
 
   void _filterMedicos(String query) {
-    appLogger.info('_MedicosScreenState: Filtrando médicos con query: $query');
+    appLogger.info('_MedicosScreenState: Filtrando mÃ©dicos con query: $query');
     
     // Usar WidgetsBinding para evitar setState durante build
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -99,7 +99,7 @@ class _MedicosScreenState extends State<MedicosScreen> {
           _searchQuery = query;
           if (query.isEmpty) {
             _filteredMedicosList = _medicosList;
-            appLogger.info('_MedicosScreenState: Filtro eliminado, mostrando todos los médicos');
+            appLogger.info('_MedicosScreenState: Filtro eliminado, mostrando todos los mÃ©dicos');
           } else {
             _filteredMedicosList = _medicosList.where((medico) {
               final nombre = (medico['nombre'] ?? '').toString().toLowerCase();
@@ -110,7 +110,7 @@ class _MedicosScreenState extends State<MedicosScreen> {
                      documento.contains(searchLower) ||
                      especialidad.contains(searchLower);
             }).toList();
-            appLogger.info('_MedicosScreenState: Médicos filtrados: ${_filteredMedicosList.length}');
+            appLogger.info('_MedicosScreenState: MÃ©dicos filtrados: ${_filteredMedicosList.length}');
           }
         });
       } else {
@@ -123,8 +123,8 @@ class _MedicosScreenState extends State<MedicosScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirmar eliminación'),
-        content: Text('¿Está seguro de eliminar al médico "$nombre"?'),
+        title: const Text('Confirmar eliminaciÃ³n'),
+        content: Text('Â¿EstÃ¡ seguro de eliminar al mÃ©dico "$nombre"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -144,14 +144,14 @@ class _MedicosScreenState extends State<MedicosScreen> {
         await _medicoService.deleteMedico(id);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Médico eliminado exitosamente')),
+            const SnackBar(content: Text('MÃ©dico eliminado exitosamente')),
           );
         }
         _loadMedicos();
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error al eliminar médico: $e')),
+            SnackBar(content: Text('Error al eliminar mÃ©dico: $e')),
           );
         }
       }
@@ -173,7 +173,7 @@ class _MedicosScreenState extends State<MedicosScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBarWithLogo(
-        title: 'Médicos',
+        title: 'MÃ©dicos',
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -184,7 +184,7 @@ class _MedicosScreenState extends State<MedicosScreen> {
       ),
       body: Column(
         children: [
-          // Barra de búsqueda
+          // Barra de bÃºsqueda
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(
@@ -198,7 +198,7 @@ class _MedicosScreenState extends State<MedicosScreen> {
                         onPressed: () {
                           _searchController.clear();
                           _filterMedicos('');
-                          appLogger.info('_MedicosScreenState: Búsqueda limpiada');
+                          appLogger.info('_MedicosScreenState: BÃºsqueda limpiada');
                         },
                       )
                     : null,
@@ -216,7 +216,7 @@ class _MedicosScreenState extends State<MedicosScreen> {
             child: Row(
               children: [
                 Text(
-                  '${_filteredMedicosList.length} médicos encontrados',
+                  '${_filteredMedicosList.length} mÃ©dicos encontrados',
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
               ],
@@ -225,7 +225,7 @@ class _MedicosScreenState extends State<MedicosScreen> {
 
           const SizedBox(height: 8),
 
-          // Lista de médicos
+          // Lista de mÃ©dicos
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -239,8 +239,8 @@ class _MedicosScreenState extends State<MedicosScreen> {
                             const SizedBox(height: 16),
                             Text(
                               _searchQuery.isEmpty
-                                  ? 'No hay médicos registrados'
-                                  : 'No se encontraron médicos',
+                                  ? 'No hay mÃ©dicos registrados'
+                                  : 'No se encontraron mÃ©dicos',
                               style: TextStyle(
                                 fontSize: 18,
                                 color: Colors.grey[600],
@@ -270,11 +270,11 @@ class _MedicosScreenState extends State<MedicosScreen> {
                                 children: [
                                   const SizedBox(height: 4),
                                   if (medico['documento'] != null) Text('Documento: ${medico['documento']}'),
-                                  if (medico['registro_medico'] != null) Text('Registro: ${medico['registro_medico']}'),
+                                  if (medico['registroMedico'] != null) Text('Registro: ${medico['registroMedico']}'),
                                   if (medico['especialidad'] != null) Text('Especialidad: ${medico['especialidad']}'),
-                                  if (medico['telefono'] != null) Text('📞 ${medico['telefono']}'),
-                                  if (medico['email'] != null) Text('📧 ${medico['email']}'),
-                                  if (medico['ips'] != null) Text('🏥 ${medico['ips']['nombre'] ?? 'Sin IPS asignada'}'),
+                                  if (medico['telefono'] != null) Text('ðŸ“ž ${medico['telefono']}'),
+                                  if (medico['email'] != null) Text('ðŸ“§ ${medico['email']}'),
+                                  if (medico['ips'] != null) Text('ðŸ¥ ${medico['ips']}'),
                                 ],
                               ),
                               trailing: PopupMenuButton(
@@ -302,24 +302,16 @@ class _MedicosScreenState extends State<MedicosScreen> {
                                 ],
                                 onSelected: (value) async {
                                   if (value == 'edit') {
-                                    print('🏥 MedicosScreen: ========== EDITANDO MÉDICO ==========');
-                                    print('🏥 MedicosScreen: ID del médico: ${medico['id']}');
-                                    print('🏥 MedicosScreen: Nombre del médico: ${medico['nombre']}');
-                                    print('🏥 MedicosScreen: Navegando al formulario de edición con GoRouter...');
                                     
                                     context.push('/medicos/editar/${medico['id']}', extra: medico);
                                     
-                                    // Recargar después de un delay para simular regreso
+                                    // Recargar despuÃ©s de un delay para simular regreso
                                     Future.delayed(const Duration(seconds: 1), () {
                                       if (mounted) {
-                                        print('🏥 MedicosScreen: Recargando lista de médicos...');
                                         _loadMedicos();
                                       }
                                     });
                                   } else if (value == 'delete') {
-                                    print('🏥 MedicosScreen: ========== ELIMINANDO MÉDICO ==========');
-                                    print('🏥 MedicosScreen: ID del médico: ${medico['id']}');
-                                    print('🏥 MedicosScreen: Nombre del médico: ${medico['nombre']}');
                                     _deleteMedico(medico['id'], medico['nombre'] ?? 'Sin nombre');
                                   }
                                 },
@@ -334,23 +326,21 @@ class _MedicosScreenState extends State<MedicosScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          print('🏥 MedicosScreen: ========== CREANDO NUEVO MÉDICO ==========');
-          print('🏥 MedicosScreen: Navegando al formulario de creación con GoRouter...');
           
           context.push('/medicos/nuevo');
           
-          // Recargar después de un delay para simular regreso
+          // Recargar despuÃ©s de un delay para simular regreso
           Future.delayed(const Duration(seconds: 1), () {
             if (mounted) {
-              print('🏥 MedicosScreen: Recargando lista de médicos...');
               _loadMedicos();
             }
           });
         },
         icon: const Icon(Icons.add),
-        label: const Text('Nuevo Médico'),
+        label: const Text('Nuevo MÃ©dico'),
       ),
 
     );
   }
 }
+

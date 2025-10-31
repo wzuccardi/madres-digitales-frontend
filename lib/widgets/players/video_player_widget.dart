@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
-import '../../utils/logger.dart';
+import '../../utils/logger.dart' show appLogger;
 
 class VideoPlayerWidget extends StatefulWidget {
   final String videoPath; // Puede ser URL o path local
@@ -110,13 +110,13 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         _isInitialized = true;
       });
 
-      AppLogger.info('Video inicializado: ${widget.videoPath}');
+      appLogger.info('Video inicializado: ${widget.videoPath}');
     } catch (e) {
       setState(() {
         _hasError = true;
         _errorMessage = e.toString();
       });
-      AppLogger.error('Error inicializando video: $e');
+      appLogger.error('Error inicializando video: $e');
     }
   }
 

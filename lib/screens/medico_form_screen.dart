@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../services/medico_service.dart';
 import '../services/municipio_service.dart';
+import '../services/ips_service.dart';
+import '../services/api_service.dart';
 import '../shared/widgets/app_bar_with_logo.dart';
 import '../utils/logger.dart';
 
@@ -17,6 +19,7 @@ class _MedicoFormScreenState extends State<MedicoFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final MedicoService _medicoService = MedicoService();
   final MunicipioService _municipioService = MunicipioService();
+  late final IPSService _ipsService;
   
   // Controladores
   late final TextEditingController _nombreController;
@@ -43,7 +46,10 @@ class _MedicoFormScreenState extends State<MedicoFormScreen> {
   void initState() {
     super.initState();
     appLogger.info('MedicoFormScreen: Inicializando formulario');
-    
+
+    // Inicializar servicios
+    _ipsService = IPSService(ApiService());
+
     // Inicializar controladores
     _nombreController = TextEditingController();
     _documentoController = TextEditingController();
@@ -51,35 +57,38 @@ class _MedicoFormScreenState extends State<MedicoFormScreen> {
     _especialidadController = TextEditingController();
     _telefonoController = TextEditingController();
     _emailController = TextEditingController();
-    
+
     _isEditing = widget.medico != null;
     appLogger.info('MedicoFormScreen: Modo ${_isEditing ? "EDICIÓN" : "CREACIÓN"}');
-    
+
     _loadInitialData();
   }
 
   Future<void> _loadInitialData() async {
     try {
       appLogger.info('MedicoFormScreen: Cargando datos iniciales...');
-      
-      // Cargar municipios reales desde la API
+
+      // Cargar municipios e IPS reales desde la API
       final municipios = await _municipioService.getAllMunicipios();
       appLogger.info('MedicoFormScreen: ${municipios.length} municipios cargados desde la API');
-      
+
+      // Cargar IPS reales desde la API
+      final ipsData = await _ipsService.obtenerTodasLasIPS();
+      appLogger.info('MedicoFormScreen: ${ipsData.length} IPS cargadas desde la API');
+
       setState(() {
-        _ipsList = [
-          {'id': '1', 'nombre': 'Hospital San José'},
-          {'id': '2', 'nombre': 'Clínica del Caribe'},
-          {'id': '3', 'nombre': 'Hospital Universitario'},
-          {'id': '4', 'nombre': 'Clínica Madre Bernarda'},
-        ];
-        
+        // Usar IPS reales de la API
+        _ipsList = ipsData.map((ips) => {
+          'id': ips['id'].toString(),
+          'nombre': ips['nombre'].toString(),
+        }).toList();
+
         // Usar municipios reales de la API
         _municipiosList = municipios.map((municipio) => {
           'id': municipio['id'].toString(),
           'nombre': municipio['nombre'].toString(),
         }).toList();
-        
+
         _isLoadingData = false;
       });
       

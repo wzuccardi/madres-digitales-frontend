@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
@@ -40,7 +40,7 @@ class FileService {
     'text/csv',
   ];
   
-  // Tamaño máximo de archivo en bytes (10 MB por defecto)
+  // TamaÃ±o mÃ¡ximo de archivo en bytes (10 MB por defecto)
   static const int _maxFileSize = 10 * 1024 * 1024;
   
   // Validar archivo
@@ -54,11 +54,11 @@ class FileService {
         );
       }
       
-      // Obtener información del archivo
+      // Obtener informaciÃ³n del archivo
       final fileSize = file.lengthSync();
       final fileName = file.path.split('/').last;
       
-      // Determinar tipo MIME basado en la extensión
+      // Determinar tipo MIME basado en la extensiÃ³n
       String mimeType = '';
       final extension = fileName.split('.').last.toLowerCase();
       if (['jpg', 'jpeg'].contains(extension)) {
@@ -79,12 +79,12 @@ class FileService {
         mimeType = 'text/plain';
       }
       
-      // Validar tamaño
+      // Validar tamaÃ±o
       final maxSize = maxSizeBytes ?? _maxFileSize;
       if (fileSize > maxSize) {
         return FileValidationResult(
           isValid: false,
-          errorMessage: 'El archivo es demasiado grande. Tamaño máximo: ${_formatFileSize(maxSize)}',
+          errorMessage: 'El archivo es demasiado grande. TamaÃ±o mÃ¡ximo: ${_formatFileSize(maxSize)}',
         );
       }
       
@@ -176,17 +176,17 @@ class FileService {
       // Crear solicitud multipart
       final request = http.MultipartRequest('POST', Uri.parse(url));
       
-      // Añadir headers
+      // AÃ±adir headers
       if (headers != null) {
         request.headers.addAll(headers);
       }
       
-      // Añadir campos adicionales
+      // AÃ±adir campos adicionales
       if (additionalFields != null) {
         request.fields.addAll(additionalFields);
       }
       
-      // Añadir archivo
+      // AÃ±adir archivo
       final fileSize = await file.length();
       final stream = file.openRead();
       final multipartFile = http.MultipartFile(
@@ -291,7 +291,7 @@ class FileService {
   // Parsear JSON de forma segura
   static Map<String, dynamic> _parseJsonSafely(String jsonString) {
     try {
-      // Implementación simple de parseo JSON para evitar dependencias
+      // ImplementaciÃ³n simple de parseo JSON para evitar dependencias
       final result = <String, dynamic>{};
       
       // Buscar clave url en el string
@@ -415,7 +415,7 @@ class FileService {
     return '$directory/$fileName';
   }
   
-  // Formatear tamaño de archivo
+  // Formatear tamaÃ±o de archivo
   static String _formatFileSize(int bytes) {
     if (bytes < 1024) {
       return '$bytes B';
@@ -430,24 +430,16 @@ class FileService {
   
   // Método privado para registrar logs de rendimiento
   static void _logPerformance(String operation, int durationMs, Map<String, dynamic> info) {
-    if (kDebugMode) {
-      debugPrint(
-        'PERFORMANCE: $operation completed in ${durationMs}ms',
-      );
-    }
+    // Logging deshabilitado en producción
   }
-  
+
   // Método privado para registrar logs de errores
   static void _logError(String operation, Exception exception) {
-    if (kDebugMode) {
-      debugPrint(
-        'ERROR: $operation failed - ${exception.toString()}',
-      );
-    }
+    // Logging deshabilitado en producción
   }
 }
 
-// Resultado de validación de archivo
+// Resultado de validaciÃ³n de archivo
 class FileValidationResult {
   final bool isValid;
   final String? errorMessage;

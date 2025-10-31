@@ -27,10 +27,26 @@ class Control extends Equatable {
       id: json['id']?.toString() ?? '',
       gestanteId: json['gestante_id']?.toString() ?? '',
       fechaControl: DateTime.tryParse(json['fecha_control']?.toString() ?? '') ?? DateTime.now(),
-      semanasGestacion: json['semanas_gestacion'] != null ? int.tryParse(json['semanas_gestacion'].toString()) : null,
-      peso: json['peso'] != null ? double.tryParse(json['peso'].toString()) : null,
-      talla: json['talla'] != null ? double.tryParse(json['talla'].toString()) : null,
+      semanasGestacion: _parseInt(json['semanas_gestacion']),
+      peso: _parseDouble(json['peso']),
+      talla: _parseDouble(json['talla']),
     );
+  }
+
+  static int? _parseInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
+
+  static double? _parseDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
   }
 
   Map<String, dynamic> toJson() {

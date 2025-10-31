@@ -2,12 +2,24 @@
 // Asegura consistencia en todas las configuraciones del sistema
 
 class AppConfig {
+  // ============================================
+  // CONFIGURACIÓN DE ENTORNO
+  // ============================================
+  // Cambiar a 'true' para modo LOCAL
+  // Cambiar a 'false' para modo PRODUCCIÓN (Vercel)
+  static const bool isLocalMode = false;
+
   // Configuración de servidores
-  static const String backendBaseUrl = 'https://madres-digitales-backend.vercel.app/api';
-  static const String backendBaseUrlDev = 'http://localhost:54112/api';
+  static const String backendBaseUrlProduction = 'https://madres-digitales-backend.vercel.app/api';
+  static const String backendBaseUrlLocal = 'http://localhost:54112/api';
   static const String androidEmulatorUrl = 'http://10.0.2.2:54112/api';
-  static const String webUrl = 'https://madres-digitales-frontend.vercel.app';
-  
+  static const String webUrlProduction = 'https://madres-digitales-frontend.vercel.app';
+  static const String webUrlLocal = 'http://localhost:3008';
+
+  // URLs dinámicas según modo
+  static String get backendBaseUrl => isLocalMode ? backendBaseUrlLocal : backendBaseUrlProduction;
+  static String get webUrl => isLocalMode ? webUrlLocal : webUrlProduction;
+
   // Configuración de timeouts
   static const Duration connectionTimeout = Duration(seconds: 30);
   static const Duration receiveTimeout = Duration(seconds: 30);
@@ -159,10 +171,17 @@ class AppConfig {
   static const String messageSOSActivated = 'Alerta SOS activada';
   static const String messagePermissionDenied = 'Permiso denegado';
   
-  // Método para obtener URL según plataforma
+  // Método para obtener URL según plataforma y modo
   static String getApiUrl() {
-    // Volver a producción - los cambios se desplegarán pronto
-    return backendBaseUrl;
+    if (isLocalMode) {
+      return backendBaseUrlLocal;
+    }
+    return backendBaseUrlProduction;
+  }
+
+  // Método para obtener modo actual
+  static String getEnvironmentMode() {
+    return isLocalMode ? 'LOCAL' : 'PRODUCCIÓN';
   }
   
   // Método para verificar si un rol tiene acceso completo

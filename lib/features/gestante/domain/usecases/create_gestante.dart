@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import '../entities/gestante.dart';
+import '../entities/tipo_permiso.dart';
 import '../repositories/gestante_repository.interface.dart';
 import '../../../../core/error/failures.dart';
 

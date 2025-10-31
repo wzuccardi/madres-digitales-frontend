@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/integrated_models.dart';
@@ -40,30 +40,25 @@ class _MedicoFormDialogState extends ConsumerState<MedicoFormDialog> {
 
   final List<String> _especialidades = [
     'Medicina General',
-    'Ginecología y Obstetricia',
-    'Pediatría',
+    'GinecologÃ­a y Obstetricia',
+    'PediatrÃ­a',
     'Medicina Interna',
     'Medicina Familiar',
-    'Anestesiología',
-    'Cirugía General',
-    'Cardiología',
-    'Neurología',
-    'Psiquiatría',
-    'Radiología',
-    'Patología',
+    'AnestesiologÃ­a',
+    'CirugÃ­a General',
+    'CardiologÃ­a',
+    'NeurologÃ­a',
+    'PsiquiatrÃ­a',
+    'RadiologÃ­a',
+    'PatologÃ­a',
     'Medicina de Urgencias',
   ];
 
   @override
   void initState() {
     super.initState();
-    debugPrint('🔧 [MedicoFormDialog] Inicializando formulario Médico');
-    debugPrint('🔧 [MedicoFormDialog] Modo: ${widget.medico == null ? "Creación" : "Edición"}');
-    debugPrint('🔧 [MedicoFormDialog] Municipio ID: ${widget.municipioId}');
-    debugPrint('🔧 [MedicoFormDialog] Lista de IPS disponible: ${widget.ipsList?.length ?? 0}');
     
     if (widget.medico != null) {
-      debugPrint('🔧 [MedicoFormDialog] Cargando datos de médico existente: ${widget.medico!.nombre}');
       _nombreController.text = widget.medico!.nombre;
       _documentoController.text = widget.medico!.documento;
       _telefonoController.text = widget.medico!.telefono ?? '';
@@ -72,9 +67,7 @@ class _MedicoFormDialogState extends ConsumerState<MedicoFormDialog> {
       _especialidad = widget.medico!.especialidad;
       _ipsId = widget.medico!.ipsId;
       _activo = widget.medico!.activo;
-      debugPrint('✅ [MedicoFormDialog] Datos de médico cargados correctamente');
     } else {
-      debugPrint('🔧 [MedicoFormDialog] Inicializando formulario para nuevo médico');
     }
   }
 
@@ -92,7 +85,7 @@ class _MedicoFormDialogState extends ConsumerState<MedicoFormDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.medico == null ? 'Crear Médico' : 'Editar Médico'),
+      title: Text(widget.medico == null ? 'Crear MÃ©dico' : 'Editar MÃ©dico'),
       content: SizedBox(
         width: MediaQuery.of(context).size.width * 0.8,
         child: Form(
@@ -119,7 +112,7 @@ class _MedicoFormDialogState extends ConsumerState<MedicoFormDialog> {
                     if (value.length < 3) {
                       return 'El nombre debe tener al menos 3 caracteres';
                     }
-                    if (!RegExp(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$').hasMatch(value)) {
+                    if (!RegExp(r'^[a-zA-ZÃ¡Ã©Ã­Ã³ÃºÃÃ‰ÃÃ“ÃšÃ±Ã‘\s]+$').hasMatch(value)) {
                       return 'El nombre solo puede contener letras y espacios';
                     }
                     return null;
@@ -151,19 +144,19 @@ class _MedicoFormDialogState extends ConsumerState<MedicoFormDialog> {
                         maxLength: 20,
                         onChanged: (value) {
                           _markAsChanged();
-                          // Implementar validación asíncrona con debounce
+                          // Implementar validaciÃ³n asÃ­ncrona con debounce
                           _debounceVerificarDocumento(value);
                         },
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'El documento es requerido';
                           }
-                          // Validación básica de formato
+                          // ValidaciÃ³n bÃ¡sica de formato
                           if (value.length < 5) {
                             return 'El documento debe tener al menos 5 caracteres';
                           }
                           if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
-                            return 'El documento solo puede contener números';
+                            return 'El documento solo puede contener nÃºmeros';
                           }
                           if (_documentoError != null) {
                             return _documentoError;
@@ -177,7 +170,7 @@ class _MedicoFormDialogState extends ConsumerState<MedicoFormDialog> {
                       child: TextFormField(
                         controller: _registroMedicoController,
                         decoration: const InputDecoration(
-                          labelText: 'Registro Médico',
+                          labelText: 'Registro MÃ©dico',
                           border: OutlineInputBorder(),
                           counterText: '',
                         ),
@@ -188,10 +181,10 @@ class _MedicoFormDialogState extends ConsumerState<MedicoFormDialog> {
                         validator: (value) {
                           if (value != null && value.isNotEmpty) {
                             if (value.length < 3) {
-                              return 'El registro médico debe tener al menos 3 caracteres';
+                              return 'El registro mÃ©dico debe tener al menos 3 caracteres';
                             }
                             if (!RegExp(r'^[A-Za-z0-9\-]+$').hasMatch(value)) {
-                              return 'El registro médico solo puede contener letras, números y guiones';
+                              return 'El registro mÃ©dico solo puede contener letras, nÃºmeros y guiones';
                             }
                           }
                           return null;
@@ -207,7 +200,7 @@ class _MedicoFormDialogState extends ConsumerState<MedicoFormDialog> {
                       child: TextFormField(
                         controller: _telefonoController,
                         decoration: const InputDecoration(
-                          labelText: 'Teléfono',
+                          labelText: 'TelÃ©fono',
                           border: OutlineInputBorder(),
                           counterText: '',
                         ),
@@ -219,10 +212,10 @@ class _MedicoFormDialogState extends ConsumerState<MedicoFormDialog> {
                         validator: (value) {
                           if (value != null && value.isNotEmpty) {
                             if (!RegExp(r'^[0-9\-\+\(\)\s]+$').hasMatch(value)) {
-                              return 'El teléfono solo puede contener números y caracteres especiales (+-())';
+                              return 'El telÃ©fono solo puede contener nÃºmeros y caracteres especiales (+-())';
                             }
                             if (value.replaceAll(RegExp(r'[^\d]'), '').length < 7) {
-                              return 'El teléfono debe tener al menos 7 dígitos';
+                              return 'El telÃ©fono debe tener al menos 7 dÃ­gitos';
                             }
                           }
                           return null;
@@ -249,7 +242,7 @@ class _MedicoFormDialogState extends ConsumerState<MedicoFormDialog> {
                               return 'El email debe tener al menos 5 caracteres';
                             }
                             if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                              return 'Email inválido';
+                              return 'Email invÃ¡lido';
                             }
                           }
                           return null;
@@ -299,7 +292,6 @@ class _MedicoFormDialogState extends ConsumerState<MedicoFormDialog> {
                       }),
                     ],
                     onChanged: (value) {
-                      debugPrint('🔍 [MedicoFormDialog] IPS seleccionada: $value');
                       setState(() {
                         _ipsId = value;
                         _markAsChanged();
@@ -331,7 +323,7 @@ class _MedicoFormDialogState extends ConsumerState<MedicoFormDialog> {
                   ),
                 const SizedBox(height: 16),
                 SwitchListTile(
-                  title: const Text('Médico Activo'),
+                  title: const Text('MÃ©dico Activo'),
                   value: _activo,
                   onChanged: (value) {
                     setState(() {
@@ -370,7 +362,6 @@ class _MedicoFormDialogState extends ConsumerState<MedicoFormDialog> {
       setState(() {
         _hasUnsavedChanges = true;
       });
-      debugPrint('🔍 [MedicoFormDialog] Formulario marcado con cambios sin guardar');
     }
   }
 
@@ -380,8 +371,8 @@ class _MedicoFormDialogState extends ConsumerState<MedicoFormDialog> {
       final shouldExit = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('¿Salir sin guardar?'),
-          content: const Text('Tienes cambios sin guardar. ¿Estás seguro de que quieres salir?'),
+          title: const Text('Â¿Salir sin guardar?'),
+          content: const Text('Tienes cambios sin guardar. Â¿EstÃ¡s seguro de que quieres salir?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -405,7 +396,7 @@ class _MedicoFormDialogState extends ConsumerState<MedicoFormDialog> {
     }
   }
 
-  // Verificación asíncrona de unicidad de documento con debounce
+  // VerificaciÃ³n asÃ­ncrona de unicidad de documento con debounce
   void _debounceVerificarDocumento(String documento) {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 800), () {
@@ -413,11 +404,10 @@ class _MedicoFormDialogState extends ConsumerState<MedicoFormDialog> {
     });
   }
 
-  // Implementar verificación asíncrona de unicidad de documento
+  // Implementar verificaciÃ³n asÃ­ncrona de unicidad de documento
   Future<void> _verificarUnicidadDocumento(String documento) async {
     if (documento.length < 5 || documento == widget.medico?.documento) return;
     
-    debugPrint('🔍 [MedicoFormDialog] Verificando unicidad del documento: $documento');
     setState(() {
       _isVerificandoDocumento = true;
       _documentoError = null;
@@ -430,14 +420,10 @@ class _MedicoFormDialogState extends ConsumerState<MedicoFormDialog> {
       
       if (existe) {
         setState(() {
-          _documentoError = 'Ya existe un médico con este documento';
+          _documentoError = 'Ya existe un mÃ©dico con este documento';
         });
-        debugPrint('❌ [MedicoFormDialog] Documento ya existe: $documento');
       } else {
-        debugPrint('✅ [MedicoFormDialog] Documento disponible: $documento');
       }
-    } catch (e) {
-      debugPrint('❌ [MedicoFormDialog] Error verificando unicidad: $e');
     } finally {
       setState(() {
         _isVerificandoDocumento = false;
@@ -446,11 +432,9 @@ class _MedicoFormDialogState extends ConsumerState<MedicoFormDialog> {
   }
 
   Future<void> _guardarMedico() async {
-    debugPrint('🔍 [MedicoFormDialog] Iniciando guardado de médico');
     
-    // Validación personalizada del documento
+    // ValidaciÃ³n personalizada del documento
     if (_documentoError != null) {
-      debugPrint('❌ [MedicoFormDialog] Error de documento: $_documentoError');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(_documentoError!),
@@ -461,14 +445,12 @@ class _MedicoFormDialogState extends ConsumerState<MedicoFormDialog> {
     }
     
     if (!_formKey.currentState!.validate()) {
-      debugPrint('❌ [MedicoFormDialog] Validación del formulario falló');
       return;
     }
 
     setState(() {
       _isLoading = true;
     });
-    debugPrint('🔄 [MedicoFormDialog] Estado de carga activado');
 
     try {
       final data = {
@@ -483,37 +465,31 @@ class _MedicoFormDialogState extends ConsumerState<MedicoFormDialog> {
         'activo': _activo,
       };
       
-      debugPrint('🔍 [MedicoFormDialog] Datos a guardar: $data');
-      debugPrint('🔍 [MedicoFormDialog] Conectando con servicio real');
 
       // Implementar llamada real al servicio
       final service = await ref.read(integratedAdminServiceProvider.future);
       
       if (widget.medico == null) {
-        debugPrint('🔍 [MedicoFormDialog] Creando nuevo médico');
         await service.createMedico(data);
       } else {
-        debugPrint('🔍 [MedicoFormDialog] Actualizando médico existente: ${widget.medico!.id}');
         await service.updateMedico(widget.medico!.id, data);
       }
 
-      // Mostrar mensaje de éxito real
+      // Mostrar mensaje de Ã©xito real
       if (widget.medico == null) {
-        debugPrint('✅ [MedicoFormDialog] Médico creado exitosamente');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Médico creado exitosamente'),
+              content: Text('MÃ©dico creado exitosamente'),
               backgroundColor: Colors.green,
             ),
           );
         }
       } else {
-        debugPrint('✅ [MedicoFormDialog] Médico actualizado exitosamente');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Médico actualizado exitosamente'),
+              content: Text('MÃ©dico actualizado exitosamente'),
               backgroundColor: Colors.green,
             ),
           );
@@ -523,36 +499,32 @@ class _MedicoFormDialogState extends ConsumerState<MedicoFormDialog> {
       // Marcar que no hay cambios sin guardar
       _hasUnsavedChanges = false;
 
-      // Refrescar la lista de médicos
-      debugPrint('🔄 [MedicoFormDialog] Refrescando lista de médicos');
+      // Refrescar la lista de mÃ©dicos
       ref.invalidate(medicosIntegradosProvider(widget.municipioId));
       
       if (mounted) {
         Navigator.of(context).pop(true);
       }
     } catch (e) {
-      debugPrint('❌ [MedicoFormDialog] Error al guardar médico: $e');
-      debugPrint('❌ [MedicoFormDialog] Stack trace: ${StackTrace.current}');
       // Reemplazado con log de error directo
-      debugPrint('❌ [MedicoFormDialog] Error: $e');
       
-      String errorMessage = 'Error al guardar médico';
+      String errorMessage = 'Error al guardar mÃ©dico';
       
-      // Clasificar el error para mostrar mensaje específico
+      // Clasificar el error para mostrar mensaje especÃ­fico
       if (e.toString().contains('SocketException')) {
-        errorMessage = 'Error de conexión. Verifica tu acceso a internet.';
+        errorMessage = 'Error de conexiÃ³n. Verifica tu acceso a internet.';
       } else if (e.toString().contains('TimeoutException')) {
-        errorMessage = 'La operación tardó demasiado. Intenta nuevamente.';
+        errorMessage = 'La operaciÃ³n tardÃ³ demasiado. Intenta nuevamente.';
       } else if (e.toString().contains('401') || e.toString().contains('403')) {
-        errorMessage = 'No tienes permisos para realizar esta operación.';
+        errorMessage = 'No tienes permisos para realizar esta operaciÃ³n.';
       } else if (e.toString().contains('409')) {
-        errorMessage = 'Ya existe un médico con este documento o registro médico.';
+        errorMessage = 'Ya existe un mÃ©dico con este documento o registro mÃ©dico.';
       } else if (e.toString().contains('422')) {
-        errorMessage = 'Hay datos inválidos en el formulario. Verifica los campos.';
+        errorMessage = 'Hay datos invÃ¡lidos en el formulario. Verifica los campos.';
       } else if (e.toString().contains('500')) {
-        errorMessage = 'Error del servidor. Intenta más tarde.';
+        errorMessage = 'Error del servidor. Intenta mÃ¡s tarde.';
       } else {
-        errorMessage = 'Error al guardar médico: $e';
+        errorMessage = 'Error al guardar mÃ©dico: $e';
       }
       
       if (mounted) {
@@ -569,7 +541,6 @@ class _MedicoFormDialogState extends ConsumerState<MedicoFormDialog> {
         setState(() {
           _isLoading = false;
         });
-        debugPrint('🔄 [MedicoFormDialog] Estado de carga desactivado');
       }
     }
   }

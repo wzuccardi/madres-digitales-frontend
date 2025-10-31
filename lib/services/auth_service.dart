@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:jwt_decoder/jwt_decoder.dart';
@@ -34,59 +34,52 @@ class AuthService {
   String? get userName => _currentUser?['nombre'];
   String? get userEmail => _currentUser?['email'];
 
-  /// Inicializar el servicio de autenticación
+  /// Inicializar el servicio de autenticaciÃ³n
   Future<void> initialize() async {
     try {
-      debugPrint('🔄 AuthService: Initializing...');
       
       // Cargar datos existentes del storage
       await _loadAuthData();
       
-      // Verificar si el token actual es válido
+      // Verificar si el token actual es vÃ¡lido
       if (_currentToken != null && !isTokenExpired(_currentToken!)) {
-        debugPrint('✅ AuthService: Token válido encontrado');
       } else {
-        debugPrint('⚠️ AuthService: Token inválido o expirado, requiere login manual');
+        if (_currentToken != null) {
+        }
         await clearAuth();
       }
 
-      debugPrint('🔐 AuthService: Inicializado - Autenticado: $isAuthenticated');
     } catch (e) {
-      debugPrint('❌ AuthService: Error al inicializar: $e');
       await clearAuth();
     }
   }
   
-  /// Cargar datos de autenticación desde storage
+  /// Cargar datos de autenticaciÃ³n desde storage
   Future<void> _loadAuthData() async {
     try {
+      
       final prefs = await SharedPreferences.getInstance();
+      
       _currentToken = prefs.getString(_tokenKey);
       _refreshToken = prefs.getString(_refreshTokenKey);
       final userJson = prefs.getString(_userKey);
 
-      debugPrint('🔍 AuthService: Token exists: ${_currentToken != null}');
-      debugPrint('🔍 AuthService: User JSON: $userJson');
+      
+      // Verificar tambiÃ©n en secure storage
+      final secureToken = await _secureStorage.read(key: _tokenKey);
+      final secureUser = await _secureStorage.read(key: 'user_data');
 
       if (userJson != null) {
         _currentUser = json.decode(userJson);
-        debugPrint('✅ AuthService: User loaded from storage');
-        debugPrint('   - ID: ${_currentUser?['id']}');
-        debugPrint('   - Email: ${_currentUser?['email']}');
-        debugPrint('   - Nombre: ${_currentUser?['nombre']}');
-        debugPrint('   - ROL: ${_currentUser?['rol']}');
-        debugPrint('   - isAdmin(): ${isAdmin()}');
-        debugPrint('   - isSuperAdmin(): ${isSuperAdmin()}');
       }
+      
     } catch (e) {
-      debugPrint('❌ AuthService: Error cargando datos de autenticación: $e');
     }
   }
 
   /// Login con email y password
   Future<bool> login(String email, String password) async {
     try {
-      debugPrint('🔐 AuthService: Intentando login para $email');
 
       final response = await http.post(
         Uri.parse('$baseUrl/auth/login'),
@@ -109,29 +102,18 @@ class AuthService {
           _refreshToken = responseData['refreshToken'];
           _currentUser = responseData['usuario'];
 
-          debugPrint('📦 AuthService: Datos recibidos del backend:');
-          debugPrint('   - Token: ${_currentToken != null ? "✅" : "❌"}');
-          debugPrint('   - RefreshToken: ${_refreshToken != null ? "✅" : "❌"}');
-          debugPrint('   - User data: $_currentUser');
-          debugPrint('   - ROL recibido: ${_currentUser?['rol']}');
 
           // Guardar en storage
           await _saveAuthData();
 
-          debugPrint('✅ AuthService: Login exitoso para ${_currentUser?['nombre']}');
-          debugPrint('   - isAdmin(): ${isAdmin()}');
-          debugPrint('   - isSuperAdmin(): ${isSuperAdmin()}');
           return true;
         } else {
-          debugPrint('❌ AuthService: Login fallido - ${data['message']}');
           return false;
         }
       } else {
-        debugPrint('❌ AuthService: Error HTTP ${response.statusCode}');
         return false;
       }
     } catch (e) {
-      debugPrint('❌ AuthService: Error en login: $e');
       return false;
     }
   }
@@ -146,7 +128,6 @@ class AuthService {
     String? telefono,
   }) async {
     try {
-      debugPrint('🔐 AuthService: Intentando registro para $email con rol $rol');
 
       final response = await http.post(
         Uri.parse('$baseUrl/auth/register'),
@@ -164,29 +145,22 @@ class AuthService {
         }),
       );
 
-      debugPrint('🔍 AuthService: Respuesta de registro - Status: ${response.statusCode}');
-      debugPrint('🔍 AuthService: Body: ${response.body}');
 
       if (response.statusCode == 201) {
         final data = json.decode(response.body);
 
         if (data['success'] == true) {
-          debugPrint('✅ AuthService: Registro exitoso para $email');
           return true;
         } else {
-          debugPrint('❌ AuthService: Registro falló - ${data['error']}');
           throw Exception(data['error'] ?? 'Error en el registro');
         }
       } else if (response.statusCode == 409) {
-        debugPrint('❌ AuthService: Email ya registrado');
-        throw Exception('El email ya está registrado');
+        throw Exception('El email ya estÃ¡ registrado');
       } else {
         final data = json.decode(response.body);
-        debugPrint('❌ AuthService: Error HTTP ${response.statusCode}');
         throw Exception(data['error'] ?? 'Error en el registro');
       }
     } catch (e) {
-      debugPrint('❌ AuthService: Error en registro: $e');
       rethrow;
     }
   }
@@ -194,15 +168,12 @@ class AuthService {
   /// Logout
   Future<void> logout() async {
     try {
-      debugPrint('🔐 AuthService: Cerrando sesión...');
       await clearAuth();
-      debugPrint('✅ AuthService: Sesión cerrada exitosamente');
     } catch (e) {
-      debugPrint('❌ AuthService: Error al cerrar sesión: $e');
     }
   }
 
-  /// Limpiar datos de autenticación
+  /// Limpiar datos de autenticaciÃ³n
   Future<void> clearAuth() async {
     _currentToken = null;
     _refreshToken = null;
@@ -220,16 +191,15 @@ class AuthService {
     await _secureStorage.delete(key: 'user_data');
   }
 
-  /// Verificar si el token está expirado
+  /// Verificar si el token estÃ¡ expirado
   bool isTokenExpired(String token) {
     try {
-      // Para tokens demo, considerar válidos por 24 horas
+      // Para tokens demo, considerar vÃ¡lidos por 24 horas
       if (token.startsWith('demo-') || token.startsWith('eyJ')) {
-        return false; // Token demo siempre válido
+        return false; // Token demo siempre vÃ¡lido
       }
       return JwtDecoder.isExpired(token);
     } catch (e) {
-      debugPrint('❌ AuthService: Error al verificar expiración del token: $e');
       // Para tokens demo, no considerar expirados
       if (token.startsWith('demo-') || token.startsWith('eyJ')) {
         return false;
@@ -255,7 +225,6 @@ class AuthService {
       // Renovar si expira en menos de 5 minutos
       return timeUntilExpiry.inMinutes < 5;
     } catch (e) {
-      debugPrint('❌ AuthService: Error al verificar necesidad de renovación: $e');
       // Para tokens demo, no renovar
       if (_currentToken != null && (_currentToken!.startsWith('demo-') || _currentToken!.startsWith('eyJ'))) {
         return false;
@@ -267,13 +236,11 @@ class AuthService {
   /// Renovar token si es necesario
   Future<bool> _refreshTokenIfNeeded() async {
     if (_refreshToken == null) {
-      debugPrint('❌ AuthService: No hay refresh token disponible');
       await clearAuth();
       return false;
     }
 
     try {
-      debugPrint('🔄 AuthService: Renovando token...');
 
       final response = await http.post(
         Uri.parse('$baseUrl/auth/refresh'),
@@ -297,32 +264,27 @@ class AuthService {
 
           await _saveAuthData();
 
-          debugPrint('✅ AuthService: Token renovado exitosamente');
           return true;
         }
       }
 
-      debugPrint('❌ AuthService: Error al renovar token');
       await clearAuth();
       return false;
     } catch (e) {
-      debugPrint('❌ AuthService: Error al renovar token');
       await clearAuth();
       return false;
     }
   }
 
-  /// Guardar datos de autenticación en storage
+  /// Guardar datos de autenticaciÃ³n en storage
   Future<void> _saveAuthData() async {
     final prefs = await SharedPreferences.getInstance();
 
     // Guardar en SharedPreferences
     if (_currentToken != null) {
       await prefs.setString(_tokenKey, _currentToken!);
-      // También guardar en secure storage para ApiService
+      // TambiÃ©n guardar en secure storage para ApiService
       await _secureStorage.write(key: _tokenKey, value: _currentToken!);
-      debugPrint('🔐 AuthService: Token guardado en secure storage con clave: $_tokenKey');
-      debugPrint('🔐 AuthService: Token guardado: ${_currentToken!.substring(0, 20)}...');
     }
     if (_refreshToken != null) {
       await prefs.setString(_refreshTokenKey, _refreshToken!);
@@ -334,7 +296,7 @@ class AuthService {
     }
   }
 
-  /// Verificar si el usuario tiene un rol específico
+  /// Verificar si el usuario tiene un rol especÃ­fico
   bool hasRole(String role) {
     return userRole == role;
   }
@@ -364,7 +326,7 @@ class AuthService {
     return hasAnyRole(['madrina', 'coordinador', 'admin', 'super_admin']);
   }
 
-  /// Verificar si el usuario es médico o admin
+  /// Verificar si el usuario es mÃ©dico o admin
   bool isMedico() {
     return hasAnyRole(['medico', 'admin', 'super_admin']);
   }
@@ -376,7 +338,7 @@ class AuthService {
 
 
 
-  /// Obtener headers de autenticación
+  /// Obtener headers de autenticaciÃ³n
   Map<String, String> getAuthHeaders() {
     final headers = <String, String>{
       'Content-Type': 'application/json',
@@ -390,7 +352,7 @@ class AuthService {
     return headers;
   }
 
-  /// Hacer una petición HTTP autenticada con renovación automática de token
+  /// Hacer una peticiÃ³n HTTP autenticada con renovaciÃ³n automÃ¡tica de token
   Future<http.Response> authenticatedRequest(
     String method,
     String endpoint, {
@@ -409,11 +371,8 @@ class AuthService {
 
     final uri = Uri.parse('$baseUrl$endpoint');
 
-    // Debug mínimo para verificar conexión y auth
-    debugPrint('🔗 [AuthRequest] ${method.toUpperCase()} $uri');
-    debugPrint('🔗 [AuthRequest] Bearer present: ${headers.containsKey('Authorization')}');
+    // Debug mÃ­nimo para verificar conexiÃ³n y auth
     if (kDebugMode && body != null) {
-      debugPrint('📝 [AuthRequest] body keys: ${body.keys.toList()}');
     }
 
     http.Response resp;
@@ -439,10 +398,10 @@ class AuthService {
         resp = await http.delete(uri, headers: headers);
         break;
       default:
-        throw ArgumentError('Método HTTP no soportado: $method');
+        throw ArgumentError('MÃ©todo HTTP no soportado: $method');
     }
 
-    debugPrint('✅ [AuthRequest] Status: ${resp.statusCode} for $uri');
     return resp;
   }
 }
+

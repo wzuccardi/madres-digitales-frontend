@@ -1,22 +1,17 @@
-import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/integrated_models.dart';
 import 'service_providers.dart';
 
 // Providers simples usando FutureProvider como el resto de la app
 final municipiosIntegradosProvider = FutureProvider<List<MunicipioIntegrado>>((ref) async {
   try {
-    debugPrint('🔍 [IntegratedAdminProvider] Cargando municipios integrados');
-    // Usar el endpoint público de municipios que no requiere autenticación
+    // Usar el endpoint pÃºblico de municipios que no requiere autenticaciÃ³n
     final apiService = ref.read(apiServiceProvider);
-    debugPrint('🔧 [IntegratedAdminProvider] ApiService hash: ${apiService.hashCode}');
     final response = await apiService.get('/municipios');
-    debugPrint('🔍 [IntegratedAdminProvider] Respuesta municipios: ${response.statusCode}');
     
     if (response.data['success'] == true) {
       final List<Map<String, dynamic>> municipiosData =
           List<Map<String, dynamic>>.from(response.data['data']);
-      debugPrint('✅ [IntegratedAdminProvider] Procesando ${municipiosData.length} municipios');
       
       // Convertir a MunicipioIntegrado con valores predeterminados
       final municipios = municipiosData.map((municipio) {
@@ -30,7 +25,7 @@ final municipiosIntegradosProvider = FutureProvider<List<MunicipioIntegrado>>((r
           longitud: municipio['longitud']?.toDouble(),
           created_at: DateTime.parse(municipio['created_at'] ?? DateTime.now().toIso8601String()),
           updated_at: DateTime.parse(municipio['updated_at'] ?? DateTime.now().toIso8601String()),
-          // Valores predeterminados para estadísticas
+          // Valores predeterminados para estadÃ­sticas
           totalGestantes: 0,
           gestantesActivas: 0,
           gestantesRiesgoAlto: 0,
@@ -41,22 +36,18 @@ final municipiosIntegradosProvider = FutureProvider<List<MunicipioIntegrado>>((r
         );
       }).toList();
       
-      debugPrint('✅ [IntegratedAdminProvider] Municipios convertidos exitosamente');
       return municipios;
     } else {
-      debugPrint('❌ [IntegratedAdminProvider] Error en respuesta: ${response.data['error']}');
       throw Exception(response.data['error'] ?? 'Error desconocido');
     }
   } catch (e) {
-    debugPrint('❌ [IntegratedAdminProvider] Error cargando municipios: $e');
-    debugPrint('❌ [IntegratedAdminProvider] Stack trace: ${StackTrace.current}');
     throw Exception('Error cargando municipios: $e');
   }
 });
 
 final resumenIntegradoProvider = FutureProvider<ResumenIntegrado>((ref) async {
   try {
-    // Usar el endpoint público de estadísticas de municipios que no requiere autenticación
+    // Usar el endpoint pÃºblico de estadÃ­sticas de municipios que no requiere autenticaciÃ³n
     final apiService = ref.read(apiServiceProvider);
     final response = await apiService.get('/municipios/stats');
     
@@ -67,7 +58,7 @@ final resumenIntegradoProvider = FutureProvider<ResumenIntegrado>((ref) async {
       return ResumenIntegrado(
         totalMunicipios: resumen['total'] as int? ?? 0,
         municipiosActivos: resumen['activos'] as int? ?? 0,
-        totalIPS: 0, // No disponible en endpoint público
+        totalIPS: 0, // No disponible en endpoint pÃºblico
         ipsActivas: 0,
         totalMedicos: 0,
         medicosActivos: 0,
@@ -86,31 +77,21 @@ final resumenIntegradoProvider = FutureProvider<ResumenIntegrado>((ref) async {
 });
 
 final ipsIntegradaProvider = FutureProvider.family<List<IPSIntegrada>, String>((ref, municipioId) async {
-  debugPrint('🔍 [IntegratedAdminProvider] Cargando IPS para municipio: $municipioId');
   final service = await ref.read(integratedAdminServiceProvider.future);
-  debugPrint('🔧 [IntegratedAdminProvider] IntegratedAdminService hash: ${service.hashCode}');
-  debugPrint('⚠️ [IntegratedAdminProvider] ADVERTENCIA: IntegratedAdminService no tiene dependencias inyectadas');
   try {
     final ips = await service.getIPSByMunicipio(municipioId);
-    debugPrint('✅ [IntegratedAdminProvider] Se obtuvieron ${ips.length} IPS para municipio $municipioId');
     return ips;
   } catch (e) {
-    debugPrint('❌ [IntegratedAdminProvider] Error obteniendo IPS: $e');
     rethrow;
   }
 });
 
 final medicosIntegradosProvider = FutureProvider.family<List<MedicoIntegrado>, String>((ref, municipioId) async {
-  debugPrint('🔍 [IntegratedAdminProvider] Cargando médicos para municipio: $municipioId');
   final service = await ref.read(integratedAdminServiceProvider.future);
-  debugPrint('🔧 [IntegratedAdminProvider] IntegratedAdminService hash: ${service.hashCode}');
-  debugPrint('⚠️ [IntegratedAdminProvider] ADVERTENCIA: IntegratedAdminService no tiene dependencias inyectadas');
   try {
     final medicos = await service.getMedicosByMunicipio(municipioId);
-    debugPrint('✅ [IntegratedAdminProvider] Se obtuvieron ${medicos.length} médicos para municipio $municipioId');
     return medicos;
   } catch (e) {
-    debugPrint('❌ [IntegratedAdminProvider] Error obteniendo médicos: $e');
     rethrow;
   }
 });

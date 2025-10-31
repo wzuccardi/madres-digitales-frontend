@@ -1,5 +1,4 @@
-import 'dart:convert';
-import 'package:flutter/foundation.dart';
+﻿import 'dart:convert';
 import '../models/integrated_models.dart';
 import 'auth_service.dart';
 
@@ -9,17 +8,14 @@ class IntegratedAdminService {
   
   IntegratedAdminService({AuthService? authService})
       : _authService = authService ?? AuthService() {
-    debugPrint('🔧 [IntegratedAdminService] Inicializado con AuthService: ${_authService.hashCode}');
     if (authService == null) {
-      debugPrint('⚠️ [IntegratedAdminService] ADVERTENCIA: AuthService no inyectado, usando instancia local');
     } else {
-      debugPrint('✅ [IntegratedAdminService] AuthService inyectado correctamente');
     }
   }
 
   // ==================== MUNICIPIOS ====================
   
-  /// Obtener todos los municipios con estadísticas integradas
+  /// Obtener todos los municipios con estadÃ­sticas integradas
   Future<List<MunicipioIntegrado>> getMunicipiosIntegrados() async {
     try {
       final response = await _authService.authenticatedRequest(
@@ -35,7 +31,6 @@ class IntegratedAdminService {
         throw Exception('Error al obtener municipios integrados: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error en getMunicipiosIntegrados: $e');
       rethrow;
     }
   }
@@ -56,12 +51,11 @@ class IntegratedAdminService {
         throw Exception('Error al cambiar estado del municipio: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error en toggleMunicipioEstado: $e');
       rethrow;
     }
   }
 
-  /// Obtener municipio específico con detalles completos
+  /// Obtener municipio especÃ­fico con detalles completos
   Future<MunicipioIntegrado> getMunicipioDetallado(String municipioId) async {
     try {
       final response = await _authService.authenticatedRequest(
@@ -76,14 +70,13 @@ class IntegratedAdminService {
         throw Exception('Error al obtener municipio detallado: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error en getMunicipioDetallado: $e');
       rethrow;
     }
   }
 
   // ==================== IPS ====================
   
-  /// Obtener IPS por municipio con información integrada
+  /// Obtener IPS por municipio con informaciÃ³n integrada
   Future<List<IPSIntegrada>> getIPSByMunicipio(String municipioId) async {
     try {
       final response = await _authService.authenticatedRequest(
@@ -99,7 +92,6 @@ class IntegratedAdminService {
         throw Exception('Error al obtener IPS integradas: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error en getIPSByMunicipio: $e');
       rethrow;
     }
   }
@@ -120,7 +112,6 @@ class IntegratedAdminService {
         throw Exception('Error al obtener todas las IPS integradas: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error en getAllIPSIntegradas: $e');
       rethrow;
     }
   }
@@ -138,7 +129,6 @@ class IntegratedAdminService {
         throw Exception('Error al cambiar estado de la IPS: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error en toggleIPSEstado: $e');
       rethrow;
     }
   }
@@ -159,7 +149,6 @@ class IntegratedAdminService {
         throw Exception('Error al crear IPS: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error en createIPS: $e');
       rethrow;
     }
   }
@@ -180,14 +169,13 @@ class IntegratedAdminService {
         throw Exception('Error al actualizar IPS: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error en updateIPS: $e');
       rethrow;
     }
   }
 
-  // ==================== MÉDICOS ====================
+  // ==================== MÃ‰DICOS ====================
   
-  /// Obtener médicos por municipio con información integrada
+  /// Obtener mÃ©dicos por municipio con informaciÃ³n integrada
   Future<List<MedicoIntegrado>> getMedicosByMunicipio(String municipioId) async {
     try {
       final response = await _authService.authenticatedRequest(
@@ -200,15 +188,14 @@ class IntegratedAdminService {
         final data = decoded['data'] as List;
         return data.map((json) => MedicoIntegrado.fromJson(json)).toList();
       } else {
-        throw Exception('Error al obtener médicos integrados: ${response.statusCode}');
+        throw Exception('Error al obtener mÃ©dicos integrados: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error en getMedicosByMunicipio: $e');
       rethrow;
     }
   }
 
-  /// Obtener médicos por IPS
+  /// Obtener mÃ©dicos por IPS
   Future<List<MedicoIntegrado>> getMedicosByIPS(String ipsId) async {
     try {
       final response = await _authService.authenticatedRequest(
@@ -221,15 +208,14 @@ class IntegratedAdminService {
         final data = decoded['data'] as List;
         return data.map((json) => MedicoIntegrado.fromJson(json)).toList();
       } else {
-        throw Exception('Error al obtener médicos por IPS: ${response.statusCode}');
+        throw Exception('Error al obtener mÃ©dicos por IPS: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error en getMedicosByIPS: $e');
       rethrow;
     }
   }
 
-  /// Obtener todos los médicos integrados
+  /// Obtener todos los mÃ©dicos integrados
   Future<List<MedicoIntegrado>> getAllMedicosIntegrados() async {
     try {
       final response = await _authService.authenticatedRequest(
@@ -242,15 +228,14 @@ class IntegratedAdminService {
         final data = decoded['data'] as List;
         return data.map((json) => MedicoIntegrado.fromJson(json)).toList();
       } else {
-        throw Exception('Error al obtener todos los médicos integrados: ${response.statusCode}');
+        throw Exception('Error al obtener todos los mÃ©dicos integrados: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error en getAllMedicosIntegrados: $e');
       rethrow;
     }
   }
 
-  /// Activar o desactivar un médico
+  /// Activar o desactivar un mÃ©dico
   Future<void> toggleMedicoEstado(String medicoId, bool nuevoEstado) async {
     try {
       final response = await _authService.authenticatedRequest(
@@ -260,15 +245,14 @@ class IntegratedAdminService {
       );
 
       if (response.statusCode != 200) {
-        throw Exception('Error al cambiar estado del médico: ${response.statusCode}');
+        throw Exception('Error al cambiar estado del mÃ©dico: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error en toggleMedicoEstado: $e');
       rethrow;
     }
   }
 
-  /// Crear nuevo médico
+  /// Crear nuevo mÃ©dico
   Future<MedicoIntegrado> createMedico(Map<String, dynamic> medicoData) async {
     try {
       final response = await _authService.authenticatedRequest(
@@ -281,15 +265,14 @@ class IntegratedAdminService {
         final decoded = json.decode(response.body);
         return MedicoIntegrado.fromJson(decoded['data']);
       } else {
-        throw Exception('Error al crear médico: ${response.statusCode}');
+        throw Exception('Error al crear mÃ©dico: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error en createMedico: $e');
       rethrow;
     }
   }
 
-  /// Actualizar médico
+  /// Actualizar mÃ©dico
   Future<MedicoIntegrado> updateMedico(String medicoId, Map<String, dynamic> medicoData) async {
     try {
       final response = await _authService.authenticatedRequest(
@@ -302,15 +285,14 @@ class IntegratedAdminService {
         final decoded = json.decode(response.body);
         return MedicoIntegrado.fromJson(decoded['data']);
       } else {
-        throw Exception('Error al actualizar médico: ${response.statusCode}');
+        throw Exception('Error al actualizar mÃ©dico: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error en updateMedico: $e');
       rethrow;
     }
   }
 
-  /// Asignar médico a IPS
+  /// Asignar mÃ©dico a IPS
   Future<void> asignarMedicoAIPS(String medicoId, String ipsId) async {
     try {
       final response = await _authService.authenticatedRequest(
@@ -320,17 +302,16 @@ class IntegratedAdminService {
       );
 
       if (response.statusCode != 200) {
-        throw Exception('Error al asignar médico a IPS: ${response.statusCode}');
+        throw Exception('Error al asignar mÃ©dico a IPS: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error en asignarMedicoAIPS: $e');
       rethrow;
     }
   }
 
-  // ==================== RESUMEN Y ESTADÍSTICAS ====================
+  // ==================== RESUMEN Y ESTADÃSTICAS ====================
   
-  /// Obtener resumen integrado con todas las estadísticas
+  /// Obtener resumen integrado con todas las estadÃ­sticas
   Future<ResumenIntegrado> getResumenIntegrado() async {
     try {
       final response = await _authService.authenticatedRequest(
@@ -345,12 +326,11 @@ class IntegratedAdminService {
         throw Exception('Error al obtener resumen integrado: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error en getResumenIntegrado: $e');
       rethrow;
     }
   }
 
-  /// Obtener estadísticas por municipio
+  /// Obtener estadÃ­sticas por municipio
   Future<Map<String, dynamic>> getEstadisticasMunicipio(String municipioId) async {
     try {
       final response = await _authService.authenticatedRequest(
@@ -362,15 +342,14 @@ class IntegratedAdminService {
         final decoded = json.decode(response.body);
         return decoded['data'] as Map<String, dynamic>;
       } else {
-        throw Exception('Error al obtener estadísticas del municipio: ${response.statusCode}');
+        throw Exception('Error al obtener estadÃ­sticas del municipio: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error en getEstadisticasMunicipio: $e');
       rethrow;
     }
   }
 
-  /// Obtener estadísticas por IPS
+  /// Obtener estadÃ­sticas por IPS
   Future<Map<String, dynamic>> getEstadisticasIPS(String ipsId) async {
     try {
       final response = await _authService.authenticatedRequest(
@@ -382,15 +361,14 @@ class IntegratedAdminService {
         final decoded = json.decode(response.body);
         return decoded['data'] as Map<String, dynamic>;
       } else {
-        throw Exception('Error al obtener estadísticas de la IPS: ${response.statusCode}');
+        throw Exception('Error al obtener estadÃ­sticas de la IPS: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error en getEstadisticasIPS: $e');
       rethrow;
     }
   }
 
-  /// Obtener estadísticas por médico
+  /// Obtener estadÃ­sticas por mÃ©dico
   Future<Map<String, dynamic>> getEstadisticasMedico(String medicoId) async {
     try {
       final response = await _authService.authenticatedRequest(
@@ -402,17 +380,16 @@ class IntegratedAdminService {
         final decoded = json.decode(response.body);
         return decoded['data'] as Map<String, dynamic>;
       } else {
-        throw Exception('Error al obtener estadísticas del médico: ${response.statusCode}');
+        throw Exception('Error al obtener estadÃ­sticas del mÃ©dico: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error en getEstadisticasMedico: $e');
       rethrow;
     }
   }
 
-  // ==================== BÚSQUEDAS Y FILTROS ====================
+  // ==================== BÃšSQUEDAS Y FILTROS ====================
   
-  /// Buscar en todos los módulos
+  /// Buscar en todos los mÃ³dulos
   Future<Map<String, dynamic>> buscarIntegrado(String query) async {
     try {
       final response = await _authService.authenticatedRequest(
@@ -434,10 +411,9 @@ class IntegratedAdminService {
               .toList(),
         };
       } else {
-        throw Exception('Error en búsqueda integrada: ${response.statusCode}');
+        throw Exception('Error en bÃºsqueda integrada: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error en buscarIntegrado: $e');
       rethrow;
     }
   }
@@ -477,14 +453,13 @@ class IntegratedAdminService {
         throw Exception('Error al obtener municipios con filtros: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error en getMunicipiosConFiltros: $e');
       rethrow;
     }
   }
 
   // ==================== OPERACIONES MASIVAS ====================
   
-  /// Activar/desactivar múltiples municipios
+  /// Activar/desactivar mÃºltiples municipios
   Future<void> toggleMultiplesMunicipios(List<String> municipioIds, bool nuevoEstado) async {
     try {
       final response = await _authService.authenticatedRequest(
@@ -497,15 +472,14 @@ class IntegratedAdminService {
       );
 
       if (response.statusCode != 200) {
-        throw Exception('Error al cambiar estado de múltiples municipios: ${response.statusCode}');
+        throw Exception('Error al cambiar estado de mÃºltiples municipios: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error en toggleMultiplesMunicipios: $e');
       rethrow;
     }
   }
 
-  /// Sincronizar datos entre módulos
+  /// Sincronizar datos entre mÃ³dulos
   Future<void> sincronizarDatos() async {
     try {
       final response = await _authService.authenticatedRequest(
@@ -517,7 +491,6 @@ class IntegratedAdminService {
         throw Exception('Error al sincronizar datos: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error en sincronizarDatos: $e');
       rethrow;
     }
   }
@@ -547,7 +520,6 @@ class IntegratedAdminService {
         throw Exception('Error al generar reporte integrado: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error en generarReporteIntegrado: $e');
       rethrow;
     }
   }

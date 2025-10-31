@@ -9,6 +9,7 @@ import '../services/api_service.dart';  // Corrección: Importar ApiService
 import '../services/notification_service.dart';  // Importar NotificationService
 import '../utils/logger.dart';  // Corrección: Importar logger
 import '../shared/widgets/app_bar_with_logo.dart';
+import '../providers/service_providers.dart';  // Importar providers
 
 class CentroNotificacionesScreen extends ConsumerStatefulWidget {
   const CentroNotificacionesScreen({super.key});
@@ -54,17 +55,17 @@ class _CentroNotificacionesScreenState extends ConsumerState<CentroNotificacione
       final alertaService = AlertaService(apiService);  // Corrección: Crear instancia de AlertaService
       
       final alertas = await alertaService.obtenerAlertas();  // Corrección: Usar método correcto
-      
-      // Filtrar por tipo (usando el campo tipo en lugar de prioridad)
+
+      // Filtrar por tipo (usando el campo tipoAlerta y nivelPrioridad)
       final criticas = alertas.where((a) =>
-        a.tipo == 'urgent' && !a.leida).toList();  // Corrección: Usar propiedades correctas
+        a.nivelPrioridad == 'critica' && !a.resuelta).toList();  // Corrección: Usar propiedades correctas
       final altas = alertas.where((a) =>
-        a.tipo == 'warning' && !a.leida).toList();  // Corrección: Usar propiedades correctas
+        a.nivelPrioridad == 'alta' && !a.resuelta).toList();  // Corrección: Usar propiedades correctas
       final medias = alertas.where((a) =>
-        (a.tipo == 'info' || a.tipo == 'warning') && !a.leida).toList();  // Corrección: Usar propiedades correctas
-      
+        (a.nivelPrioridad == 'media' || a.nivelPrioridad == 'alta') && !a.resuelta).toList();  // Corrección: Usar propiedades correctas
+
       setState(() {
-        _alertas = alertas.where((a) => !a.leida).toList();  // Corrección: Usar propiedad correcta
+        _alertas = alertas.where((a) => !a.resuelta).toList();  // Corrección: Usar propiedad correcta
         _alertasCriticas = criticas;
         _alertasAltas = altas;
         _alertasMedias = medias;
@@ -244,8 +245,8 @@ class _CentroNotificacionesScreenState extends ConsumerState<CentroNotificacione
   }
 
   Widget _buildAlertaCard(Alerta alerta) {  // Corrección: Usar Alerta
-    final isCritica = alerta.tipo == 'urgent';  // Corrección: Usar propiedad correcta
-    final isAlta = alerta.tipo == 'warning';  // Corrección: Usar propiedad correcta
+    final isCritica = alerta.nivelPrioridad == 'critica';  // Corrección: Usar propiedad correcta
+    final isAlta = alerta.nivelPrioridad == 'alta';  // Corrección: Usar propiedad correcta
     
     Color cardColor = isCritica ? Colors.red[50]! :
                      isAlta ? Colors.orange[50]! :
@@ -288,7 +289,7 @@ class _CentroNotificacionesScreenState extends ConsumerState<CentroNotificacione
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          alerta.tipo.toUpperCase(),
+                          alerta.tipoAlerta.toUpperCase(),
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -296,7 +297,7 @@ class _CentroNotificacionesScreenState extends ConsumerState<CentroNotificacione
                           ),
                         ),
                         Text(
-                          'Tipo: ${alerta.tipo.toUpperCase()}',  // Corrección: Usar propiedad correcta
+                          'Tipo: ${alerta.tipoAlerta.toUpperCase()}',  // Corrección: Usar propiedad correcta
                           style: TextStyle(
                             fontSize: 12,
                             color: iconColor,
@@ -358,17 +359,17 @@ class _CentroNotificacionesScreenState extends ConsumerState<CentroNotificacione
         title: Row(
           children: [
             Icon(
-              alerta.tipo == 'urgent' ? Icons.error :  // Corrección: Usar propiedad correcta
-              alerta.tipo == 'warning' ? Icons.warning :
+              alerta.nivelPrioridad == 'critica' ? Icons.error :  // Corrección: Usar propiedad correcta
+              alerta.nivelPrioridad == 'alta' ? Icons.warning :
               Icons.info,
-              color: alerta.tipo == 'urgent' ? Colors.red :  // Corrección: Usar propiedad correcta
-                     alerta.tipo == 'warning' ? Colors.orange :
+              color: alerta.nivelPrioridad == 'critica' ? Colors.red :  // Corrección: Usar propiedad correcta
+                     alerta.nivelPrioridad == 'alta' ? Colors.orange :
                      Colors.blue,
             ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                alerta.tipo.toUpperCase(),
+                alerta.nivelPrioridad.toUpperCase(),
                 style: const TextStyle(fontSize: 18),
               ),
             ),
@@ -379,8 +380,8 @@ class _CentroNotificacionesScreenState extends ConsumerState<CentroNotificacione
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildDetalleRow('Tipo', alerta.tipo.toUpperCase()),  // Corrección: Usar propiedad correcta
-              _buildDetalleRow('Título', alerta.titulo),  // Corrección: Usar propiedad correcta
+              _buildDetalleRow('Tipo', alerta.tipoAlerta.toUpperCase()),  // Corrección: Usar propiedad correcta
+              _buildDetalleRow('Prioridad', alerta.nivelPrioridad.toUpperCase()),  // Corrección: Usar propiedad correcta
               _buildDetalleRow('Mensaje', alerta.mensaje),  // Corrección: Usar propiedad correcta
               _buildDetalleRow('Fecha', _formatFecha(alerta.fechaCreacion)),  // Corrección: Usar propiedad correcta
             ],
@@ -450,24 +451,24 @@ class _CentroNotificacionesScreenState extends ConsumerState<CentroNotificacione
   /// Sincronizar estado de lectura con el backend
   Future<void> _sincronizarLectura() async {
     try {
-      // Obtener alertas no leídas
-      final alertasNoLeidas = _alertas.where((alerta) => !alerta.leida).toList();
-      
-      if (alertasNoLeidas.isEmpty) return;
-      
+      // Obtener alertas no resueltas
+      final alertasNoResueltas = _alertas.where((alerta) => !alerta.resuelta).toList();
+
+      if (alertasNoResueltas.isEmpty) return;
+
       // Usar NotificationService para sincronizar
       final notificationService = NotificationService.instance;
-      
-      for (final alerta in alertasNoLeidas) {
+
+      for (final alerta in alertasNoResueltas) {
         await notificationService.marcarComoLeido(alerta.id);
       }
-      
+
       // Recargar alertas después de sincronizar
       if (mounted) {
         _cargarAlertas();
       }
-      
-      appLogger.info('Sincronización de lectura completada para ${alertasNoLeidas.length} alertas');
+
+      appLogger.info('Sincronización de lectura completada para ${alertasNoResueltas.length} alertas');
     } catch (e) {
       appLogger.error('Error en sincronización de lectura', error: e);
     }

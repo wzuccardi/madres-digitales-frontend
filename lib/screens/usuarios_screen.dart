@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../models/usuario_model.dart';
 import '../services/usuario_service.dart';
@@ -78,8 +78,8 @@ class _UsuariosScreenState extends ConsumerState<UsuariosScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirmar eliminación'),
-        content: Text('¿Está seguro de eliminar al usuario "${usuario.nombre}"?'),
+        title: const Text('Confirmar eliminaciÃ³n'),
+        content: Text('Â¿EstÃ¡ seguro de eliminar al usuario "${usuario.nombre}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -120,7 +120,7 @@ class _UsuariosScreenState extends ConsumerState<UsuariosScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBarWithLogo(
-        title: 'Gestión de Usuarios',
+        title: 'GestiÃ³n de Usuarios',
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -131,15 +131,12 @@ class _UsuariosScreenState extends ConsumerState<UsuariosScreen> {
       body: _buildBody(),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          print('👤 UsuariosScreen: ========== CREANDO NUEVO USUARIO ==========');
-          print('👤 UsuariosScreen: Navegando al formulario de creación con GoRouter...');
           
           context.push('/usuarios/nuevo');
           
-          // Recargar después de un delay
+          // Recargar despuÃ©s de un delay
           Future.delayed(const Duration(seconds: 1), () {
             if (mounted) {
-              print('👤 UsuariosScreen: Recargando lista de usuarios...');
               _loadUsuarios();
             }
           });
@@ -343,3 +340,4 @@ class _UsuariosScreenState extends ConsumerState<UsuariosScreen> {
     }
   }
 }
+

@@ -1,5 +1,5 @@
-// Formulario Mejorado de Control Prenatal con Evaluación Automática de Alertas
-// Integra el sistema de alertas automáticas del backend
+﻿// Formulario Mejorado de Control Prenatal con EvaluaciÃ³n AutomÃ¡tica de Alertas
+// Integra el sistema de alertas automÃ¡ticas del backend
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,19 +9,14 @@ class ControlPrenatalMejoradoScreen extends ConsumerStatefulWidget {
   final Map<String, dynamic> gestante;
   final Map<String, dynamic>? control;
 
-  ControlPrenatalMejoradoScreen({
+  const ControlPrenatalMejoradoScreen({
     super.key,
     required this.gestante,
     this.control,
-  }) {
-    print('🔷 CONTROL_PRENATAL_MEJORADO_SCREEN: Constructor llamado - ARCHIVO: control_prenatal_mejorado_screen.dart');
-    print('🔷 CONTROL_PRENATAL_MEJORADO_SCREEN: gestante = $gestante');
-    print('🔷 CONTROL_PRENATAL_MEJORADO_SCREEN: control = $control');
-  }
+  });
 
   @override
   ConsumerState<ControlPrenatalMejoradoScreen> createState() {
-    print('🔷 CONTROL_PRENATAL_MEJORADO_SCREEN: createState llamado - ARCHIVO: control_prenatal_mejorado_screen.dart');
     return _ControlPrenatalMejoradoScreenState();
   }
 }
@@ -50,21 +45,21 @@ class _ControlPrenatalMejoradoScreenState extends ConsumerState<ControlPrenatalM
   bool _isLoading = false;
   bool _evaluarAutomaticamente = true;
 
-  // Síntomas disponibles (del backend)
+  // SÃ­ntomas disponibles (del backend)
   final List<Map<String, String>> _sintomasDisponibles = [
     {'id': 'sangrado_vaginal', 'nombre': 'Sangrado vaginal'},
     {'id': 'dolor_abdominal_severo', 'nombre': 'Dolor abdominal severo'},
     {'id': 'cefalea_severa', 'nombre': 'Cefalea severa'},
-    {'id': 'vision_borrosa', 'nombre': 'Visión borrosa'},
-    {'id': 'dolor_epigastrico', 'nombre': 'Dolor epigástrico'},
+    {'id': 'vision_borrosa', 'nombre': 'VisiÃ³n borrosa'},
+    {'id': 'dolor_epigastrico', 'nombre': 'Dolor epigÃ¡strico'},
     {'id': 'contracciones_regulares', 'nombre': 'Contracciones regulares'},
     {'id': 'ruptura_membranas', 'nombre': 'Ruptura de membranas'},
     {'id': 'ausencia_movimiento_fetal', 'nombre': 'Ausencia de movimientos fetales'},
     {'id': 'movimientos_fetales_disminuidos', 'nombre': 'Movimientos fetales disminuidos'},
-    {'id': 'escalofrios', 'nombre': 'Escalofríos'},
-    {'id': 'confusion', 'nombre': 'Confusión'},
+    {'id': 'escalofrios', 'nombre': 'EscalofrÃ­os'},
+    {'id': 'confusion', 'nombre': 'ConfusiÃ³n'},
     {'id': 'convulsiones', 'nombre': 'Convulsiones'},
-    {'id': 'perdida_conciencia', 'nombre': 'Pérdida de conciencia'},
+    {'id': 'perdida_conciencia', 'nombre': 'PÃ©rdida de conciencia'},
   ];
 
   @override
@@ -112,7 +107,7 @@ class _ControlPrenatalMejoradoScreenState extends ConsumerState<ControlPrenatalM
           _buildGestanteInfo(),
           // Indicador de progreso
           _buildProgressIndicator(),
-          // Formulario por páginas
+          // Formulario por pÃ¡ginas
           Expanded(
             child: PageView(
               controller: _pageController,
@@ -126,7 +121,7 @@ class _ControlPrenatalMejoradoScreenState extends ConsumerState<ControlPrenatalM
               ],
             ),
           ),
-          // Botones de navegación
+          // Botones de navegaciÃ³n
           _buildNavigationButtons(),
         ],
       ),
@@ -161,7 +156,7 @@ class _ControlPrenatalMejoradoScreenState extends ConsumerState<ControlPrenatalM
                 ),
                 if (_semanasGestacion != null)
                   Text(
-                    'Semanas de gestación: $_semanasGestacion',
+                    'Semanas de gestaciÃ³n: $_semanasGestacion',
                     style: const TextStyle(
                       fontSize: 12,
                       color: Colors.blue,
@@ -239,21 +234,21 @@ class _ControlPrenatalMejoradoScreenState extends ConsumerState<ControlPrenatalM
                 }
                 final peso = double.tryParse(value);
                 if (peso == null || peso < 30 || peso > 200) {
-                  return 'Peso inválido (30-200 kg)';
+                  return 'Peso invÃ¡lido (30-200 kg)';
                 }
                 return null;
               },
             ),
             const SizedBox(height: 16),
             
-            // Presión arterial
+            // PresiÃ³n arterial
             Row(
               children: [
                 Expanded(
                   child: TextFormField(
                     controller: _presionSistolicaController,
                     decoration: const InputDecoration(
-                      labelText: 'Presión Sistólica *',
+                      labelText: 'PresiÃ³n SistÃ³lica *',
                       border: OutlineInputBorder(),
                       suffixText: 'mmHg',
                     ),
@@ -265,7 +260,7 @@ class _ControlPrenatalMejoradoScreenState extends ConsumerState<ControlPrenatalM
                       }
                       final presion = int.tryParse(value);
                       if (presion == null || presion < 70 || presion > 200) {
-                        return 'Inválido';
+                        return 'InvÃ¡lido';
                       }
                       return null;
                     },
@@ -277,7 +272,7 @@ class _ControlPrenatalMejoradoScreenState extends ConsumerState<ControlPrenatalM
                   child: TextFormField(
                     controller: _presionDiastolicaController,
                     decoration: const InputDecoration(
-                      labelText: 'Presión Diastólica *',
+                      labelText: 'PresiÃ³n DiastÃ³lica *',
                       border: OutlineInputBorder(),
                       suffixText: 'mmHg',
                     ),
@@ -289,7 +284,7 @@ class _ControlPrenatalMejoradoScreenState extends ConsumerState<ControlPrenatalM
                       }
                       final presion = int.tryParse(value);
                       if (presion == null || presion < 40 || presion > 130) {
-                        return 'Inválido';
+                        return 'InvÃ¡lido';
                       }
                       return null;
                     },
@@ -300,11 +295,11 @@ class _ControlPrenatalMejoradoScreenState extends ConsumerState<ControlPrenatalM
             ),
             const SizedBox(height: 16),
             
-            // Frecuencia cardíaca
+            // Frecuencia cardÃ­aca
             TextFormField(
               controller: _frecuenciaCardiacaController,
               decoration: const InputDecoration(
-                labelText: 'Frecuencia Cardíaca *',
+                labelText: 'Frecuencia CardÃ­aca *',
                 border: OutlineInputBorder(),
                 suffixText: 'lpm',
               ),
@@ -312,11 +307,11 @@ class _ControlPrenatalMejoradoScreenState extends ConsumerState<ControlPrenatalM
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'La frecuencia cardíaca es obligatoria';
+                  return 'La frecuencia cardÃ­aca es obligatoria';
                 }
                 final fc = int.tryParse(value);
                 if (fc == null || fc < 40 || fc > 180) {
-                  return 'Frecuencia inválida (40-180 lpm)';
+                  return 'Frecuencia invÃ¡lida (40-180 lpm)';
                 }
                 return null;
               },
@@ -330,7 +325,7 @@ class _ControlPrenatalMejoradoScreenState extends ConsumerState<ControlPrenatalM
               decoration: const InputDecoration(
                 labelText: 'Temperatura',
                 border: OutlineInputBorder(),
-                suffixText: '°C',
+                suffixText: 'Â°C',
               ),
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               onChanged: _checkTemperatura,
@@ -397,12 +392,12 @@ class _ControlPrenatalMejoradoScreenState extends ConsumerState<ControlPrenatalM
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            '2. Síntomas de Alarma',
+            '2. SÃ­ntomas de Alarma',
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           const Text(
-            'Selecciona todos los síntomas que presente la gestante:',
+            'Selecciona todos los sÃ­ntomas que presente la gestante:',
             style: TextStyle(color: Colors.grey),
           ),
           const SizedBox(height: 24),
@@ -441,7 +436,7 @@ class _ControlPrenatalMejoradoScreenState extends ConsumerState<ControlPrenatalM
           
           const SizedBox(height: 24),
           
-          // Resumen de síntomas
+          // Resumen de sÃ­ntomas
           if (_sintomasSeleccionados.isNotEmpty)
             Card(
               color: _hasEmergencySintomas() ? Colors.red[50] : Colors.orange[50],
@@ -458,8 +453,8 @@ class _ControlPrenatalMejoradoScreenState extends ConsumerState<ControlPrenatalM
                         const SizedBox(width: 8),
                         Text(
                           _hasEmergencySintomas() 
-                              ? 'SÍNTOMAS DE EMERGENCIA DETECTADOS'
-                              : 'SÍNTOMAS DE ALARMA DETECTADOS',
+                              ? 'SÃNTOMAS DE EMERGENCIA DETECTADOS'
+                              : 'SÃNTOMAS DE ALARMA DETECTADOS',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: _hasEmergencySintomas() ? Colors.red : Colors.orange,
@@ -469,7 +464,7 @@ class _ControlPrenatalMejoradoScreenState extends ConsumerState<ControlPrenatalM
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '${_sintomasSeleccionados.length} síntoma${_sintomasSeleccionados.length > 1 ? 's' : ''} seleccionado${_sintomasSeleccionados.length > 1 ? 's' : ''}',
+                      '${_sintomasSeleccionados.length} sÃ­ntoma${_sintomasSeleccionados.length > 1 ? 's' : ''} seleccionado${_sintomasSeleccionados.length > 1 ? 's' : ''}',
                       style: const TextStyle(color: Colors.grey),
                     ),
                   ],
@@ -498,19 +493,19 @@ class _ControlPrenatalMejoradoScreenState extends ConsumerState<ControlPrenatalM
             decoration: const InputDecoration(
               labelText: 'Observaciones del Control',
               border: OutlineInputBorder(),
-              hintText: 'Escribe cualquier observación relevante...',
+              hintText: 'Escribe cualquier observaciÃ³n relevante...',
             ),
             maxLines: 8,
           ),
           const SizedBox(height: 24),
           
-          // Opción de evaluación automática
+          // OpciÃ³n de evaluaciÃ³n automÃ¡tica
           Card(
             color: Colors.blue[50],
             child: SwitchListTile(
-              title: const Text('Evaluación Automática de Alertas'),
+              title: const Text('EvaluaciÃ³n AutomÃ¡tica de Alertas'),
               subtitle: const Text(
-                'El sistema evaluará automáticamente los signos vitales y síntomas para generar alertas',
+                'El sistema evaluarÃ¡ automÃ¡ticamente los signos vitales y sÃ­ntomas para generar alertas',
               ),
               value: _evaluarAutomaticamente,
               onChanged: (value) => setState(() => _evaluarAutomaticamente = value),
@@ -530,7 +525,7 @@ class _ControlPrenatalMejoradoScreenState extends ConsumerState<ControlPrenatalM
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            '4. Confirmación',
+            '4. ConfirmaciÃ³n',
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
@@ -547,11 +542,11 @@ class _ControlPrenatalMejoradoScreenState extends ConsumerState<ControlPrenatalM
               if (_pesoController.text.isNotEmpty)
                 'Peso: ${_pesoController.text} kg',
               if (_presionSistolicaController.text.isNotEmpty && _presionDiastolicaController.text.isNotEmpty)
-                'Presión Arterial: ${_presionSistolicaController.text}/${_presionDiastolicaController.text} mmHg',
+                'PresiÃ³n Arterial: ${_presionSistolicaController.text}/${_presionDiastolicaController.text} mmHg',
               if (_frecuenciaCardiacaController.text.isNotEmpty)
-                'Frecuencia Cardíaca: ${_frecuenciaCardiacaController.text} lpm',
+                'Frecuencia CardÃ­aca: ${_frecuenciaCardiacaController.text} lpm',
               if (_temperaturaController.text.isNotEmpty)
-                'Temperatura: ${_temperaturaController.text} °C',
+                'Temperatura: ${_temperaturaController.text} Â°C',
               'Movimientos Fetales: ${_movimientosFetales ? "Presentes" : "Ausentes"}',
               'Edemas: ${_edemas ? "Presentes" : "Ausentes"}',
             ],
@@ -559,7 +554,7 @@ class _ControlPrenatalMejoradoScreenState extends ConsumerState<ControlPrenatalM
           
           if (_sintomasSeleccionados.isNotEmpty)
             _buildConfirmacionCard(
-              'Síntomas de Alarma',
+              'SÃ­ntomas de Alarma',
               _sintomasSeleccionados.map((id) {
                 final sintoma = _sintomasDisponibles.firstWhere((s) => s['id'] == id);
                 return sintoma['nombre']!;
@@ -584,7 +579,7 @@ class _ControlPrenatalMejoradoScreenState extends ConsumerState<ControlPrenatalM
                     SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Se realizará evaluación automática de alertas al guardar',
+                        'Se realizarÃ¡ evaluaciÃ³n automÃ¡tica de alertas al guardar',
                         style: TextStyle(color: Colors.blue),
                       ),
                     ),
@@ -623,7 +618,7 @@ class _ControlPrenatalMejoradoScreenState extends ConsumerState<ControlPrenatalM
             const SizedBox(height: 12),
             ...items.map((item) => Padding(
               padding: const EdgeInsets.only(bottom: 4),
-              child: Text('• $item'),
+              child: Text('â€¢ $item'),
             )),
           ],
         ),
@@ -706,8 +701,8 @@ class _ControlPrenatalMejoradoScreenState extends ConsumerState<ControlPrenatalM
     setState(() => _isLoading = true);
 
     try {
-      // TODO: Implementar llamada al backend con evaluación automática
-      await Future.delayed(const Duration(seconds: 2)); // Simulación
+      // TODO: Implementar llamada al backend con evaluaciÃ³n automÃ¡tica
+      await Future.delayed(const Duration(seconds: 2)); // SimulaciÃ³n
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -752,33 +747,33 @@ class _ControlPrenatalMejoradoScreenState extends ConsumerState<ControlPrenatalM
     final diastolica = int.tryParse(_presionDiastolicaController.text);
     
     if (sistolica != null && sistolica >= 160) {
-      _mostrarAlertaSignoVital('Presión arterial sistólica muy alta (≥160 mmHg)');
+      _mostrarAlertaSignoVital('PresiÃ³n arterial sistÃ³lica muy alta (â‰¥160 mmHg)');
     } else if (sistolica != null && sistolica >= 140) {
-      _mostrarAlertaSignoVital('Presión arterial sistólica alta (≥140 mmHg)');
+      _mostrarAlertaSignoVital('PresiÃ³n arterial sistÃ³lica alta (â‰¥140 mmHg)');
     }
     
     if (diastolica != null && diastolica >= 110) {
-      _mostrarAlertaSignoVital('Presión arterial diastólica muy alta (≥110 mmHg)');
+      _mostrarAlertaSignoVital('PresiÃ³n arterial diastÃ³lica muy alta (â‰¥110 mmHg)');
     } else if (diastolica != null && diastolica >= 90) {
-      _mostrarAlertaSignoVital('Presión arterial diastólica alta (≥90 mmHg)');
+      _mostrarAlertaSignoVital('PresiÃ³n arterial diastÃ³lica alta (â‰¥90 mmHg)');
     }
   }
 
   void _checkFrecuenciaCardiaca(String value) {
     final fc = int.tryParse(value);
     if (fc != null && fc >= 120) {
-      _mostrarAlertaSignoVital('Taquicardia severa (≥120 lpm)');
+      _mostrarAlertaSignoVital('Taquicardia severa (â‰¥120 lpm)');
     } else if (fc != null && fc >= 100) {
-      _mostrarAlertaSignoVital('Taquicardia (≥100 lpm)');
+      _mostrarAlertaSignoVital('Taquicardia (â‰¥100 lpm)');
     }
   }
 
   void _checkTemperatura(String value) {
     final temp = double.tryParse(value);
     if (temp != null && temp >= 39.0) {
-      _mostrarAlertaSignoVital('Fiebre alta (≥39°C)');
+      _mostrarAlertaSignoVital('Fiebre alta (â‰¥39Â°C)');
     } else if (temp != null && temp >= 38.0) {
-      _mostrarAlertaSignoVital('Fiebre (≥38°C)');
+      _mostrarAlertaSignoVital('Fiebre (â‰¥38Â°C)');
     }
   }
 
@@ -789,7 +784,7 @@ class _ControlPrenatalMejoradoScreenState extends ConsumerState<ControlPrenatalM
           children: [
             const Icon(Icons.warning, color: Colors.white),
             const SizedBox(width: 8),
-            Expanded(child: Text('⚠️ $mensaje')),
+            Expanded(child: Text('âš ï¸ $mensaje')),
           ],
         ),
         backgroundColor: Colors.orange,
@@ -805,7 +800,7 @@ class _ControlPrenatalMejoradoScreenState extends ConsumerState<ControlPrenatalM
           children: [
             const Icon(Icons.error, color: Colors.white),
             const SizedBox(width: 8),
-            Expanded(child: Text('🚨 EMERGENCIA: $sintoma')),
+            Expanded(child: Text('ðŸš¨ EMERGENCIA: $sintoma')),
           ],
         ),
         backgroundColor: Colors.red,
@@ -822,12 +817,12 @@ class _ControlPrenatalMejoradoScreenState extends ConsumerState<ControlPrenatalM
           children: [
             Icon(Icons.error, color: Colors.red),
             SizedBox(width: 8),
-            Text('EMERGENCIA OBSTÉTRICA'),
+            Text('EMERGENCIA OBSTÃ‰TRICA'),
           ],
         ),
         content: const Text(
-          'La ausencia de movimientos fetales es una EMERGENCIA OBSTÉTRICA. '
-          'Se generará una alerta crítica automáticamente.',
+          'La ausencia de movimientos fetales es una EMERGENCIA OBSTÃ‰TRICA. '
+          'Se generarÃ¡ una alerta crÃ­tica automÃ¡ticamente.',
         ),
         actions: [
           TextButton(
@@ -857,4 +852,5 @@ class _ControlPrenatalMejoradoScreenState extends ConsumerState<ControlPrenatalM
     return '${date.day}/${date.month}/${date.year}';
   }
 }
+
 

@@ -1,8 +1,7 @@
-// Servicio de compatibilidad para el sistema SOS
+﻿// Servicio de compatibilidad para el sistema SOS
 // Maneja errores de compatibilidad con el backend y proporciona fallbacks
 
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'api_service.dart';
 import 'auth_service.dart';
 import '../config/app_config.dart';
@@ -21,7 +20,6 @@ class SOSCompatibilityService {
     String? descripcion,
   }) async {
     try {
-      debugPrint('🚨 SOSCompatibilityService: Enviando alerta SOS compatible...');
       
       // Intentar con el endpoint original
       final response = await _apiService.post(AppConfig.endpointSOS, data: {
@@ -39,7 +37,6 @@ class SOSCompatibilityService {
       });
       
       if (response.data != null && response.data['success'] == true) {
-        debugPrint('✅ SOSCompatibilityService: Alerta SOS enviada exitosamente');
         return {
           'success': true,
           'alertaId': response.data['alertaId'],
@@ -49,11 +46,9 @@ class SOSCompatibilityService {
           'mensaje': 'Alerta SOS enviada exitosamente',
         };
       } else {
-        debugPrint('❌ SOSCompatibilityService: Error en respuesta del backend');
         throw Exception(response.data?['error'] ?? 'Error desconocido del backend');
       }
     } catch (e) {
-      debugPrint('❌ SOSCompatibilityService: Error enviando alerta SOS: $e');
       
       // Intentar con el endpoint alternativo
       return await _enviarAlertaSOSAlternativo(
@@ -73,7 +68,6 @@ class SOSCompatibilityService {
     String? descripcion,
   }) async {
     try {
-      debugPrint('🔄 SOSCompatibilityService: Intentando con endpoint alternativo...');
       
       // Usar endpoint de alertas general
       final response = await _apiService.post('/alertas/emergencia', data: {
@@ -88,7 +82,6 @@ class SOSCompatibilityService {
       });
       
       if (response.data != null && response.data['success'] == true) {
-        debugPrint('✅ SOSCompatibilityService: Alerta SOS enviada con endpoint alternativo');
         return {
           'success': true,
           'alertaId': response.data['alertaId'],
@@ -98,13 +91,11 @@ class SOSCompatibilityService {
           'mensaje': 'Alerta SOS enviada exitosamente (endpoint alternativo)',
         };
       } else {
-        debugPrint('❌ SOSCompatibilityService: Error con endpoint alternativo');
         throw Exception(response.data?['error'] ?? 'Error desconocido del backend');
       }
     } catch (e) {
-      debugPrint('❌ SOSCompatibilityService: Error con endpoint alternativo: $e');
       
-      // Último recurso: guardar localmente
+      // Ãšltimo recurso: guardar localmente
       return await _guardarAlertaSOSLocalmente(
         gestanteId: gestanteId,
         latitud: latitud,
@@ -122,7 +113,6 @@ class SOSCompatibilityService {
     String? descripcion,
   }) async {
     try {
-      debugPrint('💾 SOSCompatibilityService: Guardando alerta SOS localmente...');
       
       // Crear alerta local
       final alertaLocal = {
@@ -139,21 +129,19 @@ class SOSCompatibilityService {
         'timestamp': DateTime.now().toIso8601String(),
       };
       
-      // Aquí se podría guardar en almacenamiento local
+      // AquÃ­ se podrÃ­a guardar en almacenamiento local
       // Por ahora, solo retornamos el resultado
       
-      debugPrint('✅ SOSCompatibilityService: Alerta SOS guardada localmente');
       return {
         'success': true,
         'alertaId': alertaLocal['id'],
         'gestanteId': gestanteId,
         'coordenadas': [longitud, latitud],
         'timestamp': DateTime.now().toIso8601String(),
-        'mensaje': 'Alerta SOS guardada localmente (sin conexión)',
+        'mensaje': 'Alerta SOS guardada localmente (sin conexiÃ³n)',
         'local': true,
       };
     } catch (e) {
-      debugPrint('❌ SOSCompatibilityService: Error guardando alerta localmente: $e');
       return {
         'success': false,
         'alertaId': null,
@@ -169,15 +157,12 @@ class SOSCompatibilityService {
   /// Sincronizar alertas locales pendientes
   Future<List<Map<String, dynamic>>> sincronizarAlertasPendientes() async {
     try {
-      debugPrint('🔄 SOSCompatibilityService: Sincronizando alertas pendientes...');
       
-      // Aquí se obtendrían las alertas locales pendientes
-      // Por ahora, retornamos una lista vacía
+      // AquÃ­ se obtendrÃ­an las alertas locales pendientes
+      // Por ahora, retornamos una lista vacÃ­a
       
-      debugPrint('✅ SOSCompatibilityService: No hay alertas pendientes por sincronizar');
       return [];
     } catch (e) {
-      debugPrint('❌ SOSCompatibilityService: Error sincronizando alertas: $e');
       return [];
     }
   }
@@ -185,20 +170,16 @@ class SOSCompatibilityService {
   /// Verificar si el backend es compatible con el sistema SOS
   Future<bool> verificarCompatibilidadSOS() async {
     try {
-      debugPrint('🔍 SOSCompatibilityService: Verificando compatibilidad SOS...');
       
-      // Intentar hacer una petición de prueba al endpoint SOS
+      // Intentar hacer una peticiÃ³n de prueba al endpoint SOS
       final response = await _apiService.get('/alertas/sos/compatibilidad');
       
       if (response.data != null && response.data['compatible'] == true) {
-        debugPrint('✅ SOSCompatibilityService: Backend compatible con SOS');
         return true;
       } else {
-        debugPrint('⚠️ SOSCompatibilityService: Backend no totalmente compatible con SOS');
         return false;
       }
     } catch (e) {
-      debugPrint('❌ SOSCompatibilityService: Error verificando compatibilidad: $e');
       return false;
     }
   }
@@ -206,7 +187,6 @@ class SOSCompatibilityService {
   /// Obtener estado del sistema SOS
   Future<Map<String, dynamic>> obtenerEstadoSOS() async {
     try {
-      debugPrint('🔍 SOSCompatibilityService: Obteniendo estado del sistema SOS...');
       
       final esCompatible = await verificarCompatibilidadSOS();
       final alertasPendientes = await sincronizarAlertasPendientes();
@@ -218,7 +198,6 @@ class SOSCompatibilityService {
         'estado': esCompatible ? 'funcional' : 'limitado',
       };
     } catch (e) {
-      debugPrint('❌ SOSCompatibilityService: Error obteniendo estado SOS: $e');
       return {
         'compatible': false,
         'alertas_pendientes': 0,

@@ -1,4 +1,4 @@
-// Servicio para reportes y estadísticas
+﻿// Servicio para reportes y estadÃ­sticas
 import 'dart:convert';
 import 'auth_service.dart';
 
@@ -18,12 +18,11 @@ class ReporteService {
         throw Exception('Error al obtener resumen general: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
-      print('❌ Error en getResumenGeneral: $e');
       rethrow;
     }
   }
 
-  // Obtener estadísticas de gestantes
+  // Obtener estadÃ­sticas de gestantes
   Future<List<dynamic>> getEstadisticasGestantes() async {
     try {
       final response = await AuthService().authenticatedRequest(
@@ -34,15 +33,14 @@ class ReporteService {
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else {
-        throw Exception('Error al obtener estadísticas de gestantes: ${response.statusCode} - ${response.body}');
+        throw Exception('Error al obtener estadÃ­sticas de gestantes: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
-      print('❌ Error en getEstadisticasGestantes: $e');
       rethrow;
     }
   }
 
-  // Obtener estadísticas de controles
+  // Obtener estadÃ­sticas de controles
   Future<Map<String, dynamic>> getEstadisticasControles({
     DateTime? fechaInicio,
     DateTime? fechaFin,
@@ -67,15 +65,14 @@ class ReporteService {
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else {
-        throw Exception('Error al obtener estadísticas de controles: ${response.statusCode} - ${response.body}');
+        throw Exception('Error al obtener estadÃ­sticas de controles: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
-      print('❌ Error en getEstadisticasControles: $e');
       rethrow;
     }
   }
 
-  // Obtener estadísticas de alertas
+  // Obtener estadÃ­sticas de alertas
   Future<Map<String, dynamic>> getEstadisticasAlertas() async {
     try {
       final response = await AuthService().authenticatedRequest(
@@ -86,15 +83,14 @@ class ReporteService {
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else {
-        throw Exception('Error al obtener estadísticas de alertas: ${response.statusCode}');
+        throw Exception('Error al obtener estadÃ­sticas de alertas: ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ Error en getEstadisticasAlertas: $e');
       rethrow;
     }
   }
 
-  // Obtener estadísticas de riesgo
+  // Obtener estadÃ­sticas de riesgo
   Future<Map<String, dynamic>> getEstadisticasRiesgo() async {
     try {
       final response = await AuthService().authenticatedRequest(
@@ -105,10 +101,9 @@ class ReporteService {
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else {
-        throw Exception('Error al obtener estadísticas de riesgo: ${response.statusCode} - ${response.body}');
+        throw Exception('Error al obtener estadÃ­sticas de riesgo: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
-      print('❌ Error en getEstadisticasRiesgo: $e');
       rethrow;
     }
   }
@@ -127,9 +122,9 @@ class ReporteService {
         throw Exception('Error al obtener tendencias: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
-      print('❌ Error en getTendencias: $e');
       rethrow;
     }
   }
 }
+
 

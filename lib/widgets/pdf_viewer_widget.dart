@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../utils/logger.dart';
+import '../../utils/logger.dart' show appLogger;
 import '../../services/api_service.dart';
 
 class PdfViewerWidget extends StatefulWidget {
@@ -55,7 +55,7 @@ class _PdfViewerWidgetState extends State<PdfViewerWidget> {
         _errorMessage = e.toString();
         _isLoading = false;
       });
-      AppLogger.error('Error cargando PDF: $e');
+      appLogger.error('Error cargando PDF: $e');
     }
   }
 
@@ -89,14 +89,14 @@ class _PdfViewerWidgetState extends State<PdfViewerWidget> {
         _isLoading = false;
       });
 
-      AppLogger.info('PDF descargado: $filePath');
+      appLogger.info('PDF descargado: $filePath');
     } catch (e) {
       setState(() {
         _hasError = true;
         _errorMessage = 'Error descargando PDF: $e';
         _isLoading = false;
       });
-      AppLogger.error('Error descargando PDF: $e');
+      appLogger.error('Error descargando PDF: $e');
     }
   }
 
@@ -215,7 +215,7 @@ class _PdfViewerWidgetState extends State<PdfViewerWidget> {
           file.deleteSync();
         }
       } catch (e) {
-        AppLogger.error('Error eliminando archivo temporal: $e');
+        appLogger.error('Error eliminando archivo temporal: $e');
       }
     }
     super.dispose();
@@ -301,7 +301,7 @@ class _PdfViewerWidgetState extends State<PdfViewerWidget> {
         _hasError = true;
         _errorMessage = 'Error al abrir PDF: $e';
       });
-      AppLogger.error('Error abriendo PDF externamente: $e');
+      appLogger.error('Error abriendo PDF externamente: $e');
     }
   }
 
@@ -345,7 +345,7 @@ class _PdfViewerWidgetState extends State<PdfViewerWidget> {
         _errorMessage = 'Error descargando PDF: $e';
         _isLoading = false;
       });
-      AppLogger.error('Error descargando PDF: $e');
+      appLogger.error('Error descargando PDF: $e');
     }
   }
 }

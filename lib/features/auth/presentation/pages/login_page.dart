@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../shared/widgets/custom_text_field.dart';
@@ -22,75 +22,64 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   @override
   void initState() {
     super.initState();
-    print('🔐 LoginPage: initState called - LoginPage loaded successfully');
     _initializeAuthService();
   }
 
   Future<void> _initializeAuthService() async {
     try {
-      print('🔐 LoginPage: Inicializando AuthService...');
       final authService = AuthService();
       await authService.initialize();
-      print('✅ LoginPage: AuthService inicializado correctamente');
     } catch (e) {
-      print('❌ LoginPage: Error inicializando AuthService: $e');
     }
   }
 
   void _handleLogin() {
-    print('🔐 LoginPage: Login button pressed');
     _loginAsync();
   }
 
   Future<void> _loginAsync() async {
-    print('🔐 LoginPage: Starting login process');
   if (!mounted) return;
   setState(() { isLoading = true; errorMessage = null; });
     try {
-      print('🔐 LoginPage: Sending login request to backend via AuthService');
       final authService = AuthService();
       final ok = await authService.login(
         emailController.text.trim(),
         passwordController.text,
       );
       if (!ok) {
-        throw Exception('Credenciales inválidas');
+        throw Exception('Credenciales invÃ¡lidas');
       }
 
-      // Enviar ubicación tras login exitoso (no bloquear navegación si falla)
+      // Enviar ubicaciÃ³n tras login exitoso (no bloquear navegaciÃ³n si falla)
       try {
         await enviarUbicacionAlBackend();
       } catch (e) {
-        print('⚠️ LoginPage: No se pudo enviar la ubicación: $e');
       }
 
-      print('🔐 LoginPage: Login successful, navigating to dashboard');
       if (!mounted) return;
       setState(() { isLoading = false; });
       if (mounted) {
         context.go('/dashboard');
-        print('✅ LoginPage: Navigation to /dashboard successful');
       }
     } catch (e) {
-      print('❌ LoginPage: Login failed: $e');
       if (!mounted) return;
       setState(() {
-        errorMessage = 'Credenciales inválidas o error de red.';
+        errorMessage = 'Credenciales invÃ¡lidas o error de red.';
         isLoading = false;
       });
     }
   }
 
-  // Geolocalización: integración en Flutter
-  // Envía la ubicación real del usuario al backend usando AuthService (con token automático)
+  // GeolocalizaciÃ³n: integraciÃ³n en Flutter
+  // EnvÃ­a la ubicaciÃ³n real del usuario al backend usando AuthService (con token automÃ¡tico)
   Future<void> enviarUbicacionAlBackend() async {
-    // Solicita permisos de ubicación
+    // Solicita permisos de ubicaciÃ³n
     LocationPermission permission = await Geolocator.requestPermission();
     if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
-      throw Exception('Permiso de ubicación denegado');
+      throw Exception('Permiso de ubicaciÃ³n denegado');
     }
 
-    // Obtiene la ubicación actual
+    // Obtiene la ubicaciÃ³n actual
     Position position = await Geolocator.getCurrentPosition(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.high,
@@ -98,7 +87,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       ),
     );
 
-    // Envía la ubicación al backend con autenticación centralizada
+    // EnvÃ­a la ubicaciÃ³n al backend con autenticaciÃ³n centralizada
     await AuthService().authenticatedRequest(
       'PUT',
       '/auth/profile',
@@ -110,7 +99,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   void _handleAutoLogin() {
-    print('🔐 LoginPage: Auto login button pressed');
     emailController.text = 'wzuccardi@gmail.com';
     passwordController.text = '73102604722';
     _handleLogin();
@@ -118,11 +106,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    print('🎨 LoginPage: build method called');
     return Scaffold(
       backgroundColor: Colors.pink.shade50,
       appBar: AppBar(
-        title: const Text('Iniciar sesión'),
+        title: const Text('Iniciar sesiÃ³n'),
         backgroundColor: Colors.pink.shade100,
         foregroundColor: Colors.pink.shade800,
       ),
@@ -147,9 +134,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               ),
             ),
             const SizedBox(height: 40),
-            CustomTextField(label: 'Correo electrónico', controller: emailController),
+            CustomTextField(label: 'Correo electrÃ³nico', controller: emailController),
             const SizedBox(height: 16),
-            CustomTextField(label: 'Contraseña', controller: passwordController, obscureText: true),
+            CustomTextField(label: 'ContraseÃ±a', controller: passwordController, obscureText: true),
             const SizedBox(height: 24),
             if (errorMessage != null)
               Padding(
@@ -161,24 +148,23 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               onPressed: isLoading ? null : _handleLogin,
             ),
             const SizedBox(height: 10),
-            // Botón de login automático para desarrollo
+            // BotÃ³n de login automÃ¡tico para desarrollo
             ElevatedButton(
               onPressed: isLoading ? null : _handleAutoLogin,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green.shade100,
                 foregroundColor: Colors.green.shade800,
               ),
-              child: const Text('Login Automático (Admin)'),
+              child: const Text('Login AutomÃ¡tico (Admin)'),
             ),
             const SizedBox(height: 10),
-            // Botón para ir al registro
+            // BotÃ³n para ir al registro
             TextButton(
               onPressed: () {
-                print('🔐 LoginPage: Navigate to register button pressed');
                 context.go('/register');
               },
               child: Text(
-                '¿No tienes cuenta? Regístrate',
+                'Â¿No tienes cuenta? RegÃ­strate',
                 style: TextStyle(
                   color: Colors.pink.shade700,
                   fontWeight: FontWeight.w600,
@@ -192,3 +178,4 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     );
   }
 }
+

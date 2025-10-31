@@ -1,8 +1,9 @@
-import 'package:dio/dio.dart';
+﻿import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/logger.dart';
 import '../config/app_config.dart';
+import 'auth_service.dart';
 
 class ApiService {
   static final String baseUrl = AppConfig.getApiUrl();
@@ -31,66 +32,57 @@ class ApiService {
 
   
   void _setupInterceptors() {
-    // Interceptor para agregar token de autenticación
+    // Interceptor para agregar token de autenticaciÃ³n
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
-        print('🔍 DEBUG: Making request to: ${options.baseUrl}${options.path}');
-        print('🔍 DEBUG: Full URL: ${options.uri}');
-        print('🔍 DEBUG: Request method: ${options.method}');
-        print('🔍 DEBUG: Query params: ${options.queryParameters}');
+        
+        // ðŸ” DEBUG: Verificar si AuthService estÃ¡ inicializado
+        try {
+          final authService = AuthService();
+          
+          // Forzar inicializaciÃ³n si no estÃ¡ autenticado
+          if (!authService.isAuthenticated) {
+            await authService.initialize();
+          }
+          
+        } catch (e) {
+        }
         
         String? token;
         
-        // Intentar obtener el token de FlutterSecureStorage primero (más confiable)
+        // Intentar obtener el token de FlutterSecureStorage primero (mÃ¡s confiable)
         token = await _storage.read(key: 'auth_token');
-        print('🔍 DEBUG: Token from FlutterSecureStorage: ${token != null ? "EXISTS" : "NULL"}');
         
         // Si no se encuentra en FlutterSecureStorage, intentar en SharedPreferences
         if (token == null) {
           try {
             final prefs = await SharedPreferences.getInstance();
             token = prefs.getString('auth_token');
-            print('🔍 DEBUG: Token from SharedPreferences: ${token != null ? "EXISTS" : "NULL"}');
             
             // Si se encuentra en SharedPreferences, guardarlo en FlutterSecureStorage para futuras solicitudes
             if (token != null) {
               await _storage.write(key: 'auth_token', value: token);
-              print('🔍 DEBUG: Token moved from SharedPreferences to FlutterSecureStorage');
             }
           } catch (e) {
-            print('🔴 DEBUG: Error reading from SharedPreferences: $e');
           }
         }
         
         if (token != null) {
           options.headers['Authorization'] = 'Bearer $token';
-          print('🔍 DEBUG: Authorization header added');
         } else {
-          print('🔴 DEBUG: No token found in storage');
         }
         handler.next(options);
       },
       onResponse: (response, handler) {
-        print('🔍 DEBUG: Response received');
-        print('🔍 DEBUG: Status code: ${response.statusCode}');
-        print('🔍 DEBUG: Response data type: ${response.data.runtimeType}');
-        print('🔍 DEBUG: Response headers: ${response.headers}');
         
         // Log response data but truncate if too large
         if (response.data.toString().length > 500) {
-          print('🔍 DEBUG: Response data (truncated): ${response.data.toString().substring(0, 500)}...');
         } else {
-          print('🔍 DEBUG: Response data: ${response.data}');
         }
         
         handler.next(response);
       },
       onError: (error, handler) async {
-        print('🔴 DEBUG: Request failed');
-        print('🔴 DEBUG: Error type: ${error.type}');
-        print('🔴 DEBUG: Error message: ${error.message}');
-        print('🔴 DEBUG: Response status: ${error.response?.statusCode}');
-        print('🔴 DEBUG: Response data: ${error.response?.data}');
         
         if (error.response?.statusCode == 401) {
           // Token expirado, limpiar storage
@@ -102,27 +94,24 @@ class ApiService {
         if (error.response?.statusCode == 404) {
           final path = error.requestOptions.path;
           if (path.contains('/controles')) {
-            print('🔧 DEBUG: Aplicando fallback para /controles - devolviendo lista vacía');
-            // Devolver lista vacía directamente (sin wrapper success/data)
+            // Devolver lista vacÃ­a directamente (sin wrapper success/data)
             final response = Response(
               requestOptions: error.requestOptions,
               statusCode: 200,
-              data: [], // Lista vacía directamente
+              data: [], // Lista vacÃ­a directamente
             );
             handler.resolve(response);
             return;
           } else if (path.contains('/contenido-crud')) {
-            print('🔧 DEBUG: Aplicando fallback para /contenido-crud - devolviendo lista vacía');
-            // Devolver lista vacía directamente
+            // Devolver lista vacÃ­a directamente
             final response = Response(
               requestOptions: error.requestOptions,
               statusCode: 200,
-              data: [], // Lista vacía directamente
+              data: [], // Lista vacÃ­a directamente
             );
             handler.resolve(response);
             return;
           } else if (path.contains('/auth/refresh')) {
-            print('🔧 DEBUG: Aplicando fallback para /auth/refresh');
             // Devolver respuesta de refresh exitoso
             final response = Response(
               requestOptions: error.requestOptions,
@@ -153,7 +142,7 @@ class ApiService {
     ));
   }
   
-  // Métodos HTTP genéricos
+  // MÃ©todos HTTP genÃ©ricos
   Future<Response<T>> get<T>(
     String path, {
     Map<String, dynamic>? queryParameters,
@@ -239,7 +228,7 @@ class ApiService {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
       case DioExceptionType.receiveTimeout:
-        return Exception('Tiempo de conexión agotado. Verifica tu conexión a internet.');
+        return Exception('Tiempo de conexiÃ³n agotado. Verifica tu conexiÃ³n a internet.');
       case DioExceptionType.badResponse:
         final statusCode = error.response?.statusCode;
         final message = error.response?.data?['message'] ?? 'Error del servidor';
@@ -247,7 +236,7 @@ class ApiService {
       case DioExceptionType.cancel:
         return Exception('Solicitud cancelada');
       case DioExceptionType.unknown:
-        return Exception('Error de conexión. Verifica que el servidor esté ejecutándose.');
+        return Exception('Error de conexiÃ³n. Verifica que el servidor estÃ© ejecutÃ¡ndose.');
       default:
         return Exception('Error desconocido: ${error.message}');
     }
@@ -280,7 +269,7 @@ class ApiService {
       if (e is DioException) {
         throw _handleError(e);
       } else {
-        throw Exception('Error de conexión: $e');
+        throw Exception('Error de conexiÃ³n: $e');
       }
     }
   }
@@ -298,7 +287,7 @@ class ApiService {
       if (e is DioException) {
         throw _handleError(e);
       } else {
-        throw Exception('Error de conexión: $e');
+        throw Exception('Error de conexiÃ³n: $e');
       }
     }
   }
@@ -313,7 +302,7 @@ class ApiService {
       if (e is DioException) {
         throw _handleError(e);
       } else {
-        throw Exception('Error de conexión: $e');
+        throw Exception('Error de conexiÃ³n: $e');
       }
     }
   }
@@ -328,22 +317,22 @@ class ApiService {
       if (e is DioException) {
         throw _handleError(e);
       } else {
-        throw Exception('Error de conexión: $e');
+        throw Exception('Error de conexiÃ³n: $e');
       }
     }
   }
 
-  // Obtener estadísticas de municipios
+  // Obtener estadÃ­sticas de municipios
   Future<Map<String, dynamic>> _getEstadisticasMunicipios() async {
     try {
       final response = await _dio.get('/municipios/stats');
       return response.data;
     } catch (e) {
-      AppLogger.instance.error('Error obteniendo estadísticas de municipios: $e');
+      AppLogger.instance.error('Error obteniendo estadÃ­sticas de municipios: $e');
       if (e is DioException) {
         throw _handleError(e);
       } else {
-        throw Exception('Error de conexión: $e');
+        throw Exception('Error de conexiÃ³n: $e');
       }
     }
   }
@@ -371,29 +360,29 @@ class ApiService {
       if (e is DioException) {
         throw _handleError(e);
       } else {
-        throw Exception('Error de conexión: $e');
+        throw Exception('Error de conexiÃ³n: $e');
       }
     }
   }
 
-  // Importar municipios de Bolívar
+  // Importar municipios de BolÃ­var
   Future<Map<String, dynamic>> _importarMunicipiosBolivar() async {
     try {
       final response = await _dio.post('/municipios/import/bolivar');
       return response.data;
     } catch (e) {
-      AppLogger.instance.error('Error importando municipios de Bolívar: $e');
+      AppLogger.instance.error('Error importando municipios de BolÃ­var: $e');
       if (e is DioException) {
         throw _handleError(e);
       } else {
-        throw Exception('Error de conexión: $e');
+        throw Exception('Error de conexiÃ³n: $e');
       }
     }
   }
 
-  // ==================== MÉTODOS ESTÁTICOS PARA COMPATIBILIDAD ====================
+  // ==================== MÃ‰TODOS ESTÃTICOS PARA COMPATIBILIDAD ====================
 
-  // Métodos estáticos para municipios
+  // MÃ©todos estÃ¡ticos para municipios
   static Future<Map<String, dynamic>> getMunicipios({
     int page = 1,
     int limit = 50,
@@ -442,7 +431,7 @@ class ApiService {
     return await _instance._importarMunicipiosBolivar();
   }
 
-  // Métodos de utilidad
+  // MÃ©todos de utilidad
   Future<void> saveToken(String token) async {
     await _storage.write(key: 'auth_token', value: token);
   }
@@ -456,7 +445,7 @@ class ApiService {
     await _storage.delete(key: 'user_data');
   }
 
-  // Métodos para Municipios
+  // MÃ©todos para Municipios
   static Future<void> updateMunicipioEstado(String municipioId, bool nuevoEstado) async {
     try {
       await _instance._dio.put('/municipios/$municipioId/estado',
@@ -467,7 +456,7 @@ class ApiService {
     }
   }
 
-  // Métodos para IPS
+  // MÃ©todos para IPS
   static Future<List<Map<String, dynamic>>> getIPS() async {
     try {
       final response = await _instance._dio.get('/ips');
@@ -493,13 +482,13 @@ class ApiService {
     }
   }
 
-  // Métodos para Médicos
+  // MÃ©todos para MÃ©dicos
   static Future<List<Map<String, dynamic>>> getMedicos() async {
     try {
       final response = await _instance._dio.get('/medicos');
       return List<Map<String, dynamic>>.from(response.data);
     } catch (e) {
-      throw Exception('Error obteniendo médicos: $e');
+      throw Exception('Error obteniendo mÃ©dicos: $e');
     }
   }
 
@@ -507,7 +496,7 @@ class ApiService {
     try {
       await _instance._dio.post('/medicos', data: medicoData);
     } catch (e) {
-      throw Exception('Error creando médico: $e');
+      throw Exception('Error creando mÃ©dico: $e');
     }
   }
 
@@ -515,7 +504,7 @@ class ApiService {
     try {
       await _instance._dio.put('/medicos/$medicoId', data: medicoData);
     } catch (e) {
-      throw Exception('Error actualizando médico: $e');
+      throw Exception('Error actualizando mÃ©dico: $e');
     }
   }
 }

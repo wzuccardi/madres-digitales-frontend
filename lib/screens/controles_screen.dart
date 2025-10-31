@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/control_service.dart';
 import '../services/gestante_service.dart';
@@ -26,40 +26,31 @@ class _ControlesScreenState extends ConsumerState<ControlesScreen>
   String? _error;
   bool _isDisposed = false;
   
-  // Cache de alertas para evitar múltiples solicitudes
+  // Cache de alertas para evitar mÃºltiples solicitudes
   final Map<String, List<Alerta>> _alertasCache = {};
   DateTime? _alertasCacheTimestamp;
-  static const Duration _cacheExpiry = Duration(minutes: 5); // Cache expira después de 5 minutos
+  static const Duration _cacheExpiry = Duration(minutes: 5); // Cache expira despuÃ©s de 5 minutos
 
   @override
   void initState() {
     super.initState();
-    print('🩺 ControlesScreen: ========== INICIALIZANDO PANTALLA ==========');
     _tabController = TabController(length: 3, vsync: this);
-    print('🩺 ControlesScreen: TabController creado con 3 tabs');
     
     // Usar WidgetsBinding para evitar setState durante build
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      print('🩺 ControlesScreen: PostFrameCallback ejecutado');
       if (mounted && !_isDisposed) {
-        print('🩺 ControlesScreen: Widget montado, iniciando carga de controles...');
         _cargarControles();
       } else {
-        print('❌ ControlesScreen: Widget no montado o disposed');
       }
     });
   }
 
   @override
   void dispose() {
-    print('🩺 ControlesScreen: ========== DISPOSING PANTALLA ==========');
     _isDisposed = true;
-    print('🩺 ControlesScreen: Flag _isDisposed establecido a true');
     
     _tabController.dispose();
-    print('🩺 ControlesScreen: ✅ TabController disposed');
     
-    print('🩺 ControlesScreen: ✅ Pantalla disposed exitosamente');
     super.dispose();
   }
 
@@ -80,10 +71,10 @@ class _ControlesScreenState extends ConsumerState<ControlesScreen>
     try {
       appLogger.info('ControlesScreen: Cargando controles reales del backend...');
       
-      // Limpiar caché de alertas al recargar controles
+      // Limpiar cachÃ© de alertas al recargar controles
       _limpiarCacheAlertas();
       
-      // Usar el servicio específico desde el provider
+      // Usar el servicio especÃ­fico desde el provider
       final apiService = ref.read(apiServiceProvider);
       final gestanteService = GestanteService(apiService);
       final controlService = ControlService(apiService, gestanteService);
@@ -158,15 +149,13 @@ class _ControlesScreenState extends ConsumerState<ControlesScreen>
       floatingActionButton: FloatingActionButton(
         heroTag: "controles_fab",
         onPressed: () async {
-          print('🔶 CONTROLES_SCREEN: Botón de agregar control presionado - ARCHIVO: controles_screen.dart');
-          print('🔶 CONTROLES_SCREEN: Navegando a ControlFormScreen');
           final result = await Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) => ControlFormScreen(),
+              builder: (context) => const ControlFormScreen(),
             ),
           );
           if (result == true) {
-            // Recargar controles si se creó uno nuevo
+            // Recargar controles si se creÃ³ uno nuevo
             _cargarControles();
           }
         },
@@ -266,7 +255,7 @@ class _ControlesScreenState extends ConsumerState<ControlesScreen>
                        isPendiente ? Colors.orange : Colors.blue,
               ),
             ),
-            // Indicador de alertas - solo mostrar si hay alertas en caché
+            // Indicador de alertas - solo mostrar si hay alertas en cachÃ©
             if (_alertasCache.containsKey(control.gestanteId) &&
                 _alertasCache[control.gestanteId]!.isNotEmpty)
               Positioned(
@@ -300,7 +289,7 @@ class _ControlesScreenState extends ConsumerState<ControlesScreen>
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
-            // Indicador de alertas en el título
+            // Indicador de alertas en el tÃ­tulo
             FutureBuilder<bool>(
               future: _tieneAlertasRecientes(control.gestanteId),
               builder: (context, snapshot) {
@@ -355,7 +344,7 @@ class _ControlesScreenState extends ConsumerState<ControlesScreen>
             Text('Estado: ${control.estado}'),
             if (control.semanasGestacion != null)
               Text(
-                'Semana gestación: ${control.semanasGestacion}',
+                'Semana gestaciÃ³n: ${control.semanasGestacion}',
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.blue[600],
@@ -371,7 +360,7 @@ class _ControlesScreenState extends ConsumerState<ControlesScreen>
               ),
             if (control.presionSistolica != null && control.presionDiastolica != null)
               Text(
-                'Presión: ${control.presionSistolica}/${control.presionDiastolica} mmHg',
+                'PresiÃ³n: ${control.presionSistolica}/${control.presionDiastolica} mmHg',
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.red[600],
@@ -407,8 +396,6 @@ class _ControlesScreenState extends ConsumerState<ControlesScreen>
         },
         onLongPress: () async {
           if (mounted) {
-            print('🔶 CONTROLES_SCREEN: Mantener presionado control para editar - ARCHIVO: controles_screen.dart');
-            print('🔶 CONTROLES_SCREEN: controlId = ${control.id}, gestanteId = ${control.gestanteId}');
             final result = await Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (context) => ControlFormScreen(
@@ -418,7 +405,7 @@ class _ControlesScreenState extends ConsumerState<ControlesScreen>
               ),
             );
             if (result == true) {
-              // Recargar controles si se editó
+              // Recargar controles si se editÃ³
               _cargarControles();
             }
           }
@@ -453,17 +440,17 @@ class _ControlesScreenState extends ConsumerState<ControlesScreen>
               Text('Estado: ${control.estado}'),
               Text('Tipo: ${control.tipo}'),
               if (control.semanasGestacion != null)
-                Text('Semana gestación: ${control.semanasGestacion}'),
+                Text('Semana gestaciÃ³n: ${control.semanasGestacion}'),
               if (control.peso != null)
                 Text('Peso: ${control.peso} kg'),
               if (control.alturaUterina != null)
                 Text('Altura uterina: ${control.alturaUterina} cm'),
               if (control.presionSistolica != null && control.presionDiastolica != null)
-                Text('Presión: ${control.presionSistolica}/${control.presionDiastolica} mmHg'),
+                Text('PresiÃ³n: ${control.presionSistolica}/${control.presionDiastolica} mmHg'),
               if (control.frecuenciaCardiaca != null)
-                Text('Frecuencia cardíaca: ${control.frecuenciaCardiaca} lpm'),
+                Text('Frecuencia cardÃ­aca: ${control.frecuenciaCardiaca} lpm'),
               if (control.temperatura != null)
-                Text('Temperatura: ${control.temperatura} °C'),
+                Text('Temperatura: ${control.temperatura} Â°C'),
               if (control.observaciones != null && control.observaciones!.isNotEmpty)
                 Text('Observaciones: ${control.observaciones}'),
               if (control.recomendaciones != null && control.recomendaciones!.isNotEmpty)
@@ -495,10 +482,10 @@ class _ControlesScreenState extends ConsumerState<ControlesScreen>
     }
   }
 
-  // Método para obtener las alertas recientes de una gestante con caché
+  // MÃ©todo para obtener las alertas recientes de una gestante con cachÃ©
   Future<List<Alerta>> _obtenerAlertasRecientes(String gestanteId) async {
     try {
-      // Verificar si tenemos datos en caché y si no han expirado
+      // Verificar si tenemos datos en cachÃ© y si no han expirado
       final ahora = DateTime.now();
       if (_alertasCacheTimestamp != null &&
           ahora.difference(_alertasCacheTimestamp!) < _cacheExpiry &&
@@ -506,13 +493,13 @@ class _ControlesScreenState extends ConsumerState<ControlesScreen>
         return _alertasCache[gestanteId]!;
       }
       
-      // Si no hay datos en caché o han expirado, obtener del servidor
+      // Si no hay datos en cachÃ© o han expirado, obtener del servidor
       final apiService = ref.read(apiServiceProvider);
       final gestanteService = GestanteService(apiService);
       final alertaService = AlertaService(apiService, gestanteService);
       final alertas = await alertaService.obtenerAlertas(limit: 10);
       
-      // Filtrar alertas de las últimas 24 horas para esta gestante
+      // Filtrar alertas de las Ãºltimas 24 horas para esta gestante
       final hace24Horas = ahora.subtract(const Duration(hours: 24));
       final alertasFiltradas = alertas.where((alerta) =>
         alerta.gestanteId == gestanteId &&
@@ -520,7 +507,7 @@ class _ControlesScreenState extends ConsumerState<ControlesScreen>
         !alerta.resuelta
       ).toList();
       
-      // Actualizar caché
+      // Actualizar cachÃ©
       _alertasCache[gestanteId] = alertasFiltradas;
       _alertasCacheTimestamp = ahora;
       
@@ -531,15 +518,15 @@ class _ControlesScreenState extends ConsumerState<ControlesScreen>
     }
   }
   
-  // Método para limpiar el caché de alertas
+  // MÃ©todo para limpiar el cachÃ© de alertas
   void _limpiarCacheAlertas() {
     _alertasCache.clear();
     _alertasCacheTimestamp = null;
   }
 
-  // Método para obtener los datos completos de la gestante
+  // MÃ©todo para obtener los datos completos de la gestante
   String _getGestanteDisplayName(Control control) {
-    // Si tenemos los datos completos de la gestante, mostrar nombre y teléfono
+    // Si tenemos los datos completos de la gestante, mostrar nombre y telÃ©fono
     if (control.gestante != null) {
       final gestante = control.gestante!;
       if (gestante.telefono != null && gestante.telefono!.isNotEmpty) {
@@ -578,10 +565,10 @@ class _ControlesScreenState extends ConsumerState<ControlesScreen>
     }
     
     if (gestante.riesgo_alto) {
-      details.add('⚠️ Alto riesgo');
+      details.add('âš ï¸ Alto riesgo');
     }
     
-    return details.isNotEmpty ? details.join(' • ') : '';
+    return details.isNotEmpty ? details.join(' â€¢ ') : '';
   }
 
   void _mostrarAlertasRecientes(Control control) {
@@ -672,28 +659,28 @@ class _ControlesScreenState extends ConsumerState<ControlesScreen>
                                         if (alerta.signosVitales!['presion_sistolica'] != null &&
                                             alerta.signosVitales!['presion_diastolica'] != null)
                                           Text(
-                                            'Presión: ${alerta.signosVitales!['presion_sistolica']}/${alerta.signosVitales!['presion_diastolica']} mmHg',
+                                            'PresiÃ³n: ${alerta.signosVitales!['presion_sistolica']}/${alerta.signosVitales!['presion_diastolica']} mmHg',
                                             style: const TextStyle(fontSize: 12),
                                           ),
                                         if (alerta.signosVitales!['frecuencia_cardiaca'] != null)
                                           Text(
-                                            'Frecuencia cardíaca: ${alerta.signosVitales!['frecuencia_cardiaca']} lpm',
+                                            'Frecuencia cardÃ­aca: ${alerta.signosVitales!['frecuencia_cardiaca']} lpm',
                                             style: const TextStyle(fontSize: 12),
                                           ),
                                         if (alerta.signosVitales!['temperatura'] != null)
                                           Text(
-                                            'Temperatura: ${alerta.signosVitales!['temperatura']} °C',
+                                            'Temperatura: ${alerta.signosVitales!['temperatura']} Â°C',
                                             style: const TextStyle(fontSize: 12),
                                           ),
                                         if (alerta.signosVitales!['semanas_gestacion'] != null)
                                           Text(
-                                            'Semana gestación: ${alerta.signosVitales!['semanas_gestacion']}',
+                                            'Semana gestaciÃ³n: ${alerta.signosVitales!['semanas_gestacion']}',
                                             style: const TextStyle(fontSize: 12),
                                           ),
                                         if (alerta.sintomas.isNotEmpty) ...[
                                           const SizedBox(height: 4),
                                           Text(
-                                            'Síntomas: ${alerta.sintomas.join(', ')}',
+                                            'SÃ­ntomas: ${alerta.sintomas.join(', ')}',
                                             style: const TextStyle(fontSize: 12),
                                           ),
                                         ],

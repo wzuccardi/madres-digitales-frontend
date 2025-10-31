@@ -9,16 +9,19 @@ class SyncStatusWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final syncService = ref.read(contenidoSyncServiceProvider);
-    final syncProgressStream = syncService.syncProgress;
-    final isSyncing = syncService.isSyncing;
+    final syncServiceAsync = ref.watch(contenidoSyncServiceProvider);
 
-    return StreamBuilder<double>(
-      stream: syncProgressStream,
-      builder: (context, snapshot) {
-        final progress = snapshot.data ?? 0.0;
-        
-        return Card(
+    return syncServiceAsync.when(
+      data: (syncService) {
+        final syncProgressStream = syncService.syncProgress;
+        final isSyncing = syncService.isSyncing;
+
+        return StreamBuilder<double>(
+          stream: syncProgressStream,
+          builder: (context, snapshot) {
+            final progress = snapshot.data ?? 0.0;
+
+            return Card(
           margin: const EdgeInsets.all(8.0),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -91,15 +94,21 @@ class SyncStatusWidget extends ConsumerWidget {
             ),
           ),
         );
+          },
+        );
       },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stackTrace) => Center(child: Text('Error: $error')),
     );
   }
 
   void _forzarSincronizacion(WidgetRef ref) {
     appLogger.debug('SyncStatusWidget: Forzando sincronización');
     try {
-      final syncService = ref.read(contenidoSyncServiceProvider);
-      syncService.syncContenidos();
+      final syncServiceAsync = ref.read(contenidoSyncServiceProvider);
+      syncServiceAsync.whenData((syncService) {
+        syncService.syncContenidos();
+      });
       
       // Mostrar mensaje de éxito
       ScaffoldMessenger.of(ref.context).showSnackBar(
@@ -143,36 +152,55 @@ class CompactSyncStatusWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final syncService = ref.read(contenidoSyncServiceProvider);
-    final isSyncing = syncService.isSyncing;
+    final syncServiceAsync = ref.watch(contenidoSyncServiceProvider);
 
-    return IconButton(
-      icon: Stack(
-        children: [
-          Icon(
-            isSyncing ? Icons.sync : Icons.sync_disabled,
-            color: isSyncing ? Colors.blue : Colors.white,
-          ),
-          if (isSyncing)
-            Positioned(
-              right: 0,
-              bottom: 0,
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: Colors.blue,
-                  shape: BoxShape.circle,
-                ),
+    return syncServiceAsync.when(
+      data: (syncService) {
+        final isSyncing = syncService.isSyncing;
+
+        return IconButton(
+          icon: Stack(
+            children: [
+              Icon(
+                isSyncing ? Icons.sync : Icons.sync_disabled,
+                color: isSyncing ? Colors.blue : Colors.white,
               ),
-            ),
-        ],
-      ),
-      onPressed: () {
-        appLogger.debug('CompactSyncStatusWidget: Icono presionado');
-        _mostrarDialogoEstado(context, ref);
+              if (isSyncing)
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: Colors.blue,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          onPressed: () {
+            appLogger.debug('CompactSyncStatusWidget: Icono presionado');
+            _mostrarDialogoEstado(context, ref);
+          },
+          tooltip: 'Estado de sincronización',
+        );
       },
-      tooltip: 'Estado de sincronización',
+      loading: () => const IconButton(
+        icon: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+        onPressed: null,
+        tooltip: 'Cargando...',
+      ),
+      error: (error, stackTrace) => const IconButton(
+        icon: Icon(Icons.error, color: Colors.red),
+        onPressed: null,
+        tooltip: 'Error',
+      ),
     );
   }
 
@@ -199,57 +227,60 @@ class DashboardSyncStatusWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final syncService = ref.read(contenidoSyncServiceProvider);
-    final isSyncing = syncService.isSyncing;
+    final syncServiceAsync = ref.watch(contenidoSyncServiceProvider);
 
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8.0),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                isSyncing ? Icons.sync : Icons.cloud_done,
-                color: isSyncing ? Colors.blue : Colors.green,
-                size: 24,
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Sincronización de Contenidos',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+    return syncServiceAsync.when(
+      data: (syncService) {
+        final isSyncing = syncService.isSyncing;
+
+        return Container(
+          padding: const EdgeInsets.all(16.0),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8.0),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          if (isSyncing) ...[
-            Text(
-              'Sincronizando contenidos...',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    isSyncing ? Icons.sync : Icons.cloud_done,
+                    color: isSyncing ? Colors.blue : Colors.green,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Sincronización de Contenidos',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 8),
-            StreamBuilder<double>(
-              stream: syncService.syncProgress,
-              builder: (context, snapshot) {
-                final progress = snapshot.data ?? 0.0;
-                return LinearProgressIndicator(
+              const SizedBox(height: 16),
+              if (isSyncing) ...[
+                Text(
+                  'Sincronizando contenidos...',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                StreamBuilder<double>(
+                  stream: syncService.syncProgress,
+                  builder: (context, snapshot) {
+                    final progress = snapshot.data ?? 0.0;
+                    return LinearProgressIndicator(
                   value: progress,
                   backgroundColor: Colors.grey[300],
                   valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
@@ -293,13 +324,19 @@ class DashboardSyncStatusWidget extends ConsumerWidget {
         ],
       ),
     );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stackTrace) => Center(child: Text('Error: $error')),
+    );
   }
 
   void _forzarSincronizacion(WidgetRef ref) {
     appLogger.debug('DashboardSyncStatusWidget: Forzando sincronización');
     try {
-      final syncService = ref.read(contenidoSyncServiceProvider);
-      syncService.syncContenidos();
+      final syncServiceAsync = ref.read(contenidoSyncServiceProvider);
+      syncServiceAsync.whenData((syncService) {
+        syncService.syncContenidos();
+      });
       
       // Mostrar mensaje de éxito
       ScaffoldMessenger.of(ref.context).showSnackBar(

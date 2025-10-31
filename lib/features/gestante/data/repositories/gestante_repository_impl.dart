@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import '../../domain/entities/gestante.dart';
 import '../../domain/entities/asignacion.dart';
+import '../../domain/entities/tipo_permiso.dart';
 import '../../domain/repositories/gestante_repository.interface.dart';
 import '../datasources/gestante_remote_datasource.dart';
 import '../datasources/gestante_local_datasource.dart';

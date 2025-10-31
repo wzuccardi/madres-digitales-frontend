@@ -1,5 +1,6 @@
 import '../../domain/entities/gestante.dart';
 import '../../domain/entities/asignacion.dart';
+import '../../domain/entities/tipo_permiso.dart';
 
 abstract class GestanteRemoteDataSource {
   // CRUD de Gestantes

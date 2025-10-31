@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -39,7 +39,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   @override
   void initState() {
     super.initState();
-    print('📝 RegisterPage: initState called - RegisterPage loaded successfully');
   }
 
   @override
@@ -70,7 +69,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     try {
       final authService = AuthService();
 
-      // Preparar datos adicionales según el rol
+      // Preparar datos adicionales segÃºn el rol
       Map<String, dynamic> additionalData = {};
       
       if (selectedRol == 'gestante') {
@@ -98,7 +97,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         });
       }
 
-      // Registrar usuario (el endpoint de registro es público para roles básicos)
+      // Registrar usuario (el endpoint de registro es pÃºblico para roles bÃ¡sicos)
       final success = await authService.register(
         nombre: nombreController.text.trim(),
         email: emailController.text.trim(),
@@ -118,7 +117,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         // Registro exitoso
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✅ Cuenta creada exitosamente. Por favor inicia sesión.'),
+            content: Text('âœ… Cuenta creada exitosamente. Por favor inicia sesiÃ³n.'),
             backgroundColor: Colors.green,
             duration: Duration(seconds: 3),
           ),
@@ -135,11 +134,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       if (!mounted) return;
       setState(() {
         String errorMsg = e.toString();
-        // Extraer mensaje de error más amigable
-        if (errorMsg.contains('email ya está registrado')) {
-          errorMessage = 'Este correo electrónico ya está registrado';
+        // Extraer mensaje de error mÃ¡s amigable
+        if (errorMsg.contains('email ya estÃ¡ registrado')) {
+          errorMessage = 'Este correo electrÃ³nico ya estÃ¡ registrado';
         } else if (errorMsg.contains('409')) {
-          errorMessage = 'Este correo electrónico ya está registrado';
+          errorMessage = 'Este correo electrÃ³nico ya estÃ¡ registrado';
         } else {
           errorMessage = 'Error al crear la cuenta. Intenta nuevamente.';
         }
@@ -166,7 +165,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
   String _formatTipoDocumento(String tipo) {
     switch (tipo) {
-      case 'cedula': return 'Cédula de Ciudadanía';
+      case 'cedula': return 'CÃ©dula de CiudadanÃ­a';
       case 'tarjeta_identidad': return 'Tarjeta de Identidad';
       case 'pasaporte': return 'Pasaporte';
       case 'registro_civil': return 'Registro Civil';
@@ -176,7 +175,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
-    print('🎨 RegisterPage: build method called');
     return Scaffold(
       backgroundColor: Colors.pink.shade50,
       appBar: AppBar(
@@ -200,7 +198,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               ),
               const SizedBox(height: 20),
               const Text(
-                'Regístrate',
+                'RegÃ­strate',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 24,
@@ -245,7 +243,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               ),
               const SizedBox(height: 24),
 
-              // Campos básicos
+              // Campos bÃ¡sicos
               // Tipo de documento
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -277,7 +275,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               TextFormField(
                 controller: documentoController,
                 decoration: const InputDecoration(
-                  labelText: 'Número de Documento *',
+                  labelText: 'NÃºmero de Documento *',
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.number,
@@ -287,7 +285,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     return 'El documento es obligatorio';
                   }
                   if (value.length < 6) {
-                    return 'El documento debe tener al menos 6 dígitos';
+                    return 'El documento debe tener al menos 6 dÃ­gitos';
                   }
                   return null;
                 },
@@ -316,16 +314,16 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               TextFormField(
                 controller: emailController,
                 decoration: const InputDecoration(
-                  labelText: 'Correo electrónico *',
+                  labelText: 'Correo electrÃ³nico *',
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.emailAddress,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'El correo electrónico es obligatorio';
+                    return 'El correo electrÃ³nico es obligatorio';
                   }
                   if (!value.contains('@')) {
-                    return 'Ingresa un correo electrónico válido';
+                    return 'Ingresa un correo electrÃ³nico vÃ¡lido';
                   }
                   return null;
                 },
@@ -335,7 +333,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               TextFormField(
                 controller: telefonoController,
                 decoration: const InputDecoration(
-                  labelText: 'Teléfono *',
+                  labelText: 'TelÃ©fono *',
                   border: OutlineInputBorder(),
                   prefixText: '+57 ',
                 ),
@@ -343,10 +341,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'El teléfono es obligatorio';
+                    return 'El telÃ©fono es obligatorio';
                   }
                   if (value.length != 10) {
-                    return 'El teléfono debe tener 10 dígitos';
+                    return 'El telÃ©fono debe tener 10 dÃ­gitos';
                   }
                   return null;
                 },
@@ -356,16 +354,16 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               TextFormField(
                 controller: passwordController,
                 decoration: const InputDecoration(
-                  labelText: 'Contraseña *',
+                  labelText: 'ContraseÃ±a *',
                   border: OutlineInputBorder(),
                 ),
                 obscureText: true,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'La contraseña es obligatoria';
+                    return 'La contraseÃ±a es obligatoria';
                   }
                   if (value.length < 6) {
-                    return 'La contraseña debe tener al menos 6 caracteres';
+                    return 'La contraseÃ±a debe tener al menos 6 caracteres';
                   }
                   return null;
                 },
@@ -375,23 +373,23 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               TextFormField(
                 controller: confirmPasswordController,
                 decoration: const InputDecoration(
-                  labelText: 'Confirmar Contraseña *',
+                  labelText: 'Confirmar ContraseÃ±a *',
                   border: OutlineInputBorder(),
                 ),
                 obscureText: true,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Confirma tu contraseña';
+                    return 'Confirma tu contraseÃ±a';
                   }
                   if (value != passwordController.text) {
-                    return 'Las contraseñas no coinciden';
+                    return 'Las contraseÃ±as no coinciden';
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 16),
 
-              // Campos adicionales según el rol
+              // Campos adicionales segÃºn el rol
               if (selectedRol == 'gestante') ...[
                 // Fecha de nacimiento
                 ListTile(
@@ -410,7 +408,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 ),
                 const SizedBox(height: 16),
 
-                // Grupo sanguíneo
+                // Grupo sanguÃ­neo
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
@@ -422,7 +420,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     child: DropdownButton<String>(
                       value: selectedGrupoSanguineo,
                       isExpanded: true,
-                      hint: const Text('Grupo Sanguíneo'),
+                      hint: const Text('Grupo SanguÃ­neo'),
                       items: [
                         const DropdownMenuItem(value: null, child: Text('No especificado')),
                         ..._gruposSanguineos.map((grupo) {
@@ -449,11 +447,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               ],
 
               if (selectedRol == 'madrina' || selectedRol == 'gestante') ...[
-                // Dirección
+                // DirecciÃ³n
                 TextFormField(
                   controller: direccionController,
                   decoration: const InputDecoration(
-                    labelText: 'Dirección',
+                    labelText: 'DirecciÃ³n',
                     border: OutlineInputBorder(),
                   ),
                   maxLines: 2,
@@ -479,7 +477,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 TextFormField(
                   controller: contactoEmergenciaTelefonoController,
                   decoration: const InputDecoration(
-                    labelText: 'Teléfono del Contacto',
+                    labelText: 'TelÃ©fono del Contacto',
                     border: OutlineInputBorder(),
                     prefixText: '+57 ',
                   ),
@@ -513,18 +511,18 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   ),
                 ),
 
-              // Botón de registro
+              // BotÃ³n de registro
               CustomButton(
                 text: isLoading ? 'Creando cuenta...' : 'Crear Cuenta',
                 onPressed: isLoading ? null : _handleRegister,
               ),
               const SizedBox(height: 20),
 
-              // Botón para volver al login
+              // BotÃ³n para volver al login
               TextButton(
                 onPressed: () => context.go('/login'),
                 child: Text(
-                  '¿Ya tienes cuenta? Inicia sesión',
+                  'Â¿Ya tienes cuenta? Inicia sesiÃ³n',
                   style: TextStyle(
                     color: Colors.pink.shade700,
                     fontWeight: FontWeight.w600,
@@ -540,3 +538,4 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     );
   }
 }
+

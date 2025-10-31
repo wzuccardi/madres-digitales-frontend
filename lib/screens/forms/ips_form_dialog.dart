@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/integrated_models.dart';
 import '../../providers/integrated_admin_provider.dart';
@@ -34,12 +34,8 @@ class _IPSFormDialogState extends ConsumerState<IPSFormDialog> {
   @override
   void initState() {
     super.initState();
-    debugPrint('🔧 [IPSFormDialog] Inicializando formulario IPS');
-    debugPrint('🔧 [IPSFormDialog] Modo: ${widget.ips == null ? "Creación" : "Edición"}');
-    debugPrint('🔧 [IPSFormDialog] Municipio ID: ${widget.municipioId}');
     
     if (widget.ips != null) {
-      debugPrint('🔧 [IPSFormDialog] Cargando datos de IPS existente: ${widget.ips!.nombre}');
       _nombreController.text = widget.ips!.nombre;
       _direccionController.text = widget.ips!.direccion;
       _telefonoController.text = widget.ips!.telefono ?? '';
@@ -48,9 +44,7 @@ class _IPSFormDialogState extends ConsumerState<IPSFormDialog> {
       _longitudController.text = widget.ips!.longitud?.toString() ?? '';
       _nivelAtencion = widget.ips!.nivelAtencion;
       _activa = widget.ips!.activa;
-      debugPrint('✅ [IPSFormDialog] Datos de IPS cargados correctamente');
     } else {
-      debugPrint('🔧 [IPSFormDialog] Inicializando formulario para nueva IPS');
     }
   }
 
@@ -94,12 +88,12 @@ class _IPSFormDialogState extends ConsumerState<IPSFormDialog> {
                 TextFormField(
                   controller: _direccionController,
                   decoration: const InputDecoration(
-                    labelText: 'Dirección *',
+                    labelText: 'DirecciÃ³n *',
                     border: OutlineInputBorder(),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'La dirección es requerida';
+                      return 'La direcciÃ³n es requerida';
                     }
                     return null;
                   },
@@ -111,7 +105,7 @@ class _IPSFormDialogState extends ConsumerState<IPSFormDialog> {
                       child: TextFormField(
                         controller: _telefonoController,
                         decoration: const InputDecoration(
-                          labelText: 'Teléfono',
+                          labelText: 'TelÃ©fono',
                           border: OutlineInputBorder(),
                         ),
                         keyboardType: TextInputType.phone,
@@ -134,7 +128,7 @@ class _IPSFormDialogState extends ConsumerState<IPSFormDialog> {
                 DropdownButtonFormField<String>(
                   initialValue: _nivelAtencion,
                   decoration: const InputDecoration(
-                    labelText: 'Nivel de Atención *',
+                    labelText: 'Nivel de AtenciÃ³n *',
                     border: OutlineInputBorder(),
                   ),
                   items: const [
@@ -163,7 +157,7 @@ class _IPSFormDialogState extends ConsumerState<IPSFormDialog> {
                           if (value != null && value.isNotEmpty) {
                             final lat = double.tryParse(value);
                             if (lat == null || lat < -90 || lat > 90) {
-                              return 'Latitud inválida (-90 a 90)';
+                              return 'Latitud invÃ¡lida (-90 a 90)';
                             }
                           }
                           return null;
@@ -183,7 +177,7 @@ class _IPSFormDialogState extends ConsumerState<IPSFormDialog> {
                           if (value != null && value.isNotEmpty) {
                             final lng = double.tryParse(value);
                             if (lng == null || lng < -180 || lng > 180) {
-                              return 'Longitud inválida (-180 a 180)';
+                              return 'Longitud invÃ¡lida (-180 a 180)';
                             }
                           }
                           return null;
@@ -227,16 +221,13 @@ class _IPSFormDialogState extends ConsumerState<IPSFormDialog> {
   }
 
   Future<void> _guardarIPS() async {
-    debugPrint('🔍 [IPSFormDialog] Iniciando guardado de IPS');
     if (!_formKey.currentState!.validate()) {
-      debugPrint('❌ [IPSFormDialog] Validación del formulario falló');
       return;
     }
 
     setState(() {
       _isLoading = true;
     });
-    debugPrint('🔄 [IPSFormDialog] Estado de carga activado');
 
     try {
       final data = {
@@ -251,23 +242,18 @@ class _IPSFormDialogState extends ConsumerState<IPSFormDialog> {
         'activa': _activa,
       };
       
-      debugPrint('🔍 [IPSFormDialog] Datos a guardar: $data');
-      debugPrint('🔍 [IPSFormDialog] Conectando con servicio real');
 
       // Implementar llamada real al servicio
       final service = await ref.read(integratedAdminServiceProvider.future);
       
       if (widget.ips == null) {
-        debugPrint('🔍 [IPSFormDialog] Creando nueva IPS');
         await service.createIPS(data);
       } else {
-        debugPrint('🔍 [IPSFormDialog] Actualizando IPS existente: ${widget.ips!.id}');
         await service.updateIPS(widget.ips!.id, data);
       }
 
-      // Por ahora, solo mostramos un mensaje de éxito
+      // Por ahora, solo mostramos un mensaje de Ã©xito
       if (widget.ips == null) {
-        debugPrint('✅ [IPSFormDialog] IPS creada exitosamente (simulado)');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -277,7 +263,6 @@ class _IPSFormDialogState extends ConsumerState<IPSFormDialog> {
           );
         }
       } else {
-        debugPrint('✅ [IPSFormDialog] IPS actualizada exitosamente (simulado)');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -289,33 +274,29 @@ class _IPSFormDialogState extends ConsumerState<IPSFormDialog> {
       }
 
       // Refrescar la lista de IPS
-      debugPrint('🔄 [IPSFormDialog] Refrescando lista de IPS');
       ref.invalidate(ipsIntegradaProvider(widget.municipioId));
       
       if (mounted) {
         Navigator.of(context).pop(true);
       }
     } catch (e) {
-      debugPrint('❌ [IPSFormDialog] Error al guardar IPS: $e');
-      debugPrint('❌ [IPSFormDialog] Stack trace: ${StackTrace.current}');
       // Reemplazado con log de error directo
-      debugPrint('❌ [IPSFormDialog] Error: $e');
       
       String errorMessage = 'Error al guardar IPS';
       
-      // Clasificar el error para mostrar mensaje específico
+      // Clasificar el error para mostrar mensaje especÃ­fico
       if (e.toString().contains('SocketException')) {
-        errorMessage = 'Error de conexión. Verifica tu acceso a internet.';
+        errorMessage = 'Error de conexiÃ³n. Verifica tu acceso a internet.';
       } else if (e.toString().contains('TimeoutException')) {
-        errorMessage = 'La operación tardó demasiado. Intenta nuevamente.';
+        errorMessage = 'La operaciÃ³n tardÃ³ demasiado. Intenta nuevamente.';
       } else if (e.toString().contains('401') || e.toString().contains('403')) {
-        errorMessage = 'No tienes permisos para realizar esta operación.';
+        errorMessage = 'No tienes permisos para realizar esta operaciÃ³n.';
       } else if (e.toString().contains('409')) {
         errorMessage = 'Ya existe una IPS con este nombre en el municipio.';
       } else if (e.toString().contains('422')) {
-        errorMessage = 'Hay datos inválidos en el formulario. Verifica los campos.';
+        errorMessage = 'Hay datos invÃ¡lidos en el formulario. Verifica los campos.';
       } else if (e.toString().contains('500')) {
-        errorMessage = 'Error del servidor. Intenta más tarde.';
+        errorMessage = 'Error del servidor. Intenta mÃ¡s tarde.';
       } else {
         errorMessage = 'Error al guardar IPS: $e';
       }
@@ -334,7 +315,6 @@ class _IPSFormDialogState extends ConsumerState<IPSFormDialog> {
         setState(() {
           _isLoading = false;
         });
-        debugPrint('🔄 [IPSFormDialog] Estado de carga desactivado');
       }
     }
   }

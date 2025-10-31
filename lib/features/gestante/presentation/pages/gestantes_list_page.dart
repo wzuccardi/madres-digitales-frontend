@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'gestante_detail_page.dart';
 import 'create_gestante_page.dart';
@@ -24,17 +24,17 @@ class _GestantesListPageState extends ConsumerState<GestantesListPage> {
 
   Future<void> _fetchGestantes() async {
     try {
-      // Simular obtención de datos - en una implementación real se usaría el gestanteProvider
+      // Simular obtenciÃ³n de datos - en una implementaciÃ³n real se usarÃ­a el gestanteProvider
       await Future.delayed(const Duration(seconds: 1));
       
-      // Datos de ejemplo - en una implementación real se obtendrían del provider
+      // Datos de ejemplo - en una implementaciÃ³n real se obtendrÃ­an del provider
       setState(() {
         gestantes = [
           // Ejemplo de datos - reemplazar con datos reales del provider
           Gestante(
             id: '1',
-            nombres: 'María',
-            apellidos: 'González',
+            nombres: 'MarÃ­a',
+            apellidos: 'GonzÃ¡lez',
             tipoDocumento: 'CC',
             numeroDocumento: '12345678',
             email: 'maria.gonzalez@email.com',
@@ -43,9 +43,9 @@ class _GestantesListPageState extends ConsumerState<GestantesListPage> {
             fechaUltimaMestruacion: DateTime(2024, 1, 15),
             fechaProbableParto: DateTime(2024, 10, 22),
             esAltoRiesgo: true,
-            factoresRiesgo: const ['Hipertensión', 'Diabetes'],
+            factoresRiesgo: const ['HipertensiÃ³n', 'Diabetes'],
             grupoSanguineo: 'O+',
-            contactoEmergenciaNombre: 'Carlos González',
+            contactoEmergenciaNombre: 'Carlos GonzÃ¡lez',
             contactoEmergenciaTelefono: '3012345678',
             direccion: 'Calle 123 #45-67',
             barrio: 'Centro',
@@ -59,9 +59,7 @@ class _GestantesListPageState extends ConsumerState<GestantesListPage> {
         ];
         isLoading = false;
       });
-      print('🤰 Flutter: Successfully loaded ${gestantes.length} gestantes');
     } catch (e) {
-      print('❌ Flutter: Error loading gestantes: $e');
       setState(() {
         errorMessage = 'Error al cargar gestantes: $e';
         isLoading = false;
@@ -129,7 +127,7 @@ class _GestantesListPageState extends ConsumerState<GestantesListPage> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                'Agrega una nueva gestante usando el botón +',
+                                'Agrega una nueva gestante usando el botÃ³n +',
                                 style: TextStyle(
                                   fontSize: 14,
                                   color: Colors.grey[500],
@@ -169,7 +167,7 @@ class _GestantesListPageState extends ConsumerState<GestantesListPage> {
                                     Text('EPS: ${gestante.eps}'),
                                     const SizedBox(height: 4),
                                     Text(
-                                      'Edad: ${gestante.edad} años | Semanas: ${gestante.semanasGestacion ?? 'N/A'}',
+                                      'Edad: ${gestante.edad} aÃ±os | Semanas: ${gestante.semanasGestacion ?? 'N/A'}',
                                     ),
                                   ],
                                 ),

@@ -1,5 +1,5 @@
-// Servicio simple para obtener datos reales del backend
-// Basado en el patrón exitoso del DashboardService
+﻿// Servicio simple para obtener datos reales del backend
+// Basado en el patrÃ³n exitoso del DashboardService
 // Integrado con el sistema de permisos de madrina
 
 import '../services/api_service.dart';
@@ -14,53 +14,45 @@ class SimpleDataService {
 
   // Obtener gestantes - con soporte para formato paginado
   Future<List<SimpleGestante>> obtenerGestantes() async {
-    print('🤰 SimpleDataService: Fetching gestantes...');
 
     try {
       final response = await _apiService.get('/gestantes');
-      print('🔍 DEBUG: Response received');
-      print('🔍 DEBUG: Response type: ${response.data.runtimeType}');
 
-      // Manejar formato paginado (nuevo)
+      // Manejar formato paginado: { success: true, data: { gestantes: [...], total: ... } }
       if (response.data is Map<String, dynamic>) {
         final Map<String, dynamic> responseData = response.data as Map<String, dynamic>;
-        print('🔍 DEBUG: Response is Map, keys: ${responseData.keys.toList()}');
 
-        if (responseData.containsKey('data') && responseData['data'] is List) {
-          final List<dynamic> data = responseData['data'] as List<dynamic>;
-          print('🔍 DEBUG: Found data array with ${data.length} items');
-
+        // Estructura: { data: { gestantes: [...] } }
+        if (responseData['data'] is Map && responseData['data']['gestantes'] != null) {
+          final List<dynamic> data = responseData['data']['gestantes'] as List<dynamic>;
           final gestantes = data
               .map((json) => SimpleGestante.fromJson(json as Map<String, dynamic>))
               .toList();
-
-          print('✅ SimpleDataService: Successfully loaded ${gestantes.length} gestantes (paginated)');
           return gestantes;
-        } else {
-          print('❌ DEBUG: Map does not contain data array');
-          print('❌ DEBUG: Keys: ${responseData.keys.toList()}');
+        }
+        // Estructura: { data: [...] }
+        else if (responseData.containsKey('data') && responseData['data'] is List) {
+          final List<dynamic> data = responseData['data'] as List<dynamic>;
+          final gestantes = data
+              .map((json) => SimpleGestante.fromJson(json as Map<String, dynamic>))
+              .toList();
+          return gestantes;
         }
       }
 
       // Manejar formato array simple (legacy)
       if (response.data is List) {
         final List<dynamic> data = response.data as List<dynamic>;
-        print('🔍 DEBUG: Response is List with ${data.length} items');
 
         final gestantes = data
             .map((json) => SimpleGestante.fromJson(json as Map<String, dynamic>))
             .toList();
 
-        print('✅ SimpleDataService: Successfully loaded ${gestantes.length} gestantes (legacy)');
         return gestantes;
       }
 
-      print('❌ DEBUG: Response format not recognized');
-      print('❌ DEBUG: Type: ${response.data.runtimeType}');
       throw Exception('Formato de respuesta inválido para gestantes');
-    } catch (e, stackTrace) {
-      print('❌ SimpleDataService: Error loading gestantes: $e');
-      print('❌ Stack trace: $stackTrace');
+    } catch (e) {
       rethrow;
     }
   }
@@ -68,22 +60,34 @@ class SimpleDataService {
   // Obtener controles - igual que el dashboard
   Future<List<SimpleControl>> obtenerControles() async {
     try {
-      print('🏥 SimpleDataService: Fetching controles...');
       final response = await _apiService.get('/controles');
-      
-      if (response.data is List) {
-        final List<dynamic> data = response.data as List<dynamic>;
-        final controles = data
-            .map((json) => SimpleControl.fromJson(json as Map<String, dynamic>))
-            .toList();
-        
-        print('🏥 SimpleDataService: Successfully loaded ${controles.length} controles');
-        return controles;
+
+      List<dynamic> controlesData;
+      if (response.data is Map<String, dynamic>) {
+        final Map<String, dynamic> responseData = response.data;
+
+        // Estructura: { success: true, data: { controles: [...], pagination: {...} } }
+        if (responseData['data'] is Map && responseData['data']['controles'] != null) {
+          controlesData = responseData['data']['controles'] as List<dynamic>;
+        }
+        // Estructura: { data: [...] }
+        else if (responseData['data'] is List) {
+          controlesData = responseData['data'] as List<dynamic>;
+        } else {
+          controlesData = [];
+        }
+      } else if (response.data is List) {
+        controlesData = response.data as List<dynamic>;
       } else {
         throw Exception('Formato de respuesta inválido para controles');
       }
+
+      final controles = controlesData
+          .map((json) => SimpleControl.fromJson(json as Map<String, dynamic>))
+          .toList();
+
+      return controles;
     } catch (e) {
-      print('❌ SimpleDataService: Error loading controles: $e');
       rethrow;
     }
   }
@@ -91,22 +95,34 @@ class SimpleDataService {
   // Obtener alertas - igual que el dashboard
   Future<List<SimpleAlerta>> obtenerAlertas() async {
     try {
-      print('🚨 SimpleDataService: Fetching alertas...');
       final response = await _apiService.get('/alertas');
-      
-      if (response.data is List) {
-        final List<dynamic> data = response.data as List<dynamic>;
-        final alertas = data
-            .map((json) => SimpleAlerta.fromJson(json as Map<String, dynamic>))
-            .toList();
-        
-        print('🚨 SimpleDataService: Successfully loaded ${alertas.length} alertas');
-        return alertas;
+
+      List<dynamic> alertasData;
+      if (response.data is Map<String, dynamic>) {
+        final Map<String, dynamic> responseData = response.data;
+
+        // Estructura: { success: true, data: { alertas: [...], pagination: {...} } }
+        if (responseData['data'] is Map && responseData['data']['alertas'] != null) {
+          alertasData = responseData['data']['alertas'] as List<dynamic>;
+        }
+        // Estructura: { data: [...] }
+        else if (responseData['data'] is List) {
+          alertasData = responseData['data'] as List<dynamic>;
+        } else {
+          alertasData = [];
+        }
+      } else if (response.data is List) {
+        alertasData = response.data as List<dynamic>;
       } else {
         throw Exception('Formato de respuesta inválido para alertas');
       }
+
+      final alertas = alertasData
+          .map((json) => SimpleAlerta.fromJson(json as Map<String, dynamic>))
+          .toList();
+
+      return alertas;
     } catch (e) {
-      print('❌ SimpleDataService: Error loading alertas: $e');
       rethrow;
     }
   }
@@ -114,18 +130,15 @@ class SimpleDataService {
   // Obtener gestante por ID
   Future<SimpleGestante?> obtenerGestantePorId(String id) async {
     try {
-      print('🤰 SimpleDataService: Fetching gestante $id...');
       final response = await _apiService.get('/gestantes/$id');
       
       if (response.data != null) {
         final gestante = SimpleGestante.fromJson(response.data as Map<String, dynamic>);
-        print('🤰 SimpleDataService: Successfully loaded gestante ${gestante.nombre}');
         return gestante;
       } else {
         return null;
       }
     } catch (e) {
-      print('❌ SimpleDataService: Error loading gestante $id: $e');
       rethrow;
     }
   }
@@ -137,13 +150,13 @@ class SimpleDataService {
     switch (estado) {
       case 'vencidos':
         return controles.where((control) {
-          // Considerar vencidos los controles de hace más de 30 días
+          // Considerar vencidos los controles de hace mÃ¡s de 30 dÃ­as
           return ahora.difference(control.fecha_control).inDays > 30;
         }).toList();
       
       case 'pendientes':
         return controles.where((control) {
-          // Considerar pendientes los controles recientes (últimos 7 días)
+          // Considerar pendientes los controles recientes (Ãºltimos 7 dÃ­as)
           return ahora.difference(control.fecha_control).inDays <= 7;
         }).toList();
       
@@ -158,36 +171,29 @@ class SimpleDataService {
     return alertas.where((alerta) => alerta.resuelta == resuelta).toList();
   }
 
-  // Método para enviar alerta SOS
+  // MÃ©todo para enviar alerta SOS
   Future<Map<String, dynamic>> enviarAlertaSOS({
     required String gestanteId,
     required double latitud,
     required double longitud,
   }) async {
     try {
-      print('🚨 SimpleDataService: Sending SOS alert...');
-      print('   Gestante ID: $gestanteId');
-      print('   Coordinates: [$longitud, $latitud]');
 
       final response = await _apiService.post('/alertas/emergencia', data: {
         'gestanteId': gestanteId,
         'coordenadas': [longitud, latitud], // Backend espera [lng, lat]
       });
 
-      print('✅ SimpleDataService: SOS alert sent successfully');
-      print('   Alert ID: ${response.data['alertaId']}');
 
       return response.data as Map<String, dynamic>;
     } catch (e) {
-      print('❌ SimpleDataService: Error sending SOS alert: $e');
       rethrow;
     }
   }
 
-  // Método para obtener alertas por gestante
+  // MÃ©todo para obtener alertas por gestante
   Future<List<SimpleAlerta>> obtenerAlertasPorGestante(String gestanteId) async {
     try {
-      print('🚨 SimpleDataService: Fetching alerts for gestante $gestanteId...');
       final response = await _apiService.get('/alertas/gestante/$gestanteId');
 
       if (response.data is List) {
@@ -196,43 +202,35 @@ class SimpleDataService {
             .map((json) => SimpleAlerta.fromJson(json as Map<String, dynamic>))
             .toList();
 
-        print('🚨 SimpleDataService: Successfully loaded ${alertas.length} alerts for gestante');
         return alertas;
       } else {
-        throw Exception('Formato de respuesta inválido para alertas de gestante');
+        throw Exception('Formato de respuesta invÃ¡lido para alertas de gestante');
       }
     } catch (e) {
-      print('❌ SimpleDataService: Error loading alerts for gestante: $e');
       rethrow;
     }
   }
 
-  // Método para resolver una alerta
+  // MÃ©todo para resolver una alerta
   Future<Map<String, dynamic>> resolverAlerta(String alertaId, {String? observaciones}) async {
     try {
-      print('🚨 SimpleDataService: Resolving alert $alertaId...');
       final response = await _apiService.put('/alertas/$alertaId/resolver', data: {
         if (observaciones != null) 'observaciones': observaciones,
       });
 
-      print('✅ SimpleDataService: Alert resolved successfully');
       return response.data as Map<String, dynamic>;
     } catch (e) {
-      print('❌ SimpleDataService: Error resolving alert: $e');
       rethrow;
     }
   }
 
-  // Método para obtener IPS cercanas
+  // MÃ©todo para obtener IPS cercanas
   Future<List<SimpleIPS>> obtenerIPSCercanas({
     required double latitud,
     required double longitud,
     double radioKm = 10.0,
   }) async {
     try {
-      print('🏥 SimpleDataService: Fetching nearby IPS...');
-      print('   Center: [$latitud, $longitud]');
-      print('   Radius: ${radioKm}km');
 
       // Usar el endpoint correcto del backend: /ips-crud/nearby
       final response = await _apiService.get('/ips-crud/nearby', queryParameters: {
@@ -249,21 +247,18 @@ class SimpleDataService {
             .map((json) => SimpleIPS.fromJson(json as Map<String, dynamic>))
             .toList();
 
-        print('🏥 SimpleDataService: Successfully loaded ${ips.length} nearby IPS');
         return ips;
       } else {
-        throw Exception('Formato de respuesta inválido para IPS cercanas');
+        throw Exception('Formato de respuesta invÃ¡lido para IPS cercanas');
       }
     } catch (e) {
-      print('❌ SimpleDataService: Error loading nearby IPS: $e');
       rethrow;
     }
   }
 
-  // Método para obtener todas las IPS
+  // MÃ©todo para obtener todas las IPS
   Future<List<SimpleIPS>> obtenerTodasLasIPS() async {
     try {
-      print('🏥 SimpleDataService: Fetching all IPS...');
       final response = await _apiService.get('/ips');
 
       if (response.data is List) {
@@ -272,21 +267,18 @@ class SimpleDataService {
             .map((json) => SimpleIPS.fromJson(json as Map<String, dynamic>))
             .toList();
 
-        print('🏥 SimpleDataService: Successfully loaded ${ips.length} IPS');
         return ips;
       } else {
-        throw Exception('Formato de respuesta inválido para IPS');
+        throw Exception('Formato de respuesta invÃ¡lido para IPS');
       }
     } catch (e) {
-      print('❌ SimpleDataService: Error loading IPS: $e');
       rethrow;
     }
   }
 
-  // Método para obtener IPS por municipio
+  // MÃ©todo para obtener IPS por municipio
   Future<List<SimpleIPS>> obtenerIPSPorMunicipio(String municipioId) async {
     try {
-      print('🏥 SimpleDataService: Fetching IPS for municipio $municipioId...');
       final response = await _apiService.get('/ips/municipio/$municipioId');
 
       if (response.data is List) {
@@ -295,18 +287,16 @@ class SimpleDataService {
             .map((json) => SimpleIPS.fromJson(json as Map<String, dynamic>))
             .toList();
 
-        print('🏥 SimpleDataService: Successfully loaded ${ips.length} IPS for municipio');
         return ips;
       } else {
-        throw Exception('Formato de respuesta inválido para IPS por municipio');
+        throw Exception('Formato de respuesta invÃ¡lido para IPS por municipio');
       }
     } catch (e) {
-      print('❌ SimpleDataService: Error loading IPS by municipio: $e');
       rethrow;
     }
   }
 
-  // Método para crear gestante
+  // MÃ©todo para crear gestante
   Future<SimpleGestante> crearGestante({
     required String documento,
     required String nombre,
@@ -321,9 +311,6 @@ class SimpleDataService {
     String? creadaPor,
   }) async {
     try {
-      print('🤰 SimpleDataService: Creating new gestante...');
-      print('   Documento: $documento');
-      print('   Nombre: $nombre');
 
       final data = {
         'documento': documento,
@@ -349,18 +336,16 @@ class SimpleDataService {
         final gestanteData = data['gestante'] as Map<String, dynamic>;
         final gestante = SimpleGestante.fromJson(gestanteData);
 
-        print('✅ SimpleDataService: Gestante created successfully with ID: ${gestante.id}');
         return gestante;
       } else {
-        throw Exception('Formato de respuesta inválido al crear gestante');
+        throw Exception('Formato de respuesta invÃ¡lido al crear gestante');
       }
     } catch (e) {
-      print('❌ SimpleDataService: Error creating gestante: $e');
       rethrow;
     }
   }
 
-  // Método para actualizar gestante
+  // MÃ©todo para actualizar gestante
   Future<SimpleGestante> actualizarGestante({
     required String id,
     String? documento,
@@ -374,7 +359,6 @@ class SimpleDataService {
     DateTime? fechaProbableParto,
   }) async {
     try {
-      print('🤰 SimpleDataService: Updating gestante $id...');
 
       final updateData = <String, dynamic>{};
       if (documento != null) updateData['documento'] = documento;
@@ -394,18 +378,16 @@ class SimpleDataService {
         final gestanteData = data['gestante'] as Map<String, dynamic>;
         final gestante = SimpleGestante.fromJson(gestanteData);
 
-        print('✅ SimpleDataService: Gestante updated successfully');
         return gestante;
       } else {
-        throw Exception('Formato de respuesta inválido al actualizar gestante');
+        throw Exception('Formato de respuesta invÃ¡lido al actualizar gestante');
       }
     } catch (e) {
-      print('❌ SimpleDataService: Error updating gestante: $e');
       rethrow;
     }
   }
 
-  // Método para crear control prenatal
+  // MÃ©todo para crear control prenatal
   Future<SimpleControl> crearControl({
     required String gestanteId,
     required DateTime fechaControl,
@@ -416,9 +398,6 @@ class SimpleDataService {
     String? observaciones,
   }) async {
     try {
-      print('🏥 SimpleDataService: Creating new control...');
-      print('   Gestante ID: $gestanteId');
-      print('   Fecha: $fechaControl');
 
       final response = await _apiService.post('/controles', data: {
         'gestante_id': gestanteId,
@@ -435,18 +414,16 @@ class SimpleDataService {
         final controlData = data['control'] as Map<String, dynamic>;
         final control = SimpleControl.fromJson(controlData);
 
-        print('✅ SimpleDataService: Control created successfully with ID: ${control.id}');
         return control;
       } else {
-        throw Exception('Formato de respuesta inválido al crear control');
+        throw Exception('Formato de respuesta invÃ¡lido al crear control');
       }
     } catch (e) {
-      print('❌ SimpleDataService: Error creating control: $e');
       rethrow;
     }
   }
 
-  // Método para actualizar control prenatal
+  // MÃ©todo para actualizar control prenatal
   Future<SimpleControl> actualizarControl({
     required String id,
     String? gestanteId,
@@ -458,7 +435,6 @@ class SimpleDataService {
     String? observaciones,
   }) async {
     try {
-      print('🏥 SimpleDataService: Updating control $id...');
 
       final updateData = <String, dynamic>{};
       if (gestanteId != null) updateData['gestante_id'] = gestanteId;
@@ -476,18 +452,16 @@ class SimpleDataService {
         final controlData = data['control'] as Map<String, dynamic>;
         final control = SimpleControl.fromJson(controlData);
 
-        print('✅ SimpleDataService: Control updated successfully');
         return control;
       } else {
-        throw Exception('Formato de respuesta inválido al actualizar control');
+        throw Exception('Formato de respuesta invÃ¡lido al actualizar control');
       }
     } catch (e) {
-      print('❌ SimpleDataService: Error updating control: $e');
       rethrow;
     }
   }
 
-  // Método para crear alerta
+  // MÃ©todo para crear alerta
   Future<SimpleAlerta> crearAlerta({
     required String gestanteId,
     required TipoAlerta tipoAlerta,
@@ -498,9 +472,6 @@ class SimpleDataService {
     double? longitud,
   }) async {
     try {
-      print('🚨 SimpleDataService: Creating new alert...');
-      print('   Gestante ID: $gestanteId');
-      print('   Tipo: ${tipoAlerta.backendValue}');
 
       final response = await _apiService.post('/alertas', data: {
         'gestante_id': gestanteId,
@@ -517,18 +488,16 @@ class SimpleDataService {
         final alertaData = data['alerta'] as Map<String, dynamic>;
         final alerta = SimpleAlerta.fromJson(alertaData);
 
-        print('✅ SimpleDataService: Alert created successfully with ID: ${alerta.id}');
         return alerta;
       } else {
-        throw Exception('Formato de respuesta inválido al crear alerta');
+        throw Exception('Formato de respuesta invÃ¡lido al crear alerta');
       }
     } catch (e) {
-      print('❌ SimpleDataService: Error creating alert: $e');
       rethrow;
     }
   }
 
-  // Método para actualizar alerta
+  // MÃ©todo para actualizar alerta
   Future<SimpleAlerta> actualizarAlerta({
     required String id,
     String? gestanteId,
@@ -541,7 +510,6 @@ class SimpleDataService {
     double? longitud,
   }) async {
     try {
-      print('🚨 SimpleDataService: Updating alert $id...');
 
       final updateData = <String, dynamic>{};
       if (gestanteId != null) updateData['gestante_id'] = gestanteId;
@@ -559,13 +527,17 @@ class SimpleDataService {
         final data = response.data as Map<String, dynamic>;
         final alertaData = data['alerta'] as Map<String, dynamic>;
         final alerta = SimpleAlerta.fromJson(alertaData);
-
-        print('✅ SimpleDataService: Alert updated successfully');
         return alerta;
       } else {
         throw Exception('Formato de respuesta inválido al actualizar alerta');
-        /// Método auxiliar para parsear respuesta de gestantes
-        List<SimpleGestante> parseGestantesResponse(dynamic response) {
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Método auxiliar para parsear respuesta de gestantes
+  List<SimpleGestante> parseGestantesResponse(dynamic response) {
           if (response.data is List) {
             final List<dynamic> data = response.data as List<dynamic>;
             return data
@@ -580,21 +552,18 @@ class SimpleDataService {
           return [];
         }
       
-        /// Método para obtener gestantes con filtrado por madrina
+        /// MÃ©todo para obtener gestantes con filtrado por madrina
         Future<List<SimpleGestante>> obtenerGestantesPorMadrina(String madrinaId) async {
           try {
-            print('🤰 SimpleDataService: Obteniendo gestantes de la madrina $madrinaId...');
             
-            // Intentar endpoint específico de madrina
+            // Intentar endpoint especÃ­fico de madrina
             try {
               final response = await _apiService.get('/gestantes/madrina/$madrinaId');
               final gestantes = parseGestantesResponse(response);
-              print('✅ SimpleDataService: ${gestantes.length} gestantes de la madrina cargadas (endpoint específico)');
               return gestantes;
             } catch (e) {
-              print('⚠️ SimpleDataService: Endpoint específico falló, intentando método alternativo: $e');
               
-              // Método alternativo: obtener todas y filtrar
+              // MÃ©todo alternativo: obtener todas y filtrar
               final response = await _apiService.get('/gestantes');
               final todasGestantes = parseGestantesResponse(response);
               
@@ -603,83 +572,51 @@ class SimpleDataService {
                   .where((g) => g.tieneAccesoMadrina(madrinaId))
                   .toList();
                   
-              print('✅ SimpleDataService: ${gestantesMadrina.length} gestantes de la madrina cargadas (filtrado manual)');
               return gestantesMadrina;
             }
           } catch (e) {
-            print('❌ SimpleDataService: Error obteniendo gestantes de la madrina: $e');
             rethrow;
           }
         }
       
-        /// Método para verificar si una madrina tiene acceso a una gestante
+        /// MÃ©todo para verificar si una madrina tiene acceso a una gestante
         Future<bool> verificarAccesoMadrina(String gestanteId, String madrinaId) async {
           try {
-            print('🔐 SimpleDataService: Verificando acceso de la madrina $madrinaId a la gestante $gestanteId...');
-            
-            // Usar el servicio de permisos si está disponible
-            if (_permissionService != null) {
-              return await _permissionService!.tienePermisoSobreGestante(gestanteId, 'ver');
-            }
-            
-            // Verificación local si no hay servicio de permisos
+            // Verificación local
             final response = await _apiService.get('/gestantes/$gestanteId');
             if (response.data != null) {
               final gestante = SimpleGestante.fromJson(response.data as Map<String, dynamic>);
               final tieneAcceso = gestante.tieneAccesoMadrina(madrinaId);
-              print('🔐 SimpleDataService: Acceso verificado localmente: $tieneAcceso');
               return tieneAcceso;
             }
             
             return false;
           } catch (e) {
-            print('❌ SimpleDataService: Error verificando acceso: $e');
             return false;
           }
         }
       
-        /// Método para asignar una gestante a una madrina
+        /// MÃ©todo para asignar una gestante a una madrina
         Future<bool> asignarGestanteAMadrina({
           required String gestanteId,
           required String madrinaId,
           String? asignadoPor,
         }) async {
           try {
-            print('🔐 SimpleDataService: Asignando gestante $gestanteId a la madrina $madrinaId...');
-            
-            // Usar el servicio de permisos si está disponible
-            if (_permissionService != null) {
-              return await _permissionService!.asignarGestanteAMadrina(
-                gestanteId: gestanteId,
-                madrinaId: madrinaId,
-                asignadoPor: asignadoPor,
-              );
-            }
-            
-            // Asignación directa si no hay servicio de permisos
+            // Asignación directa a través de la API
             final response = await _apiService.post('/gestantes/$gestanteId/asignar', data: {
               'madrina_id': madrinaId,
               'asignado_por': asignadoPor,
             });
-            
+
             if (response.data != null && response.data['success'] == true) {
-              print('✅ SimpleDataService: Gestante asignada exitosamente');
               return true;
             } else {
-              print('❌ SimpleDataService: Error en respuesta del backend');
               return false;
             }
           } catch (e) {
-            print('❌ SimpleDataService: Error asignando gestante: $e');
             return false;
           }
         }
-      
-      }
-    } catch (e) {
-      print('❌ SimpleDataService: Error updating alert: $e');
-      rethrow;
-    }
-  }
-
 }
+

@@ -1,5 +1,5 @@
-// Servicio de alarma SOS con sonido fuerte y vibración intensa
-// Proporciona alertas sonoras y táctiles para emergencias
+﻿// Servicio de alarma SOS con sonido fuerte y vibraciÃ³n intensa
+// Proporciona alertas sonoras y tÃ¡ctiles para emergencias
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
@@ -11,7 +11,7 @@ import 'auth_service.dart';
 import '../config/app_config.dart';
 import 'sos_compatibility_service.dart';
 
-// Importación condicional: usa web_audio_helper.dart en web, stub en otras plataformas
+// ImportaciÃ³n condicional: usa web_audio_helper.dart en web, stub en otras plataformas
 import 'web_audio_helper.dart' if (dart.library.io) 'stub_audio_helper.dart';
 
 class SOSAlarmService {
@@ -39,10 +39,6 @@ class SOSAlarmService {
     bool soloLocal = false,
   }) async {
     try {
-      debugPrint('🚨 SOS: Activando alarma completa...');
-      debugPrint('   Gestante ID: $gestanteId');
-      debugPrint('   Coordinates: [$longitud, $latitud]');
-      debugPrint('   Solo local: $soloLocal');
       
       Map<String, dynamic> resultado = {
         'success': false,
@@ -55,9 +51,7 @@ class SOSAlarmService {
       if (!soloLocal) {
         try {
           resultado = await _enviarAlertaBackend(gestanteId, latitud, longitud, descripcion);
-          debugPrint('✅ SOS: Alerta enviada al backend - ID: ${resultado['alertaId']}');
         } catch (e) {
-          debugPrint('❌ SOS: Error enviando alerta al backend: $e');
           resultado['mensaje'] = 'Error enviando alerta: $e';
         }
       }
@@ -65,7 +59,7 @@ class SOSAlarmService {
       // 2. Activar alarma sonora fuerte
       await _activarAlarmaSonora();
       
-      // 3. Activar vibración intensa
+      // 3. Activar vibraciÃ³n intensa
       await _activarVibracionIntensa();
       
       // 4. Actualizar resultado
@@ -76,7 +70,6 @@ class SOSAlarmService {
       
       return resultado;
     } catch (e) {
-      debugPrint('❌ SOS: Error activando alarma completa: $e');
       // Continuar con la alarma local incluso si falla el backend
       await _activarAlarmaSonora();
       await _activarVibracionIntensa();
@@ -93,26 +86,20 @@ class SOSAlarmService {
   /// Activar solo alarma sonora fuerte
   Future<void> _activarAlarmaSonora() async {
     if (_isPlaying) {
-      debugPrint('🔊 SOS: Alarma ya está activa');
       return;
     }
 
     _isPlaying = true;
-    debugPrint('🔊 SOS: ========================================');
-    debugPrint('🔊 SOS: ACTIVANDO ALARMA SONORA');
-    debugPrint('🔊 SOS: ========================================');
 
     try {
-      // Configurar volumen al máximo
+      // Configurar volumen al mÃ¡ximo
       await _audioPlayer.setVolume(1.0);
-      debugPrint('🔊 SOS: Volumen configurado al máximo (1.0)');
 
-      // Configurar para reproducción en bucle
+      // Configurar para reproducciÃ³n en bucle
       await _audioPlayer.setReleaseMode(ReleaseMode.loop);
-      debugPrint('🔊 SOS: Modo de reproducción: LOOP');
 
       // Para Flutter Web, usar un sonido de alarma online
-      // Probamos múltiples URLs por si alguna falla
+      // Probamos mÃºltiples URLs por si alguna falla
       const List<String> alarmUrls = [
         'https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3',
         'https://www.soundjay.com/button/sounds/beep-07.mp3',
@@ -123,38 +110,28 @@ class SOSAlarmService {
 
       for (String url in alarmUrls) {
         try {
-          debugPrint('🔊 SOS: Intentando reproducir desde: $url');
           await _audioPlayer.play(UrlSource(url));
-          debugPrint('✅ SOS: ¡SONIDO REPRODUCIENDO EXITOSAMENTE!');
-          debugPrint('🔊 SOS: URL: $url');
           soundPlayed = true;
           break;
         } catch (e) {
-          debugPrint('⚠️ SOS: Error con URL $url: $e');
           continue;
         }
       }
 
       if (!soundPlayed) {
-        debugPrint('❌ SOS: Ninguna URL funcionó, usando fallback');
         _reproducirBeepsEmergencia();
       } else {
-        // Programar repetición si el sonido se detiene
+        // Programar repeticiÃ³n si el sonido se detiene
         _programarReinicioSonido();
       }
 
     } catch (e) {
-      debugPrint('❌ SOS: Error general con alarma sonora: $e');
-      debugPrint('❌ SOS: Stack trace: ${StackTrace.current}');
       _reproducirBeepsEmergencia();
     }
   }
 
   /// Reproducir beeps de emergencia como fallback
   void _reproducirBeepsEmergencia() {
-    debugPrint('🔊 SOS: ========================================');
-    debugPrint('🔊 SOS: INICIANDO BEEPS DE EMERGENCIA (20 SEGUNDOS)');
-    debugPrint('🔊 SOS: ========================================');
 
     if (kIsWeb) {
       _reproducirBeepsWeb();
@@ -165,24 +142,19 @@ class SOSAlarmService {
 
   /// Reproducir beeps usando Web Audio API (para Flutter Web)
   void _reproducirBeepsWeb() {
-    debugPrint('🔊 SOS: Usando Web Audio API para navegador');
     int beepCount = 0;
     const int maxBeeps = 40;
 
     _soundTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
       if (!_isPlaying || beepCount >= maxBeeps) {
         timer.cancel();
-        debugPrint('🔊 SOS: Beeps completados (count: $beepCount / $maxBeeps)');
-        debugPrint('🔊 SOS: Duración total: ${(beepCount * 0.5).toStringAsFixed(1)} segundos');
         return;
       }
 
       try {
         // Usar helper para reproducir beep (funciona en web y nativo)
         playWebBeep();
-        debugPrint('🔊 SOS: Beep #${beepCount + 1}/$maxBeeps');
       } catch (e) {
-        debugPrint('⚠️ SOS: Error generando beep: $e');
       }
 
       beepCount++;
@@ -191,18 +163,14 @@ class SOSAlarmService {
 
   /// Reproducir beeps usando SystemSound (para plataformas nativas)
   void _reproducirBeepsNativo() {
-    debugPrint('🔊 SOS: Usando SystemSound para plataforma nativa');
     int beepCount = 0;
     const int maxBeeps = 40;
 
     _soundTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
       if (!_isPlaying || beepCount >= maxBeeps) {
         timer.cancel();
-        debugPrint('🔊 SOS: Beeps completados (count: $beepCount / $maxBeeps)');
-        debugPrint('🔊 SOS: Duración total: ${(beepCount * 0.5).toStringAsFixed(1)} segundos');
         return;
       }
-      debugPrint('🔊 SOS: Beep #${beepCount + 1}/$maxBeeps');
       SystemSound.play(SystemSoundType.alert);
       beepCount++;
     });
@@ -213,7 +181,6 @@ class SOSAlarmService {
     _soundTimer?.cancel();
     _soundTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (_isPlaying) {
-        debugPrint('🔊 SOS: Verificando estado del sonido...');
         // Reiniciar sonido si es necesario
         _reiniciarSonido();
       } else {
@@ -227,7 +194,6 @@ class SOSAlarmService {
     try {
       await _audioPlayer.resume();
     } catch (e) {
-      debugPrint('🔊 SOS: Reintentando reproducción de sonido...');
       try {
         const String alarmUrl = 'https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3';
         await _audioPlayer.play(UrlSource(alarmUrl));
@@ -237,18 +203,15 @@ class SOSAlarmService {
     }
   }
 
-  /// Activar vibración intensa
+  /// Activar vibraciÃ³n intensa
   Future<void> _activarVibracionIntensa() async {
-    debugPrint('📳 SOS: Activando vibración intensa...');
     _vibrationCount = 0;
     
     try {
-      // Nota: El paquete de vibración no está disponible,
-      // pero el sistema operativo manejará la vibración del sonido
+      // Nota: El paquete de vibraciÃ³n no estÃ¡ disponible,
+      // pero el sistema operativo manejarÃ¡ la vibraciÃ³n del sonido
       
-      debugPrint('📳 SOS: Vibración simulada (manejada por el sistema)');
     } catch (e) {
-      debugPrint('❌ SOS: Error con vibración: $e');
     }
   }
 
@@ -280,41 +243,36 @@ class SOSAlarmService {
     }
   }
 
-  /// Obtener ubicación actual
+  /// Obtener ubicaciÃ³n actual
   Future<Position?> obtenerUbicacionActual() async {
     try {
-      debugPrint('📍 SOS: Obteniendo ubicación actual...');
       
       // Verificar permisos
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          debugPrint('❌ SOS: Permisos de ubicación denegados');
           return null;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        debugPrint('❌ SOS: Permisos de ubicación denegados permanentemente');
         return null;
       }
 
-      // Obtener posición actual
+      // Obtener posiciÃ³n actual
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
         timeLimit: const Duration(seconds: 10),
       );
       
-      debugPrint('✅ SOS: Ubicación obtenida - Lat: ${position.latitude}, Lng: ${position.longitude}');
       return position;
     } catch (e) {
-      debugPrint('❌ SOS: Error obteniendo ubicación: $e');
       return null;
     }
   }
 
-  /// Activar alarma SOS con ubicación automática
+  /// Activar alarma SOS con ubicaciÃ³n automÃ¡tica
   Future<Map<String, dynamic>> activarAlarmaSOSConUbicacion({
     required String gestanteId,
     String? descripcion,
@@ -327,7 +285,7 @@ class SOSAlarmService {
         'success': false,
         'alertaId': null,
         'timestamp': DateTime.now().toIso8601String(),
-        'mensaje': 'No se pudo obtener la ubicación actual',
+        'mensaje': 'No se pudo obtener la ubicaciÃ³n actual',
       };
     }
     
@@ -342,7 +300,6 @@ class SOSAlarmService {
 
   /// Detener alarma
   Future<void> detenerAlarma() async {
-    debugPrint('🛑 SOS: Deteniendo alarma...');
     _isPlaying = false;
     _vibrationCount = 0;
     
@@ -352,14 +309,12 @@ class SOSAlarmService {
     
     try {
       await _audioPlayer.stop();
-      // La vibración se cancela automáticamente al detener el sonido
-      debugPrint('✅ SOS: Alarma detenida');
+      // La vibraciÃ³n se cancela automÃ¡ticamente al detener el sonido
     } catch (e) {
-      debugPrint('❌ SOS: Error deteniendo alarma: $e');
     }
   }
 
-  /// Verificar si la alarma está activa
+  /// Verificar si la alarma estÃ¡ activa
   bool get isPlaying => _isPlaying;
 
   /// Obtener estado actual de la alarma
@@ -369,9 +324,8 @@ class SOSAlarmService {
     'maxVibrations': _maxVibrations,
   };
 
-  /// Probar alarma (versión corta para pruebas)
+  /// Probar alarma (versiÃ³n corta para pruebas)
   Future<void> probarAlarma() async {
-    debugPrint('🧪 SOS: Probando alarma...');
 
     // Activar sonido por 3 segundos
     try {
@@ -381,16 +335,13 @@ class SOSAlarmService {
       await Future.delayed(const Duration(seconds: 3));
       await _audioPlayer.stop();
     } catch (e) {
-      debugPrint('⚠️ SOS: Error en prueba, usando beeps: $e');
       for (int i = 0; i < 3; i++) {
         await SystemSound.play(SystemSoundType.alert);
         await Future.delayed(const Duration(milliseconds: 500));
       }
     }
 
-    // La vibración se maneja automáticamente por el sonido
-    debugPrint('📳 SOS: Vibración manejada por el sistema');
+    // La vibraciÃ³n se maneja automÃ¡ticamente por el sonido
 
-    debugPrint('🧪 SOS: Prueba de alarma completada');
   }
 }

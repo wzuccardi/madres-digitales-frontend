@@ -1,5 +1,4 @@
-import 'dart:async';
-import 'package:flutter/foundation.dart';
+﻿import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../services/permission_service.dart';
@@ -20,7 +19,7 @@ class MadrinaSessionState {
   final Map<String, Set<String>> permisosCache;
   final Map<String, DateTime> permisosTimestamps;
   
-  // NUEVO: Estado de inicialización para control de concurrencia
+  // NUEVO: Estado de inicializaciÃ³n para control de concurrencia
   final bool isInitializing;
   final DateTime? lastInitialized;
 
@@ -78,11 +77,11 @@ class MadrinaSessionNotifier extends StateNotifier<MadrinaSessionState> {
   final PermissionService _permissionService;
   final AuthService _authService;
   
-  // NUEVO: Variables para controlar inicialización
+  // NUEVO: Variables para controlar inicializaciÃ³n
   bool _isInitializing = false;
   Completer<void>? _initializationCompleter;
   
-  // NUEVO: Cache de duración reducida (5 minutos en lugar de 15)
+  // NUEVO: Cache de duraciÃ³n reducida (5 minutos en lugar de 15)
   static const int _cacheDurationMinutes = 5;
   
   // NUEVO: Control de tiempo para evitar inicializaciones demasiado frecuentes
@@ -93,26 +92,22 @@ class MadrinaSessionNotifier extends StateNotifier<MadrinaSessionState> {
     _inicializarSesion();
   }
 
-  /// Inicializar la sesión de madrina con control de concurrencia
+  /// Inicializar la sesiÃ³n de madrina con control de concurrencia
   Future<void> _inicializarSesion() async {
-    // NUEVO: Prevenir múltiples inicializaciones simultáneas
+    // NUEVO: Prevenir mÃºltiples inicializaciones simultÃ¡neas
     if (_isInitializing) {
-      debugPrint('🔐 MadrinaSessionNotifier: Inicialización ya en progreso, esperando...');
       try {
         await _initializationCompleter?.future;
-        debugPrint('🔐 MadrinaSessionNotifier: Inicialización previa completada');
         return;
       } catch (e) {
-        debugPrint('❌ MadrinaSessionNotifier: Error en inicialización previa: $e');
-        // Si la inicialización previa falló, continuar con nueva inicialización
+        // Si la inicializaciÃ³n previa fallÃ³, continuar con nueva inicializaciÃ³n
       }
     }
 
-    // NUEVO: Verificar si pasó tiempo mínimo desde última inicialización
+    // NUEVO: Verificar si pasÃ³ tiempo mÃ­nimo desde Ãºltima inicializaciÃ³n
     if (state.lastInitialized != null) {
       final tiempoDesdeUltimaInicializacion = DateTime.now().difference(state.lastInitialized!);
       if (tiempoDesdeUltimaInicializacion < _minTimeBetweenInitializations) {
-        debugPrint('🔐 MadrinaSessionNotifier: Inicialización muy reciente, omitiendo');
         return;
       }
     }
@@ -126,7 +121,6 @@ class MadrinaSessionNotifier extends StateNotifier<MadrinaSessionState> {
     );
 
     try {
-      debugPrint('🔐 MadrinaSessionNotifier: Inicializando sesión...');
       
       final rol = _authService.userRole;
       final userId = _authService.userId;
@@ -139,11 +133,7 @@ class MadrinaSessionNotifier extends StateNotifier<MadrinaSessionState> {
       final tieneAccesoRestringido = esMadrina && 
           !['admin', 'super_admin', 'coordinador', 'medico'].contains(rol);
 
-      debugPrint('🔐 MadrinaSessionNotifier: Datos de sesión - '
-          'rol: $rol, userId: $userId, esMadrina: $esMadrina, '
-          'tieneAccesoRestringido: $tieneAccesoRestringido');
-
-      // NUEVO: Validación adicional de datos
+      // NUEVO: ValidaciÃ³n adicional de datos
       if (userId == null || userId.isEmpty) {
         throw Exception('ID de usuario no disponible');
       }
@@ -161,7 +151,7 @@ class MadrinaSessionNotifier extends StateNotifier<MadrinaSessionState> {
         error: null,
       );
 
-      // NUEVO: Actualizar estado de forma atómica
+      // NUEVO: Actualizar estado de forma atÃ³mica
       state = nuevoEstado;
 
       // Si es madrina, cargar permisos cache
@@ -169,10 +159,10 @@ class MadrinaSessionNotifier extends StateNotifier<MadrinaSessionState> {
         await _cargarPermisosCache();
       }
       
-      // NUEVO: Completar inicialización
+      // NUEVO: Completar inicializaciÃ³n
       _initializationCompleter?.complete();
       
-      appLogger.info('Sesión de madrina inicializada correctamente', context: {
+      appLogger.info('SesiÃ³n de madrina inicializada correctamente', context: {
         'userId': userId,
         'rol': rol,
         'esMadrina': esMadrina,
@@ -180,57 +170,52 @@ class MadrinaSessionNotifier extends StateNotifier<MadrinaSessionState> {
         'timestamp': DateTime.now().toIso8601String(),
       });
     } catch (e) {
-      debugPrint('❌ MadrinaSessionNotifier: Error inicializando sesión: $e');
-      appLogger.error('Error inicializando sesión de madrina', error: e, context: {
+      appLogger.error('Error inicializando sesiÃ³n de madrina', error: e, context: {
         'timestamp': DateTime.now().toIso8601String(),
       });
       
       state = state.copyWith(
         isLoading: false,
         isInitializing: false,
-        error: 'Error al inicializar sesión: $e',
+        error: 'Error al inicializar sesiÃ³n: $e',
       );
       
-      // NUEVO: Completar inicialización con error
+      // NUEVO: Completar inicializaciÃ³n con error
       _initializationCompleter?.completeError(e);
     } finally {
-      // NUEVO: Liberar bloqueo de inicialización
+      // NUEVO: Liberar bloqueo de inicializaciÃ³n
       _isInitializing = false;
       _initializationCompleter = null;
     }
   }
 
-  /// Verificar si tiene permiso sobre una gestante con invalidación automática
+  /// Verificar si tiene permiso sobre una gestante con invalidaciÃ³n automÃ¡tica
   Future<bool> tienePermiso(String gestanteId, String accion) async {
     if (!state.esMadrina || state.madrinaId == null || state.madrinaId!.isEmpty) {
-      debugPrint('🔐 MadrinaSessionNotifier: No es madrina o no hay ID');
       return false;
     }
 
     // Si tiene acceso completo, verificar permisos directamente
     if (!state.tieneAccesoRestringido) {
-      debugPrint('🔐 MadrinaSessionNotifier: Acceso completo - verificando permiso');
       return await _permissionService.tienePermisoSobreGestante(gestanteId, accion);
     }
 
-    // NUEVO: Verificar si el cache es válido (con tiempo reducido)
+    // NUEVO: Verificar si el cache es vÃ¡lido (con tiempo reducido)
     final cacheKey = gestanteId;
     if (_isCacheValid(cacheKey)) {
       final permisos = state.permisosCache[cacheKey] ?? <String>{};
       final tienePermiso = permisos.contains(accion);
-      debugPrint('🔐 MadrinaSessionNotifier: Usando cache - permiso: $tienePermiso para "$accion"');
       return tienePermiso;
     }
 
     // Cargar permiso desde el servicio
-    debugPrint('🔐 MadrinaSessionNotifier: Cargando permiso desde servicio...');
     try {
       final tienePermiso = await _permissionService.tienePermisoSobreGestante(
         gestanteId, 
         accion
       );
       
-      // NUEVO: Actualizar caché con tiempo reducido (5 minutos en lugar de 15)
+      // NUEVO: Actualizar cachÃ© con tiempo reducido (5 minutos en lugar de 15)
       if (tienePermiso) {
         final nuevosPermisos = Map<String, Set<String>>.from(state.permisosCache);
         final permisosExistentes = nuevosPermisos[cacheKey] ?? <String>{};
@@ -246,10 +231,8 @@ class MadrinaSessionNotifier extends StateNotifier<MadrinaSessionState> {
         );
       }
       
-      debugPrint('✅ MadrinaSessionNotifier: Permiso verificado - $tienePermiso para "$accion"');
       return tienePermiso;
     } catch (e) {
-      debugPrint('❌ MadrinaSessionNotifier: Error verificando permiso: $e');
       appLogger.error('Error verificando permiso', error: e, context: {
         'gestanteId': gestanteId,
         'accion': accion,
@@ -262,17 +245,15 @@ class MadrinaSessionNotifier extends StateNotifier<MadrinaSessionState> {
   /// Verificar si tiene un permiso general
   bool tienePermisoGeneral(String permiso) {
     if (!state.esMadrina || state.madrinaId == null || state.madrinaId!.isEmpty) {
-      debugPrint('🔐 MadrinaSessionNotifier: No es madrina o no hay ID para permiso general');
       return false;
     }
 
     // Si tiene acceso completo, tiene todos los permisos generales
     if (!state.tieneAccesoRestringido) {
-      debugPrint('🔐 MadrinaSessionNotifier: Acceso completo - permiso general concedido');
       return true;
     }
 
-    // Verificar permisos específicos según el rol
+    // Verificar permisos especÃ­ficos segÃºn el rol
     final rol = _authService.userRole;
     switch (permiso) {
       case 'ver_dashboard':
@@ -294,14 +275,12 @@ class MadrinaSessionNotifier extends StateNotifier<MadrinaSessionState> {
       case 'gestionar_municipios':
         return ['admin', 'super_admin'].contains(rol);
       default:
-        debugPrint('🔐 MadrinaSessionNotifier: Permiso general no reconocido: $permiso');
         return false;
     }
   }
 
-  /// NUEVO: Invalidar cache de permisos para una gestante específica
+  /// NUEVO: Invalidar cache de permisos para una gestante especÃ­fica
   Future<void> invalidarPermisosGestante(String gestanteId) async {
-    debugPrint('🔐 MadrinaSessionNotifier: Invalidando permisos para gestante: $gestanteId');
     
     final nuevosPermisos = Map<String, Set<String>>.from(state.permisosCache);
     final nuevosTimestamps = Map<String, DateTime>.from(state.permisosTimestamps);
@@ -314,7 +293,6 @@ class MadrinaSessionNotifier extends StateNotifier<MadrinaSessionState> {
       permisosTimestamps: nuevosTimestamps,
     );
     
-    debugPrint('✅ MadrinaSessionNotifier: Permisos invalidados para gestante: $gestanteId');
     appLogger.info('Permisos invalidados para gestante', context: {
       'gestanteId': gestanteId,
       'timestamp': DateTime.now().toIso8601String(),
@@ -323,14 +301,12 @@ class MadrinaSessionNotifier extends StateNotifier<MadrinaSessionState> {
 
   /// NUEVO: Invalidar todo el cache de permisos
   Future<void> invalidarTodosLosPermisos() async {
-    debugPrint('🔐 MadrinaSessionNotifier: Invalidando todo el cache de permisos');
     
     state = state.copyWith(
       permisosCache: const {},
       permisosTimestamps: const {},
     );
     
-    debugPrint('✅ MadrinaSessionNotifier: Todo el cache de permisos invalidado');
     appLogger.info('Todo el cache de permisos invalidado', context: {
       'timestamp': DateTime.now().toIso8601String(),
     });
@@ -339,21 +315,18 @@ class MadrinaSessionNotifier extends StateNotifier<MadrinaSessionState> {
   /// Cargar permisos cache desde el servicio
   Future<void> _cargarPermisosCache() async {
     try {
-      debugPrint('🔐 MadrinaSessionNotifier: Cargando permisos cache...');
       
       // Por ahora, no hay un endpoint para cargar todos los permisos
-      // Se cargarán bajo demanda
+      // Se cargarÃ¡n bajo demanda
       
-      debugPrint('✅ MadrinaSessionNotifier: Permisos cache cargados');
     } catch (e) {
-      debugPrint('❌ MadrinaSessionNotifier: Error cargando permisos cache: $e');
       appLogger.error('Error cargando permisos cache', error: e, context: {
         'timestamp': DateTime.now().toIso8601String(),
       });
     }
   }
 
-  /// NUEVO: Verificar si el cache es válido (con tiempo reducido)
+  /// NUEVO: Verificar si el cache es vÃ¡lido (con tiempo reducido)
   bool _isCacheValid(String gestanteId) {
     if (!state.permisosCache.containsKey(gestanteId) || 
         !state.permisosTimestamps.containsKey(gestanteId)) {
@@ -365,13 +338,11 @@ class MadrinaSessionNotifier extends StateNotifier<MadrinaSessionState> {
     return cacheAge.inMinutes < _cacheDurationMinutes;
   }
 
-  /// Refrescar la sesión con control de concurrencia
+  /// Refrescar la sesiÃ³n con control de concurrencia
   Future<void> refrescarSesion({bool forzar = false}) async {
-    debugPrint('🔐 MadrinaSessionNotifier: Refrescando sesión... (forzar: $forzar)');
     
-    // NUEVO: Si no se fuerza, verificar si ya hay una inicialización en progreso
+    // NUEVO: Si no se fuerza, verificar si ya hay una inicializaciÃ³n en progreso
     if (!forzar && _isInitializing) {
-      debugPrint('🔐 MadrinaSessionNotifier: Inicialización ya en progreso, esperando...');
       await _initializationCompleter?.future;
       return;
     }
@@ -386,11 +357,10 @@ class MadrinaSessionNotifier extends StateNotifier<MadrinaSessionState> {
     await _inicializarSesion();
   }
 
-  /// Cerrar sesión
+  /// Cerrar sesiÃ³n
   Future<void> cerrarSesion() async {
-    debugPrint('🔐 MadrinaSessionNotifier: Cerrando sesión...');
     
-    // NUEVO: Limpiar locks de inicialización
+    // NUEVO: Limpiar locks de inicializaciÃ³n
     _isInitializing = false;
     _initializationCompleter = null;
     
@@ -400,16 +370,15 @@ class MadrinaSessionNotifier extends StateNotifier<MadrinaSessionState> {
     // Limpiar estado
     state = const MadrinaSessionState();
     
-    // Cerrar sesión en AuthService
+    // Cerrar sesiÃ³n en AuthService
     await _authService.logout();
     
-    debugPrint('✅ MadrinaSessionNotifier: Sesión cerrada');
-    appLogger.info('Sesión de madrina cerrada', context: {
+    appLogger.info('SesiÃ³n de madrina cerrada', context: {
       'timestamp': DateTime.now().toIso8601String(),
     });
   }
 
-  /// Actualizar información de la madrina
+  /// Actualizar informaciÃ³n de la madrina
   void actualizarInfoMadrina({
     String? nombre,
     String? email,
@@ -421,7 +390,7 @@ class MadrinaSessionNotifier extends StateNotifier<MadrinaSessionState> {
       madrinaMunicipio: municipio ?? state.madrinaMunicipio,
     );
     
-    appLogger.info('Información de madrina actualizada', context: {
+    appLogger.info('InformaciÃ³n de madrina actualizada', context: {
       'nombre': nombre,
       'email': email,
       'municipio': municipio,
@@ -429,16 +398,16 @@ class MadrinaSessionNotifier extends StateNotifier<MadrinaSessionState> {
     });
   }
 
-  /// NUEVO: Obtener estado actual de inicialización
+  /// NUEVO: Obtener estado actual de inicializaciÃ³n
   bool get isInitializing => _isInitializing;
   
-  /// NUEVO: Obtener tiempo desde última inicialización
+  /// NUEVO: Obtener tiempo desde Ãºltima inicializaciÃ³n
   Duration? get tiempoDesdeUltimaInicializacion {
     if (state.lastInitialized == null) return null;
     return DateTime.now().difference(state.lastInitialized!);
   }
 
-  /// NUEVO: Verificar si la sesión está activa y válida
+  /// NUEVO: Verificar si la sesiÃ³n estÃ¡ activa y vÃ¡lida
   bool get sesionActivaYValida {
     return state.estaAutenticada && 
            state.esMadrina && 
@@ -447,9 +416,8 @@ class MadrinaSessionNotifier extends StateNotifier<MadrinaSessionState> {
            !state.isInitializing;
   }
 
-  /// NUEVO: Forzar recarga completa de la sesión
+  /// NUEVO: Forzar recarga completa de la sesiÃ³n
   Future<void> forzarRecargaCompleta() async {
-    debugPrint('🔄 MadrinaSessionNotifier: Forzando recarga completa...');
     
     // Limpiar todo el estado
     state = const MadrinaSessionState();
@@ -458,24 +426,23 @@ class MadrinaSessionNotifier extends StateNotifier<MadrinaSessionState> {
     _isInitializing = false;
     _initializationCompleter = null;
     
-    // Esperar un poco para asegurar que se limpió todo
+    // Esperar un poco para asegurar que se limpiÃ³ todo
     await Future.delayed(const Duration(milliseconds: 100));
     
     // Reinicializar completamente
     await _inicializarSesion();
     
-    debugPrint('✅ MadrinaSessionNotifier: Recarga completa finalizada');
   }
 }
 
-// Provider para la sesión de madrina
+// Provider para la sesiÃ³n de madrina
 final madrinaSessionProvider = StateNotifierProvider<MadrinaSessionNotifier, MadrinaSessionState>((ref) {
   final permissionService = ref.watch(permissionServiceProvider);
   final authService = ref.watch(authServiceProvider);
   return MadrinaSessionNotifier(permissionService, authService);
 });
 
-// NUEVO: Provider para estado de inicialización de sesión
+// NUEVO: Provider para estado de inicializaciÃ³n de sesiÃ³n
 final sesionInitializationProvider = Provider<SesionInitializationState>((ref) {
   final sessionState = ref.watch(madrinaSessionProvider);
   final notifier = ref.watch(madrinaSessionProvider.notifier);
@@ -502,7 +469,7 @@ class SesionInitializationState {
   });
 }
 
-// NUEVO: Provider para acciones de sesión
+// NUEVO: Provider para acciones de sesiÃ³n
 final sesionActionsProvider = Provider<SesionActions>((ref) {
   final notifier = ref.read(madrinaSessionProvider.notifier);
   

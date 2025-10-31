@@ -1,4 +1,4 @@
-import 'package:madres_digitales_flutter_new/services/api_service.dart';
+﻿import 'package:madres_digitales_flutter_new/services/api_service.dart';
 import 'package:madres_digitales_flutter_new/utils/logger.dart';
 
 class Gestante {
@@ -33,7 +33,13 @@ class Gestante {
   });
 
   factory Gestante.fromJson(Map<String, dynamic> json) {
-    print('🔍 Gestante.fromJson: Procesando JSON con claves: ${json.keys.toList()}');
+    // DEBUG: Analizar la estructura del JSON recibido
+    appLogger.info('Gestante.fromJson DEBUG: Analizando JSON', error: {
+      'jsonType': json.runtimeType.toString(),
+      'jsonKeys': json.keys.toList(),
+      'json': json,
+    });
+
     return Gestante(
       id: json['id']?.toString() ?? '',
       documento: json['documento']?.toString() ?? '',
@@ -85,30 +91,70 @@ class GestanteService {
     try {
       appLogger.info('GestanteService: Obteniendo gestantes');
       final response = await _apiService.get('/gestantes');
-      print('🔍 GestanteService: Respuesta recibida - Tipo: ${response.data.runtimeType}');
-      print('🔍 GestanteService: Respuesta recibida - Contenido: ${response.data}');
-      
+
+      // DEBUG: Analizar la estructura de la respuesta
+      appLogger.info('GestanteService DEBUG: Estructura de respuesta', error: {
+        'responseDataType': response.data.runtimeType.toString(),
+        'responseData': response.data,
+        'isMap': response.data is Map,
+        'isList': response.data is List,
+      });
+
       List<dynamic> gestantesData;
       if (response.data is Map<String, dynamic>) {
-        // La respuesta tiene la estructura {data: [...]}
-        gestantesData = response.data['data'] as List<dynamic>;
-        print('🔍 GestanteService: Extraída lista de gestantes de la clave "data": ${gestantesData.length} elementos');
-      } else {
+        final Map<String, dynamic> responseData = response.data;
+
+        // DEBUG: Analizar la estructura del data
+        appLogger.info('GestanteService DEBUG: Estructura de responseData', error: {
+          'responseData': responseData,
+          'dataType': responseData['data']?.runtimeType.toString(),
+          'dataValue': responseData['data'],
+        });
+
+        // Estructura: { success: true, data: { gestantes: [...], total: ... } }
+        if (responseData['data'] is Map && responseData['data']['gestantes'] != null) {
+          final gestantesValue = responseData['data']['gestantes'];
+
+          // DEBUG: Analizar el valor de gestantes
+          appLogger.info('GestanteService DEBUG: Estructura de gestantes', error: {
+            'gestantesValueType': gestantesValue.runtimeType.toString(),
+            'gestantesValue': gestantesValue,
+          });
+
+          if (gestantesValue is List) {
+            gestantesData = gestantesValue;
+          } else {
+            appLogger.error('GestanteService: gestantes NO es una lista', error: {
+              'type': gestantesValue.runtimeType.toString(),
+              'value': gestantesValue,
+            });
+            gestantesData = [];
+          }
+        }
+        // Estructura: { data: [...] }
+        else if (responseData['data'] is List) {
+          gestantesData = responseData['data'] as List<dynamic>;
+        } else {
+          gestantesData = [];
+        }
+      } else if (response.data is List) {
         // La respuesta es directamente una lista
         gestantesData = response.data as List<dynamic>;
-        print('🔍 GestanteService: La respuesta es directamente una lista: ${gestantesData.length} elementos');
+      } else {
+        appLogger.error('GestanteService: Tipo de respuesta inesperado', error: {
+          'type': response.data.runtimeType.toString(),
+          'data': response.data,
+        });
+        gestantesData = [];
       }
-      
+
       final gestantes = gestantesData.map((data) {
-        print('🔍 GestanteService: Procesando gestante: $data');
         return Gestante.fromJson(data);
       }).toList();
-      print('🔍 GestanteService: ${gestantes.length} gestantes procesadas correctamente');
+
+      appLogger.info('GestanteService: ${gestantes.length} gestantes cargadas');
       return gestantes;
-    } catch (e, stackTrace) {
-      print('❌ GestanteService: Error obteniendo gestantes: $e');
-      print('❌ GestanteService: Tipo de error: ${e.runtimeType}');
-      print('❌ GestanteService: Stack trace: $stackTrace');
+    } catch (e) {
       appLogger.error('Error obteniendo gestantes', error: e);
       rethrow;
     }
@@ -118,7 +164,7 @@ class GestanteService {
     try {
       appLogger.info('GestanteService: Obteniendo gestante por ID: $id');
       final response = await _apiService.get('/gestantes/$id');
-      return Gestante.fromJson(response.data);  // Corrección: Acceder a data de Response
+      return Gestante.fromJson(response.data);  // CorrecciÃ³n: Acceder a data de Response
     } catch (e) {
       appLogger.error('Error obteniendo gestante por ID', error: e, context: {
         'id': id,
@@ -130,8 +176,8 @@ class GestanteService {
   Future<Gestante> crearGestante(Map<String, dynamic> gestanteData) async {
     try {
       appLogger.info('GestanteService: Creando gestante');
-      final response = await _apiService.post('/gestantes', data: gestanteData);  // Corrección: Usar parámetro named
-      return Gestante.fromJson(response.data);  // Corrección: Acceder a data de Response
+      final response = await _apiService.post('/gestantes', data: gestanteData);  // CorrecciÃ³n: Usar parÃ¡metro named
+      return Gestante.fromJson(response.data);  // CorrecciÃ³n: Acceder a data de Response
     } catch (e) {
       appLogger.error('Error creando gestante', error: e);
       rethrow;
@@ -143,8 +189,8 @@ class GestanteService {
       appLogger.info('GestanteService: Actualizando gestante', context: {
         'id': id,
       });
-      final response = await _apiService.put('/gestantes/$id', data: gestanteData);  // Corrección: Usar parámetro named
-      return Gestante.fromJson(response.data);  // Corrección: Acceder a data de Response
+      final response = await _apiService.put('/gestantes/$id', data: gestanteData);  // CorrecciÃ³n: Usar parÃ¡metro named
+      return Gestante.fromJson(response.data);  // CorrecciÃ³n: Acceder a data de Response
     } catch (e) {
       appLogger.error('Error actualizando gestante', error: e, context: {
         'id': id,

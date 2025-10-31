@@ -198,7 +198,7 @@ final GoRouter _router = GoRouter(
     ),
     GoRoute(
       path: '/controles/nuevo',
-      builder: (context, state) => ControlFormScreen(),
+      builder: (context, state) => const ControlFormScreen(),
     ),
     GoRoute(
       path: '/controles/editar/:id',

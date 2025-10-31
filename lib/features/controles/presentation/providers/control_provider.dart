@@ -16,8 +16,26 @@ class ControlNotifier extends AsyncNotifier<List<Control>> {
     try {
       final apiService = ref.read(apiServiceProvider);
       final response = await apiService.get('/controles');
-      final List<dynamic> data = response.data;
-      return data.map((json) => Control.fromJson(json)).toList();
+
+      // Manejar estructura de respuesta del backend: { success: true, data: { controles: [...] } }
+      List<dynamic> controlesData = [];
+      if (response.data is Map && response.data['data'] != null) {
+        final dataValue = response.data['data'];
+        if (dataValue is List) {
+          // Formato: { success: true, data: [...] } (controles vencidos/pendientes)
+          controlesData = dataValue;
+        } else if (dataValue is Map && dataValue['controles'] != null) {
+          // Formato: { success: true, data: { controles: [...] } } (controles normales)
+          final controlesValue = dataValue['controles'];
+          if (controlesValue is List) {
+            controlesData = controlesValue;
+          }
+        }
+      } else if (response.data is List) {
+        controlesData = response.data;
+      }
+
+      return controlesData.map((json) => Control.fromJson(json)).toList();
     } catch (e) {
       throw Exception('Error al cargar controles: $e');
     }

@@ -40,7 +40,25 @@ class _GestantesScreenState extends ConsumerState<GestantesScreen> {
     setState(() => _isLoading = true);
     try {
       final response = await _apiService.get('/gestantes');
-      final gestantes = response.data['data'] ?? [];
+
+      // Manejar estructura de respuesta del backend igual que IPS
+      List<dynamic> gestantes = [];
+      if (response.data is Map<String, dynamic>) {
+        final responseMap = response.data as Map<String, dynamic>;
+
+        // Estructura: { success: true, data: { gestantes: [...], total: ... } }
+        if (responseMap['data'] is Map && responseMap['data']['gestantes'] != null) {
+          gestantes = responseMap['data']['gestantes'] as List<dynamic>;
+        }
+        // Estructura: { success: true, data: [...] }
+        else if (responseMap['success'] == true && responseMap['data'] is List) {
+          gestantes = responseMap['data'] as List<dynamic>;
+        }
+      } else if (response.data is List) {
+        // La respuesta es directamente una lista
+        gestantes = response.data as List<dynamic>;
+      }
+
       setState(() {
         _gestantesList = gestantes;
         _filteredGestantesList = gestantes;

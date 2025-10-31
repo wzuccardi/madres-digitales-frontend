@@ -1,4 +1,4 @@
-import '../services/api_service.dart';
+﻿import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../utils/logger.dart';
 
@@ -11,14 +11,14 @@ class MunicipioService {
     _authService = AuthService();
   }
 
-  /// Asegurar que el usuario esté autenticado antes de hacer peticiones
+  /// Asegurar que el usuario estÃ© autenticado antes de hacer peticiones
   Future<void> _ensureAuthenticated() async {
     if (!_authService.isAuthenticated) {
       appLogger.info('MunicipioService: Usuario no autenticado, inicializando AuthService...');
       await _authService.initialize();
       
       if (!_authService.isAuthenticated) {
-        throw Exception('Usuario no autenticado. Por favor, inicie sesión.');
+        throw Exception('Usuario no autenticado. Por favor, inicie sesiÃ³n.');
       }
     }
   }
@@ -26,61 +26,60 @@ class MunicipioService {
   // Obtener todos los municipios
   Future<List<dynamic>> getAllMunicipios() async {
     try {
-      await _ensureAuthenticated();
-      appLogger.info('MunicipioService: Obteniendo todos los municipios');
-      
+      // No requiere autenticación para municipios
+      appLogger.info('MunicipioService: Obteniendo todos los municipios desde API');
       final response = await _apiService.get('/municipios');
       
-      // La respuesta del backend tiene formato { success: true, data: [...] }
+      List<dynamic> municipiosData;
       if (response.data is Map<String, dynamic>) {
+        // La respuesta tiene la estructura {success: true, data: [...]}
         final responseMap = response.data as Map<String, dynamic>;
         if (responseMap['success'] == true && responseMap['data'] != null) {
-          final municipios = responseMap['data'] as List<dynamic>;
-          appLogger.info('MunicipioService: ${municipios.length} municipios obtenidos exitosamente');
-          return municipios;
+          municipiosData = responseMap['data'] as List<dynamic>;
+        } else {
+          throw Exception('Respuesta invÃ¡lida del servidor: ${responseMap['error'] ?? 'Error desconocido'}');
         }
+      } else if (response.data is List<dynamic>) {
+        // La respuesta es directamente una lista
+        municipiosData = response.data as List<dynamic>;
+      } else {
+        throw Exception('Formato de respuesta inesperado: ${response.data.runtimeType}');
       }
       
-      // Si no tiene el formato esperado, asumir que es una lista directa
-      if (response.data is List<dynamic>) {
-        final municipios = response.data as List<dynamic>;
-        appLogger.info('MunicipioService: ${municipios.length} municipios obtenidos (formato directo)');
-        return municipios;
-      }
-      
-      throw Exception('Formato de respuesta inesperado');
+      appLogger.info('MunicipioService: ${municipiosData.length} municipios obtenidos desde API');
+      return municipiosData;
     } catch (e) {
       appLogger.error('Error obteniendo municipios desde API', error: e);
       
-      // Fallback temporal con municipios reales de Bolívar
-      appLogger.info('MunicipioService: Usando fallback con municipios de Bolívar');
+      // Fallback temporal con municipios reales de BolÃ­var
+      appLogger.info('MunicipioService: Usando fallback con municipios de BolÃ­var');
       return _getMunicipiosFallback();
     }
   }
 
-  // Fallback temporal con municipios reales de Bolívar
+  // Fallback temporal con municipios reales de BolÃ­var
   List<dynamic> _getMunicipiosFallback() {
     return [
-      {'id': '13001', 'nombre': 'CARTAGENA DE INDIAS', 'departamento': 'BOLÍVAR'},
-      {'id': '13430', 'nombre': 'MAGANGUÉ', 'departamento': 'BOLÍVAR'},
-      {'id': '13244', 'nombre': 'EL CARMEN DE BOLÍVAR', 'departamento': 'BOLÍVAR'},
-      {'id': '13836', 'nombre': 'TURBACO', 'departamento': 'BOLÍVAR'},
-      {'id': '13052', 'nombre': 'ARJONA', 'departamento': 'BOLÍVAR'},
-      {'id': '13442', 'nombre': 'MARÍA LA BAJA', 'departamento': 'BOLÍVAR'},
-      {'id': '13433', 'nombre': 'MAHATES', 'departamento': 'BOLÍVAR'},
-      {'id': '13468', 'nombre': 'SANTA CRUZ DE MOMPOX', 'departamento': 'BOLÍVAR'},
-      {'id': '13657', 'nombre': 'SAN JUAN NEPOMUCENO', 'departamento': 'BOLÍVAR'},
-      {'id': '13654', 'nombre': 'SAN JACINTO', 'departamento': 'BOLÍVAR'},
-      {'id': '13140', 'nombre': 'CALAMAR', 'departamento': 'BOLÍVAR'},
-      {'id': '13222', 'nombre': 'CLEMENCIA', 'departamento': 'BOLÍVAR'},
-      {'id': '13760', 'nombre': 'SOPLAVIENTO', 'departamento': 'BOLÍVAR'},
-      {'id': '13838', 'nombre': 'TURBANÁ', 'departamento': 'BOLÍVAR'},
-      {'id': '13873', 'nombre': 'VILLANUEVA', 'departamento': 'BOLÍVAR'},
-      {'id': '13006', 'nombre': 'ACHÍ', 'departamento': 'BOLÍVAR'},
-      {'id': '13030', 'nombre': 'ALTOS DEL ROSARIO', 'departamento': 'BOLÍVAR'},
-      {'id': '13042', 'nombre': 'ARENAL', 'departamento': 'BOLÍVAR'},
-      {'id': '13062', 'nombre': 'ARROYOHONDO', 'departamento': 'BOLÍVAR'},
-      {'id': '13074', 'nombre': 'BARRANCO DE LOBA', 'departamento': 'BOLÍVAR'},
+      {'id': '13001', 'nombre': 'CARTAGENA DE INDIAS', 'departamento': 'BOLÃVAR'},
+      {'id': '13430', 'nombre': 'MAGANGUÃ‰', 'departamento': 'BOLÃVAR'},
+      {'id': '13244', 'nombre': 'EL CARMEN DE BOLÃVAR', 'departamento': 'BOLÃVAR'},
+      {'id': '13836', 'nombre': 'TURBACO', 'departamento': 'BOLÃVAR'},
+      {'id': '13052', 'nombre': 'ARJONA', 'departamento': 'BOLÃVAR'},
+      {'id': '13442', 'nombre': 'MARÃA LA BAJA', 'departamento': 'BOLÃVAR'},
+      {'id': '13433', 'nombre': 'MAHATES', 'departamento': 'BOLÃVAR'},
+      {'id': '13468', 'nombre': 'SANTA CRUZ DE MOMPOX', 'departamento': 'BOLÃVAR'},
+      {'id': '13657', 'nombre': 'SAN JUAN NEPOMUCENO', 'departamento': 'BOLÃVAR'},
+      {'id': '13654', 'nombre': 'SAN JACINTO', 'departamento': 'BOLÃVAR'},
+      {'id': '13140', 'nombre': 'CALAMAR', 'departamento': 'BOLÃVAR'},
+      {'id': '13222', 'nombre': 'CLEMENCIA', 'departamento': 'BOLÃVAR'},
+      {'id': '13760', 'nombre': 'SOPLAVIENTO', 'departamento': 'BOLÃVAR'},
+      {'id': '13838', 'nombre': 'TURBANÃ', 'departamento': 'BOLÃVAR'},
+      {'id': '13873', 'nombre': 'VILLANUEVA', 'departamento': 'BOLÃVAR'},
+      {'id': '13006', 'nombre': 'ACHÃ', 'departamento': 'BOLÃVAR'},
+      {'id': '13030', 'nombre': 'ALTOS DEL ROSARIO', 'departamento': 'BOLÃVAR'},
+      {'id': '13042', 'nombre': 'ARENAL', 'departamento': 'BOLÃVAR'},
+      {'id': '13062', 'nombre': 'ARROYOHONDO', 'departamento': 'BOLÃVAR'},
+      {'id': '13074', 'nombre': 'BARRANCO DE LOBA', 'departamento': 'BOLÃVAR'},
     ];
   }
 
@@ -133,13 +132,13 @@ class MunicipioService {
     }
   }
 
-  // Obtener municipios del departamento de Bolívar
+  // Obtener municipios del departamento de BolÃ­var
   Future<List<dynamic>> getMunicipiosBolivar() async {
     try {
       await _ensureAuthenticated();
-      appLogger.info('MunicipioService: Obteniendo municipios de Bolívar');
+      appLogger.info('MunicipioService: Obteniendo municipios de BolÃ­var');
       
-      final response = await _apiService.get('/municipios?departamento=BOLÍVAR');
+      final response = await _apiService.get('/municipios?departamento=BOLÃVAR');
       
       if (response.data is Map<String, dynamic>) {
         final responseMap = response.data as Map<String, dynamic>;
@@ -154,16 +153,16 @@ class MunicipioService {
       
       return [];
     } catch (e) {
-      appLogger.error('Error obteniendo municipios de Bolívar', error: e);
+      appLogger.error('Error obteniendo municipios de BolÃ­var', error: e);
       rethrow;
     }
   }
 
-  // Obtener estadísticas de municipios
+  // Obtener estadÃ­sticas de municipios
   Future<Map<String, dynamic>> getMunicipiosStats() async {
     try {
       await _ensureAuthenticated();
-      appLogger.info('MunicipioService: Obteniendo estadísticas de municipios');
+      appLogger.info('MunicipioService: Obteniendo estadÃ­sticas de municipios');
       
       final response = await _apiService.get('/municipios/stats');
       
@@ -176,9 +175,10 @@ class MunicipioService {
       
       return response.data as Map<String, dynamic>;
     } catch (e) {
-      appLogger.error('Error obteniendo estadísticas de municipios', error: e);
+      appLogger.error('Error obteniendo estadÃ­sticas de municipios', error: e);
       rethrow;
     }
   }
 }
+
 

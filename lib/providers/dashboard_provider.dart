@@ -1,75 +1,62 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:madres_digitales_flutter_new/models/dashboard_models.dart';
 import 'package:madres_digitales_flutter_new/utils/logger.dart';
 import 'package:madres_digitales_flutter_new/providers/service_providers.dart';
 
-/// Provider para estadísticas generales del dashboard
+/// Provider para estadÃ­sticas generales del dashboard
 final estadisticasGeneralesProvider = FutureProvider<DashboardStats>((ref) async {
-  print('📊 DashboardProvider: ========== OBTENIENDO ESTADÍSTICAS GENERALES ==========');
-  appLogger.debug('DashboardProvider: Obteniendo estadísticas generales');
+  appLogger.debug('DashboardProvider: Obteniendo estadÃ­sticas generales');
   
   try {
-    print('📊 DashboardProvider: Esperando servicio de dashboard...');
-    // Esperar a que el servicio esté disponible
+    // Esperar a que el servicio estÃ© disponible
     final dashboardService = await ref.read(dashboardServiceProvider.future);
-    print('📊 DashboardProvider: ✅ Servicio de dashboard obtenido');
     
-    print('📊 DashboardProvider: Solicitando estadísticas al servicio...');
     final estadisticas = await dashboardService.obtenerEstadisticasGenerales();
     
-    print('📊 DashboardProvider: ✅ Estadísticas obtenidas exitosamente:');
-    print('   - Total gestantes: ${estadisticas.totalGestantes}');
-    print('   - Controles realizados: ${estadisticas.controlesRealizados}');
-    print('   - Alertas activas: ${estadisticas.alertasActivas}');
-    print('   - Total médicos: ${estadisticas.totalMedicos}');
-    print('   - Total IPS: ${estadisticas.totalIps}');
     
-    appLogger.debug('DashboardProvider: Estadísticas generales obtenidas exitosamente');
+    appLogger.debug('DashboardProvider: EstadÃ­sticas generales obtenidas exitosamente');
     return estadisticas;
   } catch (e) {
-    print('❌ DashboardProvider: Error obteniendo estadísticas generales: $e');
-    print('❌ DashboardProvider: Stack trace: ${StackTrace.current}');
-    appLogger.error('DashboardProvider: Error obteniendo estadísticas generales', error: e);
+    appLogger.error('DashboardProvider: Error obteniendo estadÃ­sticas generales', error: e);
     
-    // Retornar estadísticas vacías en caso de error
-    print('📊 DashboardProvider: Retornando estadísticas vacías por error');
+    // Retornar estadÃ­sticas vacÃ­as en caso de error
     return DashboardStats.empty();
   }
 });
 
-/// Provider para estadísticas por municipio
+/// Provider para estadÃ­sticas por municipio
 final estadisticasMunicipioProvider = FutureProvider.family<DashboardStats, String>((ref, municipioId) async {
-  appLogger.debug('DashboardProvider: Obteniendo estadísticas del municipio: $municipioId');
+  appLogger.debug('DashboardProvider: Obteniendo estadÃ­sticas del municipio: $municipioId');
   
   try {
-    // Esperar a que el servicio esté disponible
+    // Esperar a que el servicio estÃ© disponible
     final dashboardService = await ref.read(dashboardServiceProvider.future);
     final estadisticas = await dashboardService.obtenerEstadisticasPorMunicipio(municipioId);
     
-    appLogger.debug('DashboardProvider: Estadísticas de municipio obtenidas exitosamente');
+    appLogger.debug('DashboardProvider: EstadÃ­sticas de municipio obtenidas exitosamente');
     return estadisticas;
   } catch (e) {
-    appLogger.error('DashboardProvider: Error obteniendo estadísticas de municipio', error: e);
+    appLogger.error('DashboardProvider: Error obteniendo estadÃ­sticas de municipio', error: e);
     
-    // Retornar estadísticas vacías en caso de error
+    // Retornar estadÃ­sticas vacÃ­as en caso de error
     return DashboardStats.empty();
   }
 });
 
-/// Provider para estadísticas por período
+/// Provider para estadÃ­sticas por perÃ­odo
 final estadisticasPeriodoProvider = FutureProvider.family<DashboardStats, Map<String, dynamic>>((ref, params) async {
   final startDate = params['startDate'] as DateTime;
   final endDate = params['endDate'] as DateTime;
   final municipioId = params['municipioId'] as String?;
   
-  appLogger.debug('DashboardProvider: Obteniendo estadísticas por período');
-  appLogger.debug('DashboardProvider: Período: ${startDate.toIso8601String()} - ${endDate.toIso8601String()}');
+  appLogger.debug('DashboardProvider: Obteniendo estadÃ­sticas por perÃ­odo');
+  appLogger.debug('DashboardProvider: PerÃ­odo: ${startDate.toIso8601String()} - ${endDate.toIso8601String()}');
   if (municipioId != null) {
     appLogger.debug('DashboardProvider: Municipio: $municipioId');
   }
   
   try {
-    // Esperar a que el servicio esté disponible
+    // Esperar a que el servicio estÃ© disponible
     final dashboardService = await ref.read(dashboardServiceProvider.future);
     final estadisticas = await dashboardService.obtenerEstadisticasPorPeriodo(
       startDate: startDate,
@@ -77,22 +64,22 @@ final estadisticasPeriodoProvider = FutureProvider.family<DashboardStats, Map<St
       municipioId: municipioId,
     );
     
-    appLogger.debug('DashboardProvider: Estadísticas de período obtenidas exitosamente');
+    appLogger.debug('DashboardProvider: EstadÃ­sticas de perÃ­odo obtenidas exitosamente');
     return estadisticas;
   } catch (e) {
-    appLogger.error('DashboardProvider: Error obteniendo estadísticas de período', error: e);
+    appLogger.error('DashboardProvider: Error obteniendo estadÃ­sticas de perÃ­odo', error: e);
     
-    // Retornar estadísticas vacías en caso de error
+    // Retornar estadÃ­sticas vacÃ­as en caso de error
     return DashboardStats.empty();
   }
 });
 
-/// Provider para el estado de conexión del dashboard - TEMPORALMENTE DESHABILITADO
+/// Provider para el estado de conexiÃ³n del dashboard - TEMPORALMENTE DESHABILITADO
 // final dashboardConnectionStateProvider = StateNotifierProvider<DashboardConnectionNotifier, DashboardConnectionState>((ref) {
 //   return DashboardConnectionNotifier(ref);
 // });
 
-/// Notificador para el estado de conexión del dashboard
+/// Notificador para el estado de conexiÃ³n del dashboard
 class DashboardConnectionNotifier extends StateNotifier<DashboardConnectionState> {
   final Ref ref;
   
@@ -106,10 +93,10 @@ class DashboardConnectionNotifier extends StateNotifier<DashboardConnectionState
     try {
       state = state.copyWith(isLoading: true, error: null);
       
-      // Esperar a que el servicio esté disponible
+      // Esperar a que el servicio estÃ© disponible
       final dashboardService = await ref.read(dashboardServiceProvider.future);
       
-      // Probar obtener estadísticas para verificar conexión
+      // Probar obtener estadÃ­sticas para verificar conexiÃ³n
       await dashboardService.obtenerEstadisticasGenerales();
       
       state = state.copyWith(
@@ -118,7 +105,7 @@ class DashboardConnectionNotifier extends StateNotifier<DashboardConnectionState
         lastChecked: DateTime.now(),
       );
       
-      appLogger.debug('DashboardConnectionNotifier: Conexión verificada exitosamente');
+      appLogger.debug('DashboardConnectionNotifier: ConexiÃ³n verificada exitosamente');
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -127,19 +114,19 @@ class DashboardConnectionNotifier extends StateNotifier<DashboardConnectionState
         lastChecked: DateTime.now(),
       );
       
-      appLogger.error('DashboardConnectionNotifier: Error verificando conexión', error: e);
+      appLogger.error('DashboardConnectionNotifier: Error verificando conexiÃ³n', error: e);
     }
   }
   
-  /// Forzar verificación de conexión
+  /// Forzar verificaciÃ³n de conexiÃ³n
   Future<void> forzarVerificacion() async {
-    appLogger.debug('DashboardConnectionNotifier: Forzando verificación de conexión');
+    appLogger.debug('DashboardConnectionNotifier: Forzando verificaciÃ³n de conexiÃ³n');
     await _verificarConexion();
   }
   
-  /// Refrescar estadísticas
+  /// Refrescar estadÃ­sticas
   Future<void> refrescarEstadisticas() async {
-    appLogger.debug('DashboardConnectionNotifier: Refrescando estadísticas');
+    appLogger.debug('DashboardConnectionNotifier: Refrescando estadÃ­sticas');
     
     try {
       state = state.copyWith(isLoading: true, error: null);
@@ -149,14 +136,14 @@ class DashboardConnectionNotifier extends StateNotifier<DashboardConnectionState
       
       state = state.copyWith(isLoading: false);
       
-      appLogger.debug('DashboardConnectionNotifier: Estadísticas refrescadas exitosamente');
+      appLogger.debug('DashboardConnectionNotifier: EstadÃ­sticas refrescadas exitosamente');
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
         error: e.toString(),
       );
       
-      appLogger.error('DashboardConnectionNotifier: Error refrescando estadísticas', error: e);
+      appLogger.error('DashboardConnectionNotifier: Error refrescando estadÃ­sticas', error: e);
     }
   }
   
@@ -169,7 +156,7 @@ class DashboardConnectionNotifier extends StateNotifier<DashboardConnectionState
   }
 }
 
-/// Estado de conexión del dashboard
+/// Estado de conexiÃ³n del dashboard
 class DashboardConnectionState {
   final bool isLoading;
   final bool isConnected;
@@ -222,36 +209,36 @@ class DashboardConnectionState {
   }
 }
 
-/// Provider para refrescar estadísticas
+/// Provider para refrescar estadÃ­sticas
 final estadisticasRefreshProvider = FutureProvider.family<DashboardStats, void>((ref, _) async {
-  appLogger.debug('DashboardProvider: Refrescando estadísticas generales');
+  appLogger.debug('DashboardProvider: Refrescando estadÃ­sticas generales');
   
   try {
-    // Esperar a que el servicio esté disponible
+    // Esperar a que el servicio estÃ© disponible
     final dashboardService = await ref.read(dashboardServiceProvider.future);
     final estadisticas = await dashboardService.actualizarEstadisticas();
     
-    appLogger.debug('DashboardProvider: Estadísticas refrescadas exitosamente');
+    appLogger.debug('DashboardProvider: EstadÃ­sticas refrescadas exitosamente');
     return estadisticas;
   } catch (e) {
-    appLogger.error('DashboardProvider: Error refrescando estadísticas', error: e);
+    appLogger.error('DashboardProvider: Error refrescando estadÃ­sticas', error: e);
     
-    // Retornar estadísticas vacías en caso de error
+    // Retornar estadÃ­sticas vacÃ­as en caso de error
     return DashboardStats.empty();
   }
 });
 
-/// Provider para estadísticas de tendencias
+/// Provider para estadÃ­sticas de tendencias
 final estadisticasTendenciaProvider = FutureProvider.family<DashboardTrend, String>((ref, metric) async {
-  appLogger.debug('DashboardProvider: Obteniendo estadísticas de tendencia para métrica: $metric');
+  appLogger.debug('DashboardProvider: Obteniendo estadÃ­sticas de tendencia para mÃ©trica: $metric');
   
   try {
-    // En una implementación real, aquí se obtendrían las tendencias desde el servicio
+    // En una implementaciÃ³n real, aquÃ­ se obtendrÃ­an las tendencias desde el servicio
     // Por ahora, retornamos datos de ejemplo
     final now = DateTime.now();
     final points = <DashboardTrendPoint>[];
     
-    // Generar 30 días de datos de ejemplo
+    // Generar 30 dÃ­as de datos de ejemplo
     for (int i = 29; i >= 0; i--) {
       final date = now.subtract(Duration(days: i));
       final value = _generateRandomValueForMetric(metric);
@@ -270,12 +257,12 @@ final estadisticasTendenciaProvider = FutureProvider.family<DashboardTrend, Stri
       endDate: now,
     );
     
-    appLogger.debug('DashboardProvider: Estadísticas de tendencia obtenidas exitosamente');
+    appLogger.debug('DashboardProvider: EstadÃ­sticas de tendencia obtenidas exitosamente');
     return trend;
   } catch (e) {
-    appLogger.error('DashboardProvider: Error obteniendo estadísticas de tendencia', error: e);
+    appLogger.error('DashboardProvider: Error obteniendo estadÃ­sticas de tendencia', error: e);
     
-    // Retornar tendencia vacía en caso de error
+    // Retornar tendencia vacÃ­a en caso de error
     return DashboardTrend(
       metric: metric,
       points: [],
@@ -286,12 +273,12 @@ final estadisticasTendenciaProvider = FutureProvider.family<DashboardTrend, Stri
   }
 });
 
-/// Provider para estadísticas de comparación
+/// Provider para estadÃ­sticas de comparaciÃ³n
 final estadisticasComparacionProvider = FutureProvider.family<DashboardComparison, String>((ref, metric) async {
-  appLogger.debug('DashboardProvider: Obteniendo estadísticas de comparación para métrica: $metric');
+  appLogger.debug('DashboardProvider: Obteniendo estadÃ­sticas de comparaciÃ³n para mÃ©trica: $metric');
   
   try {
-    // En una implementación real, aquí se obtendrían las comparaciones desde el servicio
+    // En una implementaciÃ³n real, aquÃ­ se obtendrÃ­an las comparaciones desde el servicio
     // Por ahora, retornamos datos de ejemplo
     final currentValue = _generateRandomValueForMetric(metric);
     final previousValue = _generateRandomValueForMetric(metric);
@@ -306,12 +293,12 @@ final estadisticasComparacionProvider = FutureProvider.family<DashboardCompariso
       isPositive: percentageChange >= 0,
     );
     
-    appLogger.debug('DashboardProvider: Estadísticas de comparación obtenidas exitosamente');
+    appLogger.debug('DashboardProvider: EstadÃ­sticas de comparaciÃ³n obtenidas exitosamente');
     return comparison;
   } catch (e) {
-    appLogger.error('DashboardProvider: Error obteniendo estadísticas de comparación', error: e);
+    appLogger.error('DashboardProvider: Error obteniendo estadÃ­sticas de comparaciÃ³n', error: e);
     
-    // Retornar comparación vacía en caso de error
+    // Retornar comparaciÃ³n vacÃ­a en caso de error
     return DashboardComparison(
       metric: metric,
       currentValue: 0,
@@ -323,7 +310,7 @@ final estadisticasComparacionProvider = FutureProvider.family<DashboardCompariso
   }
 });
 
-/// Generar un valor aleatorio para una métrica específica
+/// Generar un valor aleatorio para una mÃ©trica especÃ­fica
 double _generateRandomValueForMetric(String metric) {
   switch (metric.toLowerCase()) {
     case 'total_gestantes':
@@ -348,13 +335,13 @@ final municipiosDataProvider = FutureProvider<List<MunicipioData>>((ref) async {
   appLogger.debug('DashboardProvider: Obteniendo datos de municipios');
   
   try {
-    // En una implementación real, aquí se obtendrían los datos desde el servicio
+    // En una implementaciÃ³n real, aquÃ­ se obtendrÃ­an los datos desde el servicio
     // Por ahora, retornamos datos de ejemplo
     final municipios = <MunicipioData>[];
     
     final municipiosNombres = [
-      'Bogotá', 'Medellín', 'Cali', 'Barranquilla', 'Cartagena',
-      'Cúcuta', 'Bucaramanga', 'Pereira', 'Ibagué', 'Manizales'
+      'BogotÃ¡', 'MedellÃ­n', 'Cali', 'Barranquilla', 'Cartagena',
+      'CÃºcuta', 'Bucaramanga', 'Pereira', 'IbaguÃ©', 'Manizales'
     ];
     
     for (int i = 0; i < municipiosNombres.length; i++) {
@@ -383,7 +370,7 @@ final municipiosDataProvider = FutureProvider<List<MunicipioData>>((ref) async {
   } catch (e) {
     appLogger.error('DashboardProvider: Error obteniendo datos de municipios', error: e);
     
-    // Retornar lista vacía en caso de error
+    // Retornar lista vacÃ­a en caso de error
     return [];
   }
 });
@@ -393,7 +380,7 @@ final alertasResumenProvider = FutureProvider<AlertasResumen>((ref) async {
   appLogger.debug('DashboardProvider: Obteniendo resumen de alertas');
   
   try {
-    // En una implementación real, aquí se obtendrían los datos desde el servicio
+    // En una implementaciÃ³n real, aquÃ­ se obtendrÃ­an los datos desde el servicio
     // Por ahora, retornamos datos de ejemplo
     final resumen = AlertasResumen(
       total: 25,
@@ -413,7 +400,7 @@ final alertasResumenProvider = FutureProvider<AlertasResumen>((ref) async {
   } catch (e) {
     appLogger.error('DashboardProvider: Error obteniendo resumen de alertas', error: e);
     
-    // Retornar resumen vacío en caso de error
+    // Retornar resumen vacÃ­o en caso de error
     return AlertasResumen(
       total: 0,
       criticas: 0,

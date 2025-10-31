@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/service_providers.dart';
@@ -12,19 +12,14 @@ class ControlFormScreen extends ConsumerStatefulWidget {
   final String? controlId;
   final String? gestantePreseleccionada;
 
-  ControlFormScreen({
+  const ControlFormScreen({
     super.key,
     this.controlId,
     this.gestantePreseleccionada,
-  }) {
-    print('🔶 CONTROL_FORM_SCREEN: Constructor llamado - ARCHIVO: control_form_screen.dart');
-    print('🔶 CONTROL_FORM_SCREEN: controlId = $controlId');
-    print('🔶 CONTROL_FORM_SCREEN: gestantePreseleccionada = $gestantePreseleccionada');
-  }
+  });
 
   @override
   ConsumerState<ControlFormScreen> createState() {
-    print('🔶 CONTROL_FORM_SCREEN: createState llamado - ARCHIVO: control_form_screen.dart');
     return _ControlFormScreenState();
   }
 }
@@ -53,44 +48,39 @@ class _ControlFormScreenState extends ConsumerState<ControlFormScreen> {
   bool _isLoadingGestantes = true;
   String? _error;
   
-  // Datos para evaluación de alertas
+  // Datos para evaluaciÃ³n de alertas
   Map<String, dynamic> _signosVitales = {};
   List<Map<String, dynamic>> _alertasDetectadas = [];
   bool _mostrarAlertas = true;
   
-  // Nuevas variables para características mejoradas
+  // Nuevas variables para caracterÃ­sticas mejoradas
   bool _movimientosFetales = true;
   bool _edemas = false;
   final List<String> _sintomasSeleccionados = [];
   
-  // Síntomas disponibles (del backend)
+  // SÃ­ntomas disponibles (del backend)
   final List<Map<String, String>> _sintomasDisponibles = [
     {'id': 'sangrado_vaginal', 'nombre': 'Sangrado vaginal'},
     {'id': 'dolor_abdominal_severo', 'nombre': 'Dolor abdominal severo'},
     {'id': 'cefalea_severa', 'nombre': 'Cefalea severa'},
-    {'id': 'vision_borrosa', 'nombre': 'Visión borrosa'},
-    {'id': 'dolor_epigastrico', 'nombre': 'Dolor epigástrico'},
+    {'id': 'vision_borrosa', 'nombre': 'VisiÃ³n borrosa'},
+    {'id': 'dolor_epigastrico', 'nombre': 'Dolor epigÃ¡strico'},
     {'id': 'contracciones_regulares', 'nombre': 'Contracciones regulares'},
     {'id': 'ruptura_membranas', 'nombre': 'Ruptura de membranas'},
     {'id': 'ausencia_movimiento_fetal', 'nombre': 'Ausencia de movimientos fetales'},
     {'id': 'movimientos_fetales_disminuidos', 'nombre': 'Movimientos fetales disminuidos'},
-    {'id': 'escalofrios', 'nombre': 'Escalofríos'},
-    {'id': 'confusion', 'nombre': 'Confusión'},
+    {'id': 'escalofrios', 'nombre': 'EscalofrÃ­os'},
+    {'id': 'confusion', 'nombre': 'ConfusiÃ³n'},
     {'id': 'convulsiones', 'nombre': 'Convulsiones'},
-    {'id': 'perdida_conciencia', 'nombre': 'Pérdida de conciencia'},
+    {'id': 'perdida_conciencia', 'nombre': 'PÃ©rdida de conciencia'},
   ];
 
   @override
   void initState() {
-    print('🔍 ControlFormScreen: initState llamado');
     super.initState();
-    print('🔍 ControlFormScreen: Estableciendo gestante preseleccionada');
     _gestanteSeleccionada = widget.gestantePreseleccionada;
-    print('🔍 ControlFormScreen: Llamando a _cargarGestantesDisponibles');
     _cargarGestantesDisponibles();
-    print('🔍 ControlFormScreen: Configurando listeners');
     _configurarListeners();
-    print('🔍 ControlFormScreen: initState completado');
   }
 
   @override
@@ -119,7 +109,7 @@ class _ControlFormScreenState extends ConsumerState<ControlFormScreen> {
     _frecuenciaRespiratoriaController.addListener(_actualizarSignosVitales);
     _alturaUterinaController.addListener(_actualizarSignosVitales);
     
-    // Listeners para validación en tiempo real
+    // Listeners para validaciÃ³n en tiempo real
     _presionSistolicaController.addListener(() => _checkPresionArterial(''));
     _presionDiastolicaController.addListener(() => _checkPresionArterial(''));
     _frecuenciaCardiacaController.addListener(() => _checkFrecuenciaCardiaca(''));
@@ -147,25 +137,18 @@ class _ControlFormScreenState extends ConsumerState<ControlFormScreen> {
   }
 
   Future<void> _cargarGestantesDisponibles() async {
-    print('🔍 ControlFormScreen: Iniciando _cargarGestantesDisponibles');
     setState(() {
       _isLoadingGestantes = true;
       _error = null;
     });
 
     try {
-      print('🔍 ControlFormScreen: Obteniendo apiService');
       final apiService = ref.read(apiServiceProvider);
-      print('🔍 ControlFormScreen: Creando gestanteService');
       final gestanteService = gs.GestanteService(apiService);
-      print('🔍 ControlFormScreen: Llamando a obtenerGestantes');
       
       final gestantes = await gestanteService.obtenerGestantes();
-      print('🔍 ControlFormScreen: Gestantes obtenidas - Tipo: ${gestantes.runtimeType}, Cantidad: ${gestantes.length}');
       
-      print('🔍 ControlFormScreen: Filtrando gestantes activas');
       final gestantesActivas = gestantes.where((g) => g.activa).toList();
-      print('🔍 ControlFormScreen: Gestantes activas - Cantidad: ${gestantesActivas.length}');
       
       setState(() {
         _gestantesDisponibles = gestantesActivas;
@@ -173,12 +156,7 @@ class _ControlFormScreenState extends ConsumerState<ControlFormScreen> {
       });
 
       appLogger.info('ControlFormScreen: ${_gestantesDisponibles.length} gestantes disponibles');
-      print('✅ ControlFormScreen: Carga completada exitosamente');
-    } catch (e, stackTrace) {
-      print('❌ ControlFormScreen: Error detallado:');
-      print('   Error: $e');
-      print('   Tipo: ${e.runtimeType}');
-      print('   StackTrace: $stackTrace');
+    } catch (e) {
       appLogger.error('ControlFormScreen: Error cargando gestantes', error: e);
       setState(() {
         _error = 'Error cargando gestantes: ${e.toString()}';
@@ -229,7 +207,6 @@ class _ControlFormScreenState extends ConsumerState<ControlFormScreen> {
         'observaciones': _observacionesController.text.trim(),
       };
       
-      print('🔍 ControlFormScreen: Enviando datos del control: $controlData');
 
       if (widget.controlId != null) {
         await controlService.actualizarControl(widget.controlId!, controlData);
@@ -237,7 +214,7 @@ class _ControlFormScreenState extends ConsumerState<ControlFormScreen> {
         await controlService.crearControl(controlData);
       }
 
-      // Crear alertas automáticas si se detectaron
+      // Crear alertas automÃ¡ticas si se detectaron
       await _crearAlertasAutomaticas();
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -272,20 +249,20 @@ class _ControlFormScreenState extends ConsumerState<ControlFormScreen> {
       final alertaService = AlertaService(apiService);
 
       for (final alerta in _alertasDetectadas) {
-        // Solo crear alertas críticas y altas automáticamente
+        // Solo crear alertas crÃ­ticas y altas automÃ¡ticamente
         if (alerta['prioridad'] == 'critica' || alerta['prioridad'] == 'alta') {
           await alertaService.crearAlerta(
             gestanteId: _gestanteSeleccionada!,
             tipoAlerta: alerta['tipo'] ?? 'manual',
             nivelPrioridad: alerta['prioridad'] ?? 'media',
-            mensaje: alerta['mensaje'] ?? 'Alerta automática',
+            mensaje: alerta['mensaje'] ?? 'Alerta automÃ¡tica',
           );
         }
       }
 
-      appLogger.info('ControlFormScreen: ${_alertasDetectadas.length} alertas automáticas creadas');
+      appLogger.info('ControlFormScreen: ${_alertasDetectadas.length} alertas automÃ¡ticas creadas');
     } catch (e) {
-      appLogger.error('ControlFormScreen: Error creando alertas automáticas', error: e);
+      appLogger.error('ControlFormScreen: Error creando alertas automÃ¡ticas', error: e);
     }
   }
 
@@ -496,7 +473,7 @@ class _ControlFormScreenState extends ConsumerState<ControlFormScreen> {
                   child: TextFormField(
                     controller: _semanasGestacionController,
                     decoration: const InputDecoration(
-                      labelText: 'Semanas de Gestación',
+                      labelText: 'Semanas de GestaciÃ³n',
                       border: OutlineInputBorder(),
                       suffixText: 'sem',
                     ),
@@ -508,7 +485,7 @@ class _ControlFormScreenState extends ConsumerState<ControlFormScreen> {
                       }
                       final semanas = int.tryParse(value);
                       if (semanas == null || semanas < 1 || semanas > 42) {
-                        return 'Valor inválido (1-42)';
+                        return 'Valor invÃ¡lido (1-42)';
                       }
                       return null;
                     },
@@ -533,7 +510,7 @@ class _ControlFormScreenState extends ConsumerState<ControlFormScreen> {
                       }
                       final peso = double.tryParse(value);
                       if (peso == null || peso < 30 || peso > 200) {
-                        return 'Valor inválido (30-200 kg)';
+                        return 'Valor invÃ¡lido (30-200 kg)';
                       }
                       return null;
                     },
@@ -548,7 +525,7 @@ class _ControlFormScreenState extends ConsumerState<ControlFormScreen> {
                   child: TextFormField(
                     controller: _presionSistolicaController,
                     decoration: const InputDecoration(
-                      labelText: 'Presión Sistólica',
+                      labelText: 'PresiÃ³n SistÃ³lica',
                       border: OutlineInputBorder(),
                       suffixText: 'mmHg',
                     ),
@@ -560,7 +537,7 @@ class _ControlFormScreenState extends ConsumerState<ControlFormScreen> {
                       }
                       final presion = int.tryParse(value);
                       if (presion == null || presion < 70 || presion > 250) {
-                        return 'Valor inválido (70-250)';
+                        return 'Valor invÃ¡lido (70-250)';
                       }
                       return null;
                     },
@@ -571,7 +548,7 @@ class _ControlFormScreenState extends ConsumerState<ControlFormScreen> {
                   child: TextFormField(
                     controller: _presionDiastolicaController,
                     decoration: const InputDecoration(
-                      labelText: 'Presión Diastólica',
+                      labelText: 'PresiÃ³n DiastÃ³lica',
                       border: OutlineInputBorder(),
                       suffixText: 'mmHg',
                     ),
@@ -583,7 +560,7 @@ class _ControlFormScreenState extends ConsumerState<ControlFormScreen> {
                       }
                       final presion = int.tryParse(value);
                       if (presion == null || presion < 40 || presion > 150) {
-                        return 'Valor inválido (40-150)';
+                        return 'Valor invÃ¡lido (40-150)';
                       }
                       return null;
                     },
@@ -598,7 +575,7 @@ class _ControlFormScreenState extends ConsumerState<ControlFormScreen> {
                   child: TextFormField(
                     controller: _frecuenciaCardiacaController,
                     decoration: const InputDecoration(
-                      labelText: 'Frecuencia Cardíaca Materna',
+                      labelText: 'Frecuencia CardÃ­aca Materna',
                       border: OutlineInputBorder(),
                       suffixText: 'lpm',
                     ),
@@ -608,7 +585,7 @@ class _ControlFormScreenState extends ConsumerState<ControlFormScreen> {
                       if (value != null && value.isNotEmpty) {
                         final fc = int.tryParse(value);
                         if (fc == null || fc < 50 || fc > 200) {
-                          return 'Valor inválido (50-200)';
+                          return 'Valor invÃ¡lido (50-200)';
                         }
                       }
                       return null;
@@ -620,7 +597,7 @@ class _ControlFormScreenState extends ConsumerState<ControlFormScreen> {
                   child: TextFormField(
                     controller: _frecuenciaCardiacaFetalController,
                     decoration: const InputDecoration(
-                      labelText: 'Frecuencia Cardíaca Fetal',
+                      labelText: 'Frecuencia CardÃ­aca Fetal',
                       border: OutlineInputBorder(),
                       suffixText: 'lpm',
                     ),
@@ -630,7 +607,7 @@ class _ControlFormScreenState extends ConsumerState<ControlFormScreen> {
                       if (value != null && value.isNotEmpty) {
                         final fcf = int.tryParse(value);
                         if (fcf == null || fcf < 100 || fcf > 180) {
-                          return 'Valor inválido (100-180)';
+                          return 'Valor invÃ¡lido (100-180)';
                         }
                       }
                       return null;
@@ -649,7 +626,7 @@ class _ControlFormScreenState extends ConsumerState<ControlFormScreen> {
                     decoration: const InputDecoration(
                       labelText: 'Temperatura',
                       border: OutlineInputBorder(),
-                      suffixText: '°C',
+                      suffixText: 'Â°C',
                     ),
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   ),
@@ -680,7 +657,7 @@ class _ControlFormScreenState extends ConsumerState<ControlFormScreen> {
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
             ),
             const SizedBox(height: 16),
-            // Switches para características mejoradas
+            // Switches para caracterÃ­sticas mejoradas
             SwitchListTile(
               title: const Text('Movimientos Fetales'),
               subtitle: Text(_movimientosFetales ? 'Presentes' : 'Ausentes'),
@@ -748,7 +725,7 @@ class _ControlFormScreenState extends ConsumerState<ControlFormScreen> {
     );
   }
 
-  // Nueva sección para síntomas de alarma
+  // Nueva secciÃ³n para sÃ­ntomas de alarma
   Widget _buildSintomasAlarmaSection() {
     return Card(
       child: Padding(
@@ -761,7 +738,7 @@ class _ControlFormScreenState extends ConsumerState<ControlFormScreen> {
                 Icon(Icons.warning_amber, color: Colors.orange[600]),
                 const SizedBox(width: 8),
                 const Text(
-                  'Síntomas de Alarma',
+                  'SÃ­ntomas de Alarma',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -771,7 +748,7 @@ class _ControlFormScreenState extends ConsumerState<ControlFormScreen> {
             ),
             const SizedBox(height: 12),
             const Text(
-              'Selecciona todos los síntomas que presente la gestante:',
+              'Selecciona todos los sÃ­ntomas que presente la gestante:',
               style: TextStyle(color: Colors.grey),
             ),
             const SizedBox(height: 16),
@@ -811,7 +788,7 @@ class _ControlFormScreenState extends ConsumerState<ControlFormScreen> {
             
             const SizedBox(height: 16),
             
-            // Resumen de síntomas
+            // Resumen de sÃ­ntomas
             if (_sintomasSeleccionados.isNotEmpty)
               Card(
                 color: _hasEmergencySintomas() ? Colors.red[50] : Colors.orange[50],
@@ -828,8 +805,8 @@ class _ControlFormScreenState extends ConsumerState<ControlFormScreen> {
                           const SizedBox(width: 8),
                           Text(
                             _hasEmergencySintomas()
-                                ? 'SÍNTOMAS DE EMERGENCIA DETECTADOS'
-                                : 'SÍNTOMAS DE ALARMA DETECTADOS',
+                                ? 'SÃNTOMAS DE EMERGENCIA DETECTADOS'
+                                : 'SÃNTOMAS DE ALARMA DETECTADOS',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: _hasEmergencySintomas() ? Colors.red : Colors.orange,
@@ -839,7 +816,7 @@ class _ControlFormScreenState extends ConsumerState<ControlFormScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '${_sintomasSeleccionados.length} síntoma${_sintomasSeleccionados.length > 1 ? 's' : ''} seleccionado${_sintomasSeleccionados.length > 1 ? 's' : ''}',
+                        '${_sintomasSeleccionados.length} sÃ­ntoma${_sintomasSeleccionados.length > 1 ? 's' : ''} seleccionado${_sintomasSeleccionados.length > 1 ? 's' : ''}',
                         style: const TextStyle(color: Colors.grey),
                       ),
                     ],
@@ -852,7 +829,7 @@ class _ControlFormScreenState extends ConsumerState<ControlFormScreen> {
     );
   }
 
-  // Método para verificar si un síntoma es de emergencia
+  // MÃ©todo para verificar si un sÃ­ntoma es de emergencia
   bool _isEmergencySintoma(String sintomaId) {
     const emergencySintomas = [
       'ausencia_movimiento_fetal',
@@ -863,12 +840,12 @@ class _ControlFormScreenState extends ConsumerState<ControlFormScreen> {
     return emergencySintomas.contains(sintomaId);
   }
 
-  // Método para verificar si hay síntomas de emergencia
+  // MÃ©todo para verificar si hay sÃ­ntomas de emergencia
   bool _hasEmergencySintomas() {
     return _sintomasSeleccionados.any((id) => _isEmergencySintoma(id));
   }
 
-  // Método para mostrar alerta de movimientos fetales
+  // MÃ©todo para mostrar alerta de movimientos fetales
   void _mostrarAlertaMovimientosFetales() {
     showDialog(
       context: context,
@@ -877,12 +854,12 @@ class _ControlFormScreenState extends ConsumerState<ControlFormScreen> {
           children: [
             Icon(Icons.error, color: Colors.red),
             SizedBox(width: 8),
-            Text('EMERGENCIA OBSTÉTRICA'),
+            Text('EMERGENCIA OBSTÃ‰TRICA'),
           ],
         ),
         content: const Text(
-          'La ausencia de movimientos fetales es una EMERGENCIA OBSTÉTRICA. '
-          'Se generará una alerta crítica automáticamente.',
+          'La ausencia de movimientos fetales es una EMERGENCIA OBSTÃ‰TRICA. '
+          'Se generarÃ¡ una alerta crÃ­tica automÃ¡ticamente.',
         ),
         actions: [
           TextButton(
@@ -894,7 +871,7 @@ class _ControlFormScreenState extends ConsumerState<ControlFormScreen> {
     );
   }
 
-  // Método para mostrar alerta de emergencia
+  // MÃ©todo para mostrar alerta de emergencia
   void _mostrarAlertaEmergencia(String sintoma) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -902,7 +879,7 @@ class _ControlFormScreenState extends ConsumerState<ControlFormScreen> {
           children: [
             const Icon(Icons.error, color: Colors.white),
             const SizedBox(width: 8),
-            Expanded(child: Text('🚨 EMERGENCIA: $sintoma')),
+            Expanded(child: Text('ðŸš¨ EMERGENCIA: $sintoma')),
           ],
         ),
         backgroundColor: Colors.red,
@@ -911,45 +888,45 @@ class _ControlFormScreenState extends ConsumerState<ControlFormScreen> {
     );
   }
 
-  // Método para verificar presión arterial
+  // MÃ©todo para verificar presiÃ³n arterial
   void _checkPresionArterial(String value) {
     final sistolica = int.tryParse(_presionSistolicaController.text);
     final diastolica = int.tryParse(_presionDiastolicaController.text);
     
     if (sistolica != null && sistolica >= 160) {
-      _mostrarAlertaSignoVital('Presión arterial sistólica muy alta (≥160 mmHg)');
+      _mostrarAlertaSignoVital('PresiÃ³n arterial sistÃ³lica muy alta (â‰¥160 mmHg)');
     } else if (sistolica != null && sistolica >= 140) {
-      _mostrarAlertaSignoVital('Presión arterial sistólica alta (≥140 mmHg)');
+      _mostrarAlertaSignoVital('PresiÃ³n arterial sistÃ³lica alta (â‰¥140 mmHg)');
     }
     
     if (diastolica != null && diastolica >= 110) {
-      _mostrarAlertaSignoVital('Presión arterial diastólica muy alta (≥110 mmHg)');
+      _mostrarAlertaSignoVital('PresiÃ³n arterial diastÃ³lica muy alta (â‰¥110 mmHg)');
     } else if (diastolica != null && diastolica >= 90) {
-      _mostrarAlertaSignoVital('Presión arterial diastólica alta (≥90 mmHg)');
+      _mostrarAlertaSignoVital('PresiÃ³n arterial diastÃ³lica alta (â‰¥90 mmHg)');
     }
   }
 
-  // Método para verificar frecuencia cardíaca
+  // MÃ©todo para verificar frecuencia cardÃ­aca
   void _checkFrecuenciaCardiaca(String value) {
     final fc = int.tryParse(value);
     if (fc != null && fc >= 120) {
-      _mostrarAlertaSignoVital('Taquicardia severa (≥120 lpm)');
+      _mostrarAlertaSignoVital('Taquicardia severa (â‰¥120 lpm)');
     } else if (fc != null && fc >= 100) {
-      _mostrarAlertaSignoVital('Taquicardia (≥100 lpm)');
+      _mostrarAlertaSignoVital('Taquicardia (â‰¥100 lpm)');
     }
   }
 
-  // Método para verificar temperatura
+  // MÃ©todo para verificar temperatura
   void _checkTemperatura(String value) {
     final temp = double.tryParse(value);
     if (temp != null && temp >= 39.0) {
-      _mostrarAlertaSignoVital('Fiebre alta (≥39°C)');
+      _mostrarAlertaSignoVital('Fiebre alta (â‰¥39Â°C)');
     } else if (temp != null && temp >= 38.0) {
-      _mostrarAlertaSignoVital('Fiebre (≥38°C)');
+      _mostrarAlertaSignoVital('Fiebre (â‰¥38Â°C)');
     }
   }
 
-  // Método para mostrar alerta de signo vital
+  // MÃ©todo para mostrar alerta de signo vital
   void _mostrarAlertaSignoVital(String mensaje) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -957,7 +934,7 @@ class _ControlFormScreenState extends ConsumerState<ControlFormScreen> {
           children: [
             const Icon(Icons.warning, color: Colors.white),
             const SizedBox(width: 8),
-            Expanded(child: Text('⚠️ $mensaje')),
+            Expanded(child: Text('âš ï¸ $mensaje')),
           ],
         ),
         backgroundColor: Colors.orange,

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dartz/dartz.dart';
 import '../../domain/entities/gestante.dart';
 import '../../domain/entities/asignacion.dart';
+import '../../domain/entities/tipo_permiso.dart';
 import '../../domain/usecases/create_gestante.dart';
 import '../../domain/usecases/assign_gestante_to_madrina.dart';
 import '../../domain/usecases/get_gestantes_asignadas.dart';

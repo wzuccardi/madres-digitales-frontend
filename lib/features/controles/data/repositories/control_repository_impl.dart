@@ -7,8 +7,22 @@ class ControlRepositoryImpl {
 
   Future<List<ControlModel>> fetchControles() async {
     final response = await dio.get('/controles');
-    List data = response.data as List;
-    return data.map((json) => ControlModel.fromJson(json)).toList();
+
+    // Manejar estructura de respuesta del backend: { success: true, data: { controles: [...] } }
+    List<dynamic> controlesData = [];
+    if (response.data is Map && response.data['data'] != null) {
+      final dataMap = response.data['data'];
+      if (dataMap is Map && dataMap['controles'] != null) {
+        final controlesValue = dataMap['controles'];
+        if (controlesValue is List) {
+          controlesData = controlesValue;
+        }
+      }
+    } else if (response.data is List) {
+      controlesData = response.data;
+    }
+
+    return controlesData.map((json) => ControlModel.fromJson(json)).toList();
   }
 
   Future<ControlModel> createControl(Map<String, dynamic> data) async {

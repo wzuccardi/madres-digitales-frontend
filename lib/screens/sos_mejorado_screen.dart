@@ -1,4 +1,4 @@
-// Pantalla SOS mejorada con alarma sonora fuerte y vibración intensa
+﻿// Pantalla SOS mejorada con alarma sonora fuerte y vibraciÃ³n intensa
 // Proporciona una interfaz de emergencia clara y efectiva
 
 import 'dart:async';
@@ -34,7 +34,7 @@ class _SOSMejoradoScreenState extends ConsumerState<SOSMejoradoScreen>
     with TickerProviderStateMixin {
   int _countdown = 5;
   Position? _currentPosition;
-  String _locationStatus = 'Obteniendo ubicación...';
+  String _locationStatus = 'Obteniendo ubicaciÃ³n...';
   bool _alertSent = false;
   bool _isAlertActive = false;
   String _alertMessage = '';
@@ -98,7 +98,7 @@ class _SOSMejoradoScreenState extends ConsumerState<SOSMejoradoScreen>
       curve: Curves.easeInOut,
     ));
     
-    // Iniciar animación de pulso
+    // Iniciar animaciÃ³n de pulso
     _pulseController.repeat(reverse: true);
     
     // Ocultar barra de estado para efecto completo
@@ -122,7 +122,7 @@ class _SOSMejoradoScreenState extends ConsumerState<SOSMejoradoScreen>
   }
 
   Future<void> _iniciarProcesoSOS() async {
-    // 1. Obtener ubicación
+    // 1. Obtener ubicaciÃ³n
     await _obtenerUbicacion();
     
     // 2. Enviar alerta SOS
@@ -137,7 +137,7 @@ class _SOSMejoradoScreenState extends ConsumerState<SOSMejoradoScreen>
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
           setState(() {
-            _locationStatus = 'Permisos de ubicación denegados';
+            _locationStatus = 'Permisos de ubicaciÃ³n denegados';
           });
           return;
         }
@@ -145,12 +145,12 @@ class _SOSMejoradoScreenState extends ConsumerState<SOSMejoradoScreen>
 
       if (permission == LocationPermission.deniedForever) {
         setState(() {
-          _locationStatus = 'Permisos de ubicación denegados permanentemente';
+          _locationStatus = 'Permisos de ubicaciÃ³n denegados permanentemente';
         });
         return;
       }
 
-      // Obtener posición actual
+      // Obtener posiciÃ³n actual
       _currentPosition = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
         timeLimit: const Duration(seconds: 10),
@@ -158,7 +158,7 @@ class _SOSMejoradoScreenState extends ConsumerState<SOSMejoradoScreen>
 
       setState(() {
         _locationStatus =
-            'Ubicación: ${_currentPosition!.latitude.toStringAsFixed(6)}, '
+            'UbicaciÃ³n: ${_currentPosition!.latitude.toStringAsFixed(6)}, '
             '${_currentPosition!.longitude.toStringAsFixed(6)}';
       });
 
@@ -166,7 +166,7 @@ class _SOSMejoradoScreenState extends ConsumerState<SOSMejoradoScreen>
       await _buscarContactosCercanos();
     } catch (e) {
       setState(() {
-        _locationStatus = 'Error obteniendo ubicación: $e';
+        _locationStatus = 'Error obteniendo ubicaciÃ³n: $e';
       });
     }
   }
@@ -187,8 +187,7 @@ class _SOSMejoradoScreenState extends ConsumerState<SOSMejoradoScreen>
         _contactosCercanos = contactos;
       });
     } catch (e) {
-      print('Error buscando contactos cercanos: $e');
-      // No interrumpir el flujo si falla la búsqueda de contactos
+      // No interrumpir el flujo si falla la bÃºsqueda de contactos
     }
   }
 
@@ -221,9 +220,6 @@ class _SOSMejoradoScreenState extends ConsumerState<SOSMejoradoScreen>
             speedAccuracy: 0.0
           );
 
-      debugPrint('🚨 Enviando alerta SOS real al backend...');
-      debugPrint('   Gestante ID: $gestanteId');
-      debugPrint('   Coordinates: [${position.longitude}, ${position.latitude}]');
 
       // Activar alarma SOS completa
       final resultado = await _sosService.activarAlarmaSOSConUbicacion(
@@ -237,19 +233,12 @@ class _SOSMejoradoScreenState extends ConsumerState<SOSMejoradoScreen>
       });
 
       if (_alertSent) {
-        debugPrint('✅ SOS Alert sent successfully:');
-        debugPrint('   Alert ID: ${resultado['alertaId']}');
-        debugPrint('   Gestante ID: ${resultado['gestanteId']}');
-        debugPrint('   Coordinates: ${resultado['coordenadas']}');
-        debugPrint('   Timestamp: ${resultado['timestamp']}');
         
         _iniciarCountdown();
         _iniciarEfectosVisuales();
       } else {
-        debugPrint('❌ Error enviando alerta: $_alertMessage');
       }
     } catch (e) {
-      debugPrint('❌ Error enviando alerta SOS: $e');
       setState(() {
         _alertSent = false;
         _alertMessage = 'Error: $e';
@@ -266,7 +255,7 @@ class _SOSMejoradoScreenState extends ConsumerState<SOSMejoradoScreen>
         );
       }
       
-      // Continuar con el proceso aunque falle el envío
+      // Continuar con el proceso aunque falle el envÃ­o
       _iniciarCountdown();
       _iniciarEfectosVisuales();
     }
@@ -274,12 +263,12 @@ class _SOSMejoradoScreenState extends ConsumerState<SOSMejoradoScreen>
 
   Future<String?> _obtenerGestanteIdActual() async {
     try {
-      // Intentar obtener gestante desde el contexto de autenticación
+      // Intentar obtener gestante desde el contexto de autenticaciÃ³n
       final authService = AuthService();
       final userId = authService.userId;
       
       if (userId != null) {
-        // Aquí podrías obtener la gestante asociada al usuario
+        // AquÃ­ podrÃ­as obtener la gestante asociada al usuario
         // Por ahora, usamos la primera gestante disponible
         final simpleDataService = ref.read(simpleDataServiceProvider);
         final gestantes = await simpleDataService.obtenerGestantes();
@@ -289,7 +278,6 @@ class _SOSMejoradoScreenState extends ConsumerState<SOSMejoradoScreen>
         }
       }
     } catch (e) {
-      debugPrint('Error obteniendo gestante ID: $e');
     }
     
     return null;
@@ -303,7 +291,7 @@ class _SOSMejoradoScreenState extends ConsumerState<SOSMejoradoScreen>
           _countdown--;
         });
         
-        // Vibración en cada segundo
+        // VibraciÃ³n en cada segundo
         HapticFeedback.lightImpact();
       } else if (mounted) {
         timer.cancel();
@@ -317,7 +305,7 @@ class _SOSMejoradoScreenState extends ConsumerState<SOSMejoradoScreen>
       _isAlertActive = true;
     });
     
-    // Iniciar animación de sacudida
+    // Iniciar animaciÃ³n de sacudida
     _shakeController.repeat(reverse: true);
     
     // Iniciar parpadeo de pantalla
@@ -367,10 +355,10 @@ class _SOSMejoradoScreenState extends ConsumerState<SOSMejoradoScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
-              '¡ALERTA SOS ENVIADA!\n\n'
+              'Â¡ALERTA SOS ENVIADA!\n\n'
               'Se ha notificado a los servicios de emergencia '
               'y a tu madrina comunitaria.\n\n'
-              'Mantén la calma, ayuda está en camino.',
+              'MantÃ©n la calma, ayuda estÃ¡ en camino.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
@@ -478,7 +466,7 @@ class _SOSMejoradoScreenState extends ConsumerState<SOSMejoradoScreen>
         ),
         const SizedBox(height: 20),
         Text(
-          'BOTÓN DE EMERGENCIA',
+          'BOTÃ“N DE EMERGENCIA',
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
@@ -586,7 +574,7 @@ class _SOSMejoradoScreenState extends ConsumerState<SOSMejoradoScreen>
               ),
             )),
             
-            // Botón para mostrar mapa
+            // BotÃ³n para mostrar mapa
             const SizedBox(height: 8),
             ElevatedButton.icon(
               onPressed: () => setState(() => _mostrarMapa = !_mostrarMapa),

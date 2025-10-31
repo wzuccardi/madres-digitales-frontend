@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/contenido_unificado.dart';
@@ -13,7 +13,7 @@ import 'contenido_crud_screen.dart';
 
 // Hot reload trigger - 2025-10-24
 
-// Enum local para categorías de contenido
+// Enum local para categorÃ­as de contenido
 enum CategoriaContenido {
   nutricion,
   cuidadoPrenatal,
@@ -41,8 +41,8 @@ String obtenerNombreCategoriaString(String categoria) {
     case 'LACTANCIA':
       return 'Lactancia';
     case 'NUTRICION':
-    case 'NUTRICIÓN':
-      return 'Nutrición';
+    case 'NUTRICIÃ“N':
+      return 'NutriciÃ³n';
     case 'EJERCICIO':
       return 'Ejercicio';
     case 'SALUD_MENTAL':
@@ -50,15 +50,15 @@ String obtenerNombreCategoriaString(String categoria) {
       return 'Salud Mental';
     case 'CUIDADO_BEBE':
     case 'CUIDADOBEBE':
-      return 'Cuidado del Bebé';
+      return 'Cuidado del BebÃ©';
     case 'PLANIFICACION_FAMILIAR':
     case 'PLANIFICACIONFAMILIAR':
-      return 'Planificación Familiar';
+      return 'PlanificaciÃ³n Familiar';
     case 'EMERGENCIAS':
       return 'Emergencias';
     case 'EDUCACION':
-    case 'EDUCACIÓN':
-      return 'Educación';
+    case 'EDUCACIÃ“N':
+      return 'EducaciÃ³n';
     case 'CUIDADO_PRENATAL':
     case 'CUIDADOPRENATAL':
       return 'Cuidado Prenatal';
@@ -70,17 +70,17 @@ String obtenerNombreCategoriaString(String categoria) {
 String obtenerNombreTipoString(String tipo) {
   switch (tipo.toUpperCase()) {
     case 'ARTICULO':
-      return 'Artículo';
+      return 'ArtÃ­culo';
     case 'VIDEO':
       return 'Video';
     case 'AUDIO':
       return 'Audio';
     case 'INFOGRAFIA':
-    case 'INFOGRAFÍA':
-      return 'Infografía';
+    case 'INFOGRAFÃA':
+      return 'InfografÃ­a';
     case 'GUIA':
-    case 'GUÍA':
-      return 'Guía';
+    case 'GUÃA':
+      return 'GuÃ­a';
     case 'CHECKLIST':
       return 'Checklist';
     default:
@@ -92,8 +92,8 @@ String obtenerNombreNivelString(String? nivel) {
   if (nivel == null) return 'No especificado';
   switch (nivel.toUpperCase()) {
     case 'BASICO':
-    case 'BÁSICO':
-      return 'Básico';
+    case 'BÃSICO':
+      return 'BÃ¡sico';
     case 'INTERMEDIO':
       return 'Intermedio';
     case 'AVANZADO':
@@ -120,10 +120,10 @@ IconData obtenerIconoTipoString(String tipo) {
     case 'INTERACTIVO':
       return Icons.touch_app;
     case 'ARTICULO':
-    case 'ARTÍCULO':
+    case 'ARTÃCULO':
       return Icons.article;
     case 'INFOGRAFIA':
-    case 'INFOGRAFÍA':
+    case 'INFOGRAFÃA':
       return Icons.info;
     default:
       return Icons.help;
@@ -214,7 +214,7 @@ class _ContenidoScreenState extends ConsumerState<ContenidoScreen> with SingleTi
       vsync: this,
     );
     _tabController.addListener(_onTabChanged);
-    // Cargar contenidos después de que el widget esté construido
+    // Cargar contenidos despuÃ©s de que el widget estÃ© construido
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _cargarContenidos();
     });
@@ -229,7 +229,7 @@ class _ContenidoScreenState extends ConsumerState<ContenidoScreen> with SingleTi
   String _obtenerNombreCategoria(CategoriaContenido categoria) {
     switch (categoria) {
       case CategoriaContenido.nutricion:
-        return 'Nutrición';
+        return 'NutriciÃ³n';
       case CategoriaContenido.cuidadoPrenatal:
         return 'Cuidado Prenatal';
       case CategoriaContenido.signosAlarma:
@@ -241,7 +241,7 @@ class _ContenidoScreenState extends ConsumerState<ContenidoScreen> with SingleTi
       case CategoriaContenido.posparto:
         return 'Posparto';
       case CategoriaContenido.planificacion:
-        return 'Planificación';
+        return 'PlanificaciÃ³n';
       case CategoriaContenido.saludMental:
         return 'Salud Mental';
       case CategoriaContenido.ejercicio:
@@ -275,7 +275,7 @@ class _ContenidoScreenState extends ConsumerState<ContenidoScreen> with SingleTi
       _error = null;
     });
     try {
-      // Esperar a que el servicio esté disponible
+      // Esperar a que el servicio estÃ© disponible
       final contenidoService = await ref.read(contenidoServiceProvider.future);
       final contenidos = await contenidoService.getContenidosByCategoria(_categoriaSeleccionada.name);
       setState(() {
@@ -291,7 +291,7 @@ class _ContenidoScreenState extends ConsumerState<ContenidoScreen> with SingleTi
     }
   }
 
-  // Eliminada función de mocks
+  // Eliminada funciÃ³n de mocks
 
   void _filtrarContenidos(String query) {
     setState(() {
@@ -301,15 +301,15 @@ class _ContenidoScreenState extends ConsumerState<ContenidoScreen> with SingleTi
       } else {
         _contenidosFiltrados = _contenidos.where((contenido) {
           return contenido.titulo.toLowerCase().contains(query.toLowerCase()) ||
-                  (contenido.descripcion?.toLowerCase().contains(query.toLowerCase()) ?? false) || // Corrección: descripcion es nullable
-                  (contenido.tags?.any((tag) => tag.toLowerCase().contains(query.toLowerCase())) ?? false); // Corrección: usar tags
+                  (contenido.descripcion?.toLowerCase().contains(query.toLowerCase()) ?? false) || // CorrecciÃ³n: descripcion es nullable
+                  (contenido.tags?.any((tag) => tag.toLowerCase().contains(query.toLowerCase())) ?? false); // CorrecciÃ³n: usar tags
         }).toList();
       }
     });
   }
 
   void _mostrarBusqueda(BuildContext context) {
-    // TODO: Implementar ContenidoSearchDelegate o reemplazar búsqueda
+    // TODO: Implementar ContenidoSearchDelegate o reemplazar bÃºsqueda
     // showSearch(
     //   context: context,
     //   delegate: ContenidoSearchDelegate(
@@ -325,9 +325,6 @@ class _ContenidoScreenState extends ConsumerState<ContenidoScreen> with SingleTi
     final isAdmin = authService.hasAnyRole(['admin', 'super_admin', 'coordinador']);
     
     // Debug: Verificar rol del usuario
-    print('🔍 ContenidoScreen: isAdmin = $isAdmin');
-    print('🔍 ContenidoScreen: currentUser = ${authService.currentUser}');
-    print('🔍 ContenidoScreen: userRole = ${authService.currentUser?['rol']}');
 
     return Scaffold(
       appBar: AppBar(
@@ -384,7 +381,6 @@ class _ContenidoScreenState extends ConsumerState<ContenidoScreen> with SingleTi
                 ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
-          print('🟣 CONTENIDO_SCREEN: Botón presionado - navegando a CRUD');
           final result = await Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const ContenidoCrudScreen()),
@@ -445,11 +441,11 @@ class _ContenidoScreenState extends ConsumerState<ContenidoScreen> with SingleTi
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Miniatura
-            if (contenido.urlImagen != null) // Corrección: usar urlImagen
+            if (contenido.urlImagen != null) // CorrecciÃ³n: usar urlImagen
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
                 child: CachedNetworkImage(
-                  imageUrl: contenido.urlImagen!, // Corrección: usar urlImagen
+                  imageUrl: contenido.urlImagen!, // CorrecciÃ³n: usar urlImagen
                   height: 200,
                   width: double.infinity,
                   fit: BoxFit.cover,
@@ -464,7 +460,7 @@ class _ContenidoScreenState extends ConsumerState<ContenidoScreen> with SingleTi
                     height: 200,
                     color: Colors.grey[300],
                     child: Icon(
-                      obtenerIconoTipoString(contenido.tipo), // Corrección: usar tipo
+                      obtenerIconoTipoString(contenido.tipo), // CorrecciÃ³n: usar tipo
                       size: 64,
                       color: Colors.grey[600],
                     ),
@@ -476,7 +472,7 @@ class _ContenidoScreenState extends ConsumerState<ContenidoScreen> with SingleTi
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Título y tipo
+                  // TÃ­tulo y tipo
                   Row(
                     children: [
                       Expanded(
@@ -487,34 +483,34 @@ class _ContenidoScreenState extends ConsumerState<ContenidoScreen> with SingleTi
                           ),
                         ),
                       ),
-                      buildTipoChipString(contenido.tipo), // Corrección: usar tipo
+                      buildTipoChipString(contenido.tipo), // CorrecciÃ³n: usar tipo
                     ],
                   ),
                   const SizedBox(height: 8),
-                  // Descripción
+                  // DescripciÃ³n
                   Text(
-                    contenido.descripcion ?? '', // Corrección: descripcion es nullable
+                    contenido.descripcion ?? '', // CorrecciÃ³n: descripcion es nullable
                     style: Theme.of(context).textTheme.bodyMedium,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 12),
-                  // Información adicional
+                  // InformaciÃ³n adicional
                   Row(
                     children: [
-                      buildNivelChipString(contenido.nivel), // Corrección: usar nivel
+                      buildNivelChipString(contenido.nivel), // CorrecciÃ³n: usar nivel
                       const SizedBox(width: 8),
-                      if (contenido.duracionMinutos != null) // Corrección: usar duracionMinutos
+                      if (contenido.duracionMinutos != null) // CorrecciÃ³n: usar duracionMinutos
                         buildDuracionChip(contenido.duracionMinutos!),
                     ],
                   ),
                   const SizedBox(height: 8),
                   // Tags
-                  if (contenido.tags?.isNotEmpty ?? false) // Corrección: usar tags
+                  if (contenido.tags?.isNotEmpty ?? false) // CorrecciÃ³n: usar tags
                     Wrap(
                       spacing: 4,
                       runSpacing: 4,
-                      children: contenido.tags!.take(3).map((tag) { // Corrección: usar tags
+                      children: contenido.tags!.take(3).map((tag) { // CorrecciÃ³n: usar tags
                         return Chip(
                           label: Text(
                             tag,
@@ -547,10 +543,10 @@ class _ContenidoScreenState extends ConsumerState<ContenidoScreen> with SingleTi
       case 'INTERACTIVO':
         return Colors.orange;
       case 'ARTICULO':
-      case 'ARTÍCULO':
+      case 'ARTÃCULO':
         return Colors.teal;
       case 'INFOGRAFIA':
-      case 'INFOGRAFÍA':
+      case 'INFOGRAFÃA':
         return Colors.indigo;
       default:
         return Colors.grey;
@@ -578,7 +574,7 @@ class ContenidoDetailScreen extends ConsumerWidget {
             // Reproductor de contenido
             _buildContentPlayer(context, ref),
             
-            // Información del contenido
+            // InformaciÃ³n del contenido
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -594,13 +590,13 @@ class ContenidoDetailScreen extends ConsumerWidget {
                   const SizedBox(height: 8),
                   
                   Text(
-                    contenido.descripcion ?? '', // Corrección: descripcion es nullable
+                    contenido.descripcion ?? '', // CorrecciÃ³n: descripcion es nullable
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
                   
                   const SizedBox(height: 16),
                   
-                  // Información adicional
+                  // InformaciÃ³n adicional
                   _buildInfoSection(context, contenido),
                   
                   const SizedBox(height: 16),
@@ -627,7 +623,7 @@ class ContenidoDetailScreen extends ConsumerWidget {
       onProgressUpdate: (duration) async {
         // Actualizar progreso cada 30 segundos
         if (duration.inSeconds % 30 == 0) {
-          final totalDuration = contenido.duracionMinutos ?? 300; // Corrección: usar duracionMinutos
+          final totalDuration = contenido.duracionMinutos ?? 300; // CorrecciÃ³n: usar duracionMinutos
           final porcentaje = ((duration.inSeconds / totalDuration) * 100).round();
           
           await progresoService.actualizarProgreso(
@@ -648,7 +644,7 @@ class ContenidoDetailScreen extends ConsumerWidget {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('¡Contenido completado!'),
+              content: Text('Â¡Contenido completado!'),
               backgroundColor: Colors.green,
             ),
           );
@@ -665,18 +661,18 @@ class ContenidoDetailScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Información',
+              'InformaciÃ³n',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 12),
-            _buildInfoRow('Categoría', obtenerNombreCategoriaString(contenido.categoria)),
-            _buildInfoRow('Tipo', obtenerNombreTipoString(contenido.tipo)), // Corrección: usar tipo
-            _buildInfoRow('Nivel', obtenerNombreNivelString(contenido.nivel)), // Corrección: usar nivel
-            if (contenido.duracionMinutos != null) // Corrección: usar duracionMinutos
-              _buildInfoRow('Duración', '${(contenido.duracionMinutos! / 60).round()} minutos'),
-            _buildInfoRow('Fecha', _formatearFecha(contenido.fechaActualizacion)), // Corrección: usar fechaActualizacion
+            _buildInfoRow('CategorÃ­a', obtenerNombreCategoriaString(contenido.categoria)),
+            _buildInfoRow('Tipo', obtenerNombreTipoString(contenido.tipo)), // CorrecciÃ³n: usar tipo
+            _buildInfoRow('Nivel', obtenerNombreNivelString(contenido.nivel)), // CorrecciÃ³n: usar nivel
+            if (contenido.duracionMinutos != null) // CorrecciÃ³n: usar duracionMinutos
+              _buildInfoRow('DuraciÃ³n', '${(contenido.duracionMinutos! / 60).round()} minutos'),
+            _buildInfoRow('Fecha', _formatearFecha(contenido.fechaActualizacion)), // CorrecciÃ³n: usar fechaActualizacion
           ],
         ),
       ),
@@ -716,7 +712,7 @@ class ContenidoDetailScreen extends ConsumerWidget {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: contenido.tags?.map((tag) { // Corrección: usar tags
+          children: contenido.tags?.map((tag) { // CorrecciÃ³n: usar tags
             return Chip(
               label: Text(tag),
               backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
@@ -732,4 +728,5 @@ class ContenidoDetailScreen extends ConsumerWidget {
     return '${fecha.day}/${fecha.month}/${fecha.year}';
   }
 }
+
 

@@ -15,6 +15,7 @@ class Control {
   final int? presionSistolica;
   final int? presionDiastolica;
   final int? frecuenciaCardiaca;
+  final int? frecuenciaCardiacaFetal;
   final int? frecuenciaRespiratoria;
   final double? temperatura;
   final String? movimientosFetales;
@@ -44,6 +45,7 @@ class Control {
     this.presionSistolica,
     this.presionDiastolica,
     this.frecuenciaCardiaca,
+    this.frecuenciaCardiacaFetal,
     this.frecuenciaRespiratoria,
     this.temperatura,
     this.movimientosFetales,
@@ -62,6 +64,27 @@ class Control {
   });
 
   factory Control.fromJson(Map<String, dynamic> json) {
+    // DEBUG: Analizar la estructura del JSON recibido
+    appLogger.info('Control.fromJson DEBUG: Analizando JSON', error: {
+      'jsonType': json.runtimeType.toString(),
+      'jsonKeys': json.keys.toList(),
+      'json': json,
+    });
+
+    // DEBUG: Analizar campos específicos que causan errores
+    appLogger.info('Control.fromJson DEBUG: Analizando campos problemáticos', error: {
+      'semanas_gestacion': json['semanas_gestacion'],
+      'semanas_gestacion_type': json['semanas_gestacion']?.runtimeType.toString(),
+      'peso': json['peso'],
+      'peso_type': json['peso']?.runtimeType.toString(),
+      'presion_sistolica': json['presion_sistolica'],
+      'presion_sistolica_type': json['presion_sistolica']?.runtimeType.toString(),
+      'presion_diastolica': json['presion_diastolica'],
+      'presion_diastolica_type': json['presion_diastolica']?.runtimeType.toString(),
+      'controles': json['controles'],
+      'controles_type': json['controles']?.runtimeType.toString(),
+    });
+
     return Control(
       id: json['id']?.toString() ?? '',
       gestanteId: json['gestante_id']?.toString() ?? '',
@@ -71,13 +94,14 @@ class Control {
       fechaControl: json['fecha_control'] != null
           ? DateTime.parse(json['fecha_control'])
           : DateTime.now(),
-      semanasGestacion: json['semanas_gestacion'] as int?,
+      semanasGestacion: _parseInt(json['semanas_gestacion']),
       peso: _parseDouble(json['peso']),
       alturaUterina: _parseDouble(json['altura_uterina']),
-      presionSistolica: json['presion_sistolica'] as int?,
-      presionDiastolica: json['presion_diastolica'] as int?,
-      frecuenciaCardiaca: json['frecuencia_cardiaca'] as int?,
-      frecuenciaRespiratoria: json['frecuencia_respiratoria'] as int?,
+      presionSistolica: _parseInt(json['presion_sistolica']),
+      presionDiastolica: _parseInt(json['presion_diastolica']),
+      frecuenciaCardiaca: _parseInt(json['frecuencia_cardiaca']),
+      frecuenciaCardiacaFetal: _parseInt(json['frecuencia_cardiaca_fetal']),
+      frecuenciaRespiratoria: _parseInt(json['frecuencia_respiratoria']),
       temperatura: _parseDouble(json['temperatura']),
       movimientosFetales: json['movimientos_fetales'] as String?,
       edemas: json['edemas'] as String?,
@@ -114,6 +138,7 @@ class Control {
       'presion_sistolica': presionSistolica,
       'presion_diastolica': presionDiastolica,
       'frecuencia_cardiaca': frecuenciaCardiaca,
+      'frecuencia_cardiaca_fetal': frecuenciaCardiacaFetal,
       'frecuencia_respiratoria': frecuenciaRespiratoria,
       'temperatura': temperatura,
       'movimientos_fetales': movimientosFetales,
@@ -140,6 +165,14 @@ class Control {
     return null;
   }
 
+  static int? _parseInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
+
   // Getters para compatibilidad con código existente
   DateTime get fechaProgramada => fechaControl;
   String get gestanteNombreDisplay => gestanteNombre ?? 'Gestante';
@@ -157,13 +190,62 @@ class ControlService {
     try {
       appLogger.info('ControlService: Obteniendo controles');
       final response = await _apiService.get('/controles');
-      final List<dynamic> controlesData = response.data;  // Corrección: Acceder a data de Response
-      
+
+      // DEBUG: Analizar la estructura de la respuesta
+      appLogger.info('ControlService DEBUG: Estructura de respuesta', error: {
+        'responseDataType': response.data.runtimeType.toString(),
+        'responseData': response.data,
+        'isMap': response.data is Map,
+        'isList': response.data is List,
+      });
+
+      // DEBUG: Buscar campo 'controles' que causa el error
+      if (response.data is Map) {
+        appLogger.info('ControlService DEBUG: Buscando campo controles', error: {
+          'hasControlesKey': (response.data as Map).containsKey('controles'),
+          'controlesValue': (response.data as Map)['controles'],
+          'controlesType': (response.data as Map)['controles']?.runtimeType.toString(),
+        });
+      }
+
+      // Manejar estructura de respuesta del backend
+      List<dynamic> controlesData;
+      if (response.data is List) {
+        // Estructura directa: [...] (como IPS y médicos)
+        controlesData = response.data;
+      } else if (response.data is Map && response.data['data'] != null) {
+        final dataValue = response.data['data'];
+        if (dataValue is List) {
+          // Formato: { success: true, data: [...] } (controles vencidos/pendientes)
+          controlesData = dataValue;
+        } else if (dataValue is Map && dataValue['controles'] != null) {
+          // Formato: { success: true, data: { controles: [...] } } (controles normales)
+          final controlesValue = dataValue['controles'];
+          if (controlesValue is List) {
+            controlesData = controlesValue;
+          } else {
+            appLogger.error('ControlService: controles NO es una lista', error: {
+              'type': controlesValue.runtimeType.toString(),
+              'value': controlesValue,
+            });
+            controlesData = [];
+          }
+        } else {
+          controlesData = [];
+        }
+      } else {
+        appLogger.error('ControlService: Estructura de respuesta inesperada', error: {
+          'dataType': response.data.runtimeType.toString(),
+          'data': response.data,
+        });
+        controlesData = [];
+      }
+
       // Si tenemos un servicio de gestantes, obtener los datos completos
       if (_gestanteService != null) {
         final controles = <Control>[];
         final gestantesMap = <String, Gestante>{};
-        
+
         // Primero obtener todas las gestantes para minimizar llamadas
         try {
           final gestantes = await _gestanteService!.obtenerGestantes();
@@ -174,26 +256,37 @@ class ControlService {
         } catch (e) {
           appLogger.info('No se pudieron cargar las gestantes: $e');
         }
-        
+
         // Luego procesar los controles con los datos de gestantes
         for (final data in controlesData) {
-          final controlData = Map<String, dynamic>.from(data);
-          final gestanteId = controlData['gestante_id']?.toString();
-          
-          if (gestanteId != null && gestantesMap.containsKey(gestanteId)) {
-            controlData['gestante'] = gestantesMap[gestanteId]!.toJson();
-            controlData['gestante_nombre'] = gestantesMap[gestanteId]!.nombre;
-            appLogger.info('ControlService: Asociando control ${controlData['id']} con gestante ${gestantesMap[gestanteId]!.nombre}');
-          } else {
-            appLogger.info('ControlService: No se encontró gestante para ID $gestanteId');
+          try {
+            final controlData = Map<String, dynamic>.from(data);
+            final gestanteId = controlData['gestante_id']?.toString();
+
+            // DEBUG: Analizar cada control individual para encontrar el campo 'controles' problemático
+            if (controlData.containsKey('controles')) {
+              appLogger.error('ControlService DEBUG: Campo "controles" encontrado en control individual', error: {
+                'controlData': controlData,
+                'controlesValue': controlData['controles'],
+                'controlesType': controlData['controles']?.runtimeType.toString(),
+              });
+            }
+
+            if (gestanteId != null && gestantesMap.containsKey(gestanteId)) {
+              controlData['gestante'] = gestantesMap[gestanteId]!.toJson();
+              controlData['gestante_nombre'] = gestantesMap[gestanteId]!.nombre;
+            }
+
+            controles.add(Control.fromJson(controlData));
+          } catch (e) {
+            appLogger.error('ControlService: Error procesando control', error: e);
+            rethrow;
           }
-          
-          controles.add(Control.fromJson(controlData));
         }
-        
+
         return controles;
       }
-      
+
       // Si no hay servicio de gestantes, retornar los controles sin datos adicionales
       return controlesData.map((data) => Control.fromJson(data)).toList();
     } catch (e) {
@@ -221,7 +314,16 @@ class ControlService {
         'gestanteId': gestanteId,
       });
       final response = await _apiService.get('/controles/gestante/$gestanteId');
-      final List<dynamic> controlesData = response.data;  // Corrección: Acceder a data de Response
+
+      // Manejar estructura de respuesta del backend
+      List<dynamic> controlesData;
+      if (response.data is Map && response.data['data'] != null) {
+        controlesData = response.data['data']['controles'] ?? [];
+      } else if (response.data is List) {
+        controlesData = response.data;
+      } else {
+        controlesData = [];
+      }
       return controlesData.map((data) => Control.fromJson(data)).toList();
     } catch (e) {
       appLogger.error('Error obteniendo controles por gestante', error: e, context: {
@@ -327,7 +429,27 @@ class ControlService {
     try {
       appLogger.info('ControlService: Obteniendo controles vencidos');
       final response = await _apiService.get('/controles/vencidos');
-      final List<dynamic> controlesData = response.data;  // Corrección: Acceder a data de Response
+
+      // Manejar estructura de respuesta del backend
+      List<dynamic> controlesData;
+      if (response.data is Map && response.data['data'] != null) {
+        final dataValue = response.data['data'];
+        if (dataValue is List) {
+          // Formato: { success: true, data: [...] } (controles vencidos/pendientes)
+          controlesData = dataValue;
+        } else if (dataValue is Map && dataValue['controles'] != null) {
+          // Formato: { success: true, data: { controles: [...] } } (controles normales)
+          controlesData = dataValue['controles'];
+        } else {
+          controlesData = [];
+        }
+      } else if (response.data is List) {
+        controlesData = response.data;
+      } else {
+        controlesData = [];
+      }
+
+      appLogger.info('ControlService: ${controlesData.length} controles vencidos encontrados');
       return controlesData.map((data) => Control.fromJson(data)).toList();
     } catch (e) {
       appLogger.error('Error obteniendo controles vencidos', error: e);
@@ -339,7 +461,27 @@ class ControlService {
     try {
       appLogger.info('ControlService: Obteniendo controles pendientes');
       final response = await _apiService.get('/controles/pendientes');
-      final List<dynamic> controlesData = response.data;  // Corrección: Acceder a data de Response
+
+      // Manejar estructura de respuesta del backend
+      List<dynamic> controlesData;
+      if (response.data is Map && response.data['data'] != null) {
+        final dataValue = response.data['data'];
+        if (dataValue is List) {
+          // Formato: { success: true, data: [...] } (controles vencidos/pendientes)
+          controlesData = dataValue;
+        } else if (dataValue is Map && dataValue['controles'] != null) {
+          // Formato: { success: true, data: { controles: [...] } } (controles normales)
+          controlesData = dataValue['controles'];
+        } else {
+          controlesData = [];
+        }
+      } else if (response.data is List) {
+        controlesData = response.data;
+      } else {
+        controlesData = [];
+      }
+
+      appLogger.info('ControlService: ${controlesData.length} controles pendientes encontrados');
       return controlesData.map((data) => Control.fromJson(data)).toList();
     } catch (e) {
       appLogger.error('Error obteniendo controles pendientes', error: e);

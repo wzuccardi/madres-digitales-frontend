@@ -119,7 +119,30 @@ class ContenidoService {
       
       // Si no hay cache, obtener desde API
       final response = await _apiService.get('/contenido-crud');
-      final List<dynamic> contenidosData = response.data['contenidos'] ?? [];  // Extraer la lista de contenidos
+
+      List<dynamic> contenidosData;
+      if (response.data is Map<String, dynamic>) {
+        final responseData = response.data as Map<String, dynamic>;
+
+        // Estructura: { success: true, data: { contenidos: [...] } }
+        if (responseData['data'] is Map && responseData['data']['contenidos'] != null) {
+          contenidosData = responseData['data']['contenidos'] as List<dynamic>;
+        }
+        // Estructura: { contenidos: [...] }
+        else if (responseData['contenidos'] != null) {
+          contenidosData = responseData['contenidos'] as List<dynamic>;
+        }
+        // Estructura: { data: [...] }
+        else if (responseData['data'] is List) {
+          contenidosData = responseData['data'] as List<dynamic>;
+        } else {
+          contenidosData = [];
+        }
+      } else if (response.data is List) {
+        contenidosData = response.data as List<dynamic>;
+      } else {
+        contenidosData = [];
+      }
       
       appLogger.debug('DIAGNÓSTICO: Respuesta de API recibida', context: {
         'cantidad': contenidosData.length,
@@ -209,7 +232,30 @@ class ContenidoService {
       appLogger.debug('ContenidoService: Obteniendo contenidos recomendados para gestante: $gestanteId');
       
       final response = await _apiService.get('/contenido-crud?recomendados=true&gestanteId=$gestanteId');
-      final List<dynamic> contenidosData = response.data['contenidos'] ?? [];  // Extraer la lista de contenidos
+
+      List<dynamic> contenidosData;
+      if (response.data is Map<String, dynamic>) {
+        final responseData = response.data as Map<String, dynamic>;
+
+        // Estructura: { success: true, data: { contenidos: [...] } }
+        if (responseData['data'] is Map && responseData['data']['contenidos'] != null) {
+          contenidosData = responseData['data']['contenidos'] as List<dynamic>;
+        }
+        // Estructura: { contenidos: [...] }
+        else if (responseData['contenidos'] != null) {
+          contenidosData = responseData['contenidos'] as List<dynamic>;
+        }
+        // Estructura: { data: [...] }
+        else if (responseData['data'] is List) {
+          contenidosData = responseData['data'] as List<dynamic>;
+        } else {
+          contenidosData = [];
+        }
+      } else if (response.data is List) {
+        contenidosData = response.data as List<dynamic>;
+      } else {
+        contenidosData = [];
+      }
       
       // Convertir datos a ContenidoUnificado
       return contenidosData.map((data) {

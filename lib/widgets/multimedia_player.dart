@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -246,7 +246,7 @@ class _MultimediaPlayerState extends State<MultimediaPlayer> {
                 ),
                 child: Column(
                   children: [
-                    // Título
+                    // TÃ­tulo
                     Padding(
                       padding: const EdgeInsets.all(16),
                       child: Row(
@@ -267,7 +267,7 @@ class _MultimediaPlayerState extends State<MultimediaPlayer> {
                       ),
                     ),
                     
-                    // Botón play/pause central
+                    // BotÃ³n play/pause central
                     Expanded(
                       child: Center(
                         child: Container(
@@ -362,7 +362,7 @@ class _MultimediaPlayerState extends State<MultimediaPlayer> {
           ),
         ),
         
-        // Botón de pantalla completa siempre visible
+        // BotÃ³n de pantalla completa siempre visible
         Positioned(
           top: 16,
           right: 16,
@@ -412,7 +412,7 @@ class _MultimediaPlayerState extends State<MultimediaPlayer> {
   }
 
   void _enterFullScreen() {
-    // Guardar el estado actual de reproducción
+    // Guardar el estado actual de reproducciÃ³n
     final wasPlaying = _videoController!.value.isPlaying;
     final currentPosition = _videoController!.value.position;
     
@@ -616,7 +616,7 @@ class _MultimediaPlayerState extends State<MultimediaPlayer> {
                 borderRadius: BorderRadius.circular(4),
               ),
               child: const Text(
-                '💡 Tip: Use URLs directas como:\n• https://ejemplo.com/video.mp4\n• https://ejemplo.com/video.webm',
+                'ðŸ’¡ Tip: Use URLs directas como:\nâ€¢ https://ejemplo.com/video.mp4\nâ€¢ https://ejemplo.com/video.webm',
                 style: TextStyle(fontSize: 12, color: Colors.blue),
                 textAlign: TextAlign.center,
               ),
@@ -679,7 +679,7 @@ class _FullScreenVideoPlayerState extends State<_FullScreenVideoPlayer> {
     // Escuchar cambios en el controlador
     widget.videoController.addListener(_videoListener);
     
-    // Inicializar de forma asíncrona después del build
+    // Inicializar de forma asÃ­ncrona despuÃ©s del build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeFullScreen();
     });
@@ -687,10 +687,10 @@ class _FullScreenVideoPlayerState extends State<_FullScreenVideoPlayer> {
 
   Future<void> _initializeFullScreen() async {
     try {
-      // Asegurar que el video esté en la posición correcta
+      // Asegurar que el video estÃ© en la posiciÃ³n correcta
       await widget.videoController.seekTo(widget.initialPosition);
       
-      // Restaurar el estado de reproducción si estaba reproduciéndose
+      // Restaurar el estado de reproducciÃ³n si estaba reproduciÃ©ndose
       if (widget.wasPlaying) {
         await widget.videoController.play();
       }
@@ -701,7 +701,6 @@ class _FullScreenVideoPlayerState extends State<_FullScreenVideoPlayer> {
         });
       }
     } catch (e) {
-      print('Error initializing full screen: $e');
     }
   }
 
@@ -738,7 +737,7 @@ class _FullScreenVideoPlayerState extends State<_FullScreenVideoPlayer> {
   }
 
   void _exitFullScreen() async {
-    // Pausar el video antes de salir si está reproduciéndose
+    // Pausar el video antes de salir si estÃ¡ reproduciÃ©ndose
     final currentlyPlaying = widget.videoController.value.isPlaying;
     if (currentlyPlaying) {
       await widget.videoController.pause();
@@ -768,7 +767,7 @@ class _FullScreenVideoPlayerState extends State<_FullScreenVideoPlayer> {
             ),
           ),
           
-          // Botón para salir (siempre visible)
+          // BotÃ³n para salir (siempre visible)
           Positioned(
             top: 40,
             right: 20,
@@ -816,7 +815,7 @@ class _FullScreenVideoPlayerState extends State<_FullScreenVideoPlayer> {
             ),
             child: Column(
               children: [
-                // Título
+                // TÃ­tulo
                 Padding(
                   padding: const EdgeInsets.only(top: 60, left: 20, right: 60),
                   child: SafeArea(
@@ -835,7 +834,7 @@ class _FullScreenVideoPlayerState extends State<_FullScreenVideoPlayer> {
                 
                 const Spacer(),
                 
-                // Botón central de play/pause
+                // BotÃ³n central de play/pause
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(

@@ -42,19 +42,35 @@ class DashboardStats {
   /// Crear desde JSON
   factory DashboardStats.fromJson(Map<String, dynamic> json) {
     return DashboardStats(
-      totalGestantes: json['totalGestantes'] ?? 0,
-      controlesRealizados: json['controlesRealizados'] ?? 0,
-      alertasActivas: json['alertasActivas'] ?? 0,
-      contenidosVistos: json['contenidosVistos'] ?? 0,
-      proximosControles: json['proximosControles'] ?? 0,
-      tasaCumplimiento: (json['tasaCumplimiento'] ?? 0.0).toDouble(),
-      totalMedicos: json['totalMedicos'] ?? 0,
-      totalIps: json['totalIps'] ?? 0,
+      totalGestantes: _parseInt(json['totalGestantes']),
+      controlesRealizados: _parseInt(json['controlesRealizados']) ?? _parseInt(json['controles']) ?? 0,
+      alertasActivas: _parseInt(json['alertasActivas']),
+      contenidosVistos: _parseInt(json['contenidosVistos']),
+      proximosControles: _parseInt(json['proximosControles']),
+      tasaCumplimiento: _parseDouble(json['tasaCumplimiento']),
+      totalMedicos: _parseInt(json['totalMedicos']),
+      totalIps: _parseInt(json['totalIps']),
       lastUpdated: json['lastUpdated'] != null 
           ? DateTime.parse(json['lastUpdated']) 
           : DateTime.now(),
       datosAdicionales: json['datosAdicionales'],
     );
+  }
+
+  static int _parseInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
+  }
+
+  static double _parseDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
   }
 
   /// Convertir a JSON

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../providers/service_providers.dart';
@@ -61,18 +61,14 @@ class _ReportesListPageState extends ConsumerState<ReportesListPage> {
   }
 
   Future<void> _launchUrl(String url) async {
-    print('🔗 URL original: $url');
     
-    // Si la URL es un endpoint relativo, convertirla a URL de descarga pública
+    // Si la URL es un endpoint relativo, convertirla a URL de descarga pÃºblica
     if (url.startsWith('/api/reportes/')) {
       url = url.replaceAll('/api/reportes/', 'http://localhost:54112/api/reportes/descargar/');
-      print('🔗 URL transformada (reportes): $url');
     } else if (url.startsWith('/api/')) {
       url = url.replaceAll('/api/', 'http://localhost:54112/api/');
-      print('🔗 URL transformada (api): $url');
     }
     
-    print('🔗 URL final: $url');
     
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
@@ -93,7 +89,7 @@ class _ReportesListPageState extends ConsumerState<ReportesListPage> {
                   itemBuilder: (context, index) {
                     final reporte = reportes[index];
                     return ListTile(
-                      title: Text(reporte['titulo'] ?? 'Sin título'),
+                      title: Text(reporte['titulo'] ?? 'Sin tÃ­tulo'),
                       subtitle: Text(reporte['fecha'] ?? ''),
                       trailing: IconButton(
                         icon: const Icon(Icons.download),
@@ -110,3 +106,4 @@ class _ReportesListPageState extends ConsumerState<ReportesListPage> {
     );
   }
 }
+

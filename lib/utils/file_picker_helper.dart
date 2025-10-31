@@ -1,5 +1,5 @@
 import 'package:file_picker/file_picker.dart';
-import 'logger.dart';
+import 'logger.dart' show appLogger;
 
 class FilePickerHelper {
   /// Seleccionar archivo de video
@@ -19,13 +19,13 @@ class FilePickerHelper {
           throw Exception('El video no debe superar los 100MB. Tamaño actual: ${sizeInMB.toStringAsFixed(2)}MB');
         }
 
-        AppLogger.info('Video seleccionado: ${file.name}, Tamaño: ${sizeInMB.toStringAsFixed(2)}MB');
+        appLogger.info('Video seleccionado: ${file.name}, Tamaño: ${sizeInMB.toStringAsFixed(2)}MB');
         return file;
       }
 
       return null;
     } catch (e) {
-      AppLogger.error('Error seleccionando video: $e');
+      appLogger.error('Error seleccionando video: $e');
       rethrow;
     }
   }
@@ -47,13 +47,13 @@ class FilePickerHelper {
           throw Exception('El audio no debe superar los 50MB. Tamaño actual: ${sizeInMB.toStringAsFixed(2)}MB');
         }
 
-        AppLogger.info('Audio seleccionado: ${file.name}, Tamaño: ${sizeInMB.toStringAsFixed(2)}MB');
+        appLogger.info('Audio seleccionado: ${file.name}, Tamaño: ${sizeInMB.toStringAsFixed(2)}MB');
         return file;
       }
-      
+
       return null;
     } catch (e) {
-      AppLogger.error('Error seleccionando audio: $e');
+      appLogger.error('Error seleccionando audio: $e');
       rethrow;
     }
   }
@@ -76,13 +76,13 @@ class FilePickerHelper {
           throw Exception('El PDF no debe superar los 20MB. Tamaño actual: ${sizeInMB.toStringAsFixed(2)}MB');
         }
 
-        AppLogger.info('PDF seleccionado: ${file.name}, Tamaño: ${sizeInMB.toStringAsFixed(2)}MB');
+        appLogger.info('PDF seleccionado: ${file.name}, Tamaño: ${sizeInMB.toStringAsFixed(2)}MB');
         return file;
       }
 
       return null;
     } catch (e) {
-      AppLogger.error('Error seleccionando PDF: $e');
+      appLogger.error('Error seleccionando PDF: $e');
       rethrow;
     }
   }
@@ -104,13 +104,13 @@ class FilePickerHelper {
           throw Exception('La imagen no debe superar los 10MB. Tamaño actual: ${sizeInMB.toStringAsFixed(2)}MB');
         }
 
-        AppLogger.info('Imagen seleccionada: ${file.name}, Tamaño: ${sizeInMB.toStringAsFixed(2)}MB');
+        appLogger.info('Imagen seleccionada: ${file.name}, Tamaño: ${sizeInMB.toStringAsFixed(2)}MB');
         return file;
       }
 
       return null;
     } catch (e) {
-      AppLogger.error('Error seleccionando imagen: $e');
+      appLogger.error('Error seleccionando imagen: $e');
       rethrow;
     }
   }

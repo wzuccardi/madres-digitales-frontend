@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../providers/service_providers.dart';
 import '../../../../services/auth_service.dart';
@@ -24,12 +24,12 @@ class _MunicipiosAdminScreenState extends ConsumerState<MunicipiosAdminScreen> {
   String _filtroEstado = 'todos'; // todos, activos, inactivos
   String _filtroDepartamento = 'todos';
   
-  // Paginación
+  // PaginaciÃ³n
   int _currentPage = 1;
   final int _itemsPerPage = 20;
   int _totalItems = 0;
   
-  // Estadísticas
+  // EstadÃ­sticas
   Map<String, dynamic>? _estadisticas;
 
   @override
@@ -70,23 +70,19 @@ class _MunicipiosAdminScreenState extends ConsumerState<MunicipiosAdminScreen> {
 
       final apiService = ref.read(apiServiceProvider);
 
-      // Usar el endpoint stats que no requiere autenticación
-      debugPrint('🔄 Cargando estadísticas de municipios...');
+      // Usar el endpoint stats que no requiere autenticaciÃ³n
       final statsResponse = await apiService.get('/municipios/stats');
       
-      // Usar el endpoint público de municipios que no requiere autenticación
-      debugPrint('🔄 Cargando lista de municipios...');
+      // Usar el endpoint pÃºblico de municipios que no requiere autenticaciÃ³n
       final municipiosResponse = await apiService.get('/municipios');
 
-      debugPrint('📥 Respuesta estadísticas: ${statsResponse.data}');
-      debugPrint('📥 Respuesta municipios: ${municipiosResponse.data}');
 
       if (statsResponse.data['success'] == true && municipiosResponse.data['success'] == true) {
         final allMunicipios = List<Map<String, dynamic>>.from(municipiosResponse.data['data']);
         
-        // Combinar datos de municipios con estadísticas
+        // Combinar datos de municipios con estadÃ­sticas
         final municipiosConStats = allMunicipios.map((municipio) {
-          // Buscar estadísticas si existen (valores predeterminados en 0)
+          // Buscar estadÃ­sticas si existen (valores predeterminados en 0)
           return {
             ...municipio,
             'estadisticas': {
@@ -110,12 +106,10 @@ class _MunicipiosAdminScreenState extends ConsumerState<MunicipiosAdminScreen> {
           _aplicarFiltros();
         }
 
-        debugPrint('✅ ${_municipios.length} municipios cargados con estadísticas');
       } else {
         throw Exception('Error desconocido al cargar datos');
       }
     } catch (e) {
-      debugPrint('❌ Error cargando municipios: $e');
       if (mounted) {
         setState(() {
           _error = 'Error cargando municipios: $e';
@@ -128,20 +122,16 @@ class _MunicipiosAdminScreenState extends ConsumerState<MunicipiosAdminScreen> {
   Future<void> _loadEstadisticas() async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      debugPrint('🔄 Cargando estadísticas de municipios...');
 
       final response = await apiService.get('/municipios/stats');
 
-      debugPrint('📥 Respuesta estadísticas: ${response.data}');
 
       if (response.data['success'] == true && mounted) {
         setState(() {
           _estadisticas = response.data['data'];
         });
-        debugPrint('✅ Estadísticas cargadas: $_estadisticas');
       }
     } catch (e) {
-      debugPrint('❌ Error cargando estadísticas: $e');
     }
   }
 
@@ -149,7 +139,7 @@ class _MunicipiosAdminScreenState extends ConsumerState<MunicipiosAdminScreen> {
     if (mounted) {
       setState(() {
         _municipiosFiltrados = _municipios.where((municipio) {
-          // Filtro por búsqueda
+          // Filtro por bÃºsqueda
           if (_searchQuery.isNotEmpty) {
             final query = _searchQuery.toLowerCase();
             final nombre = municipio['nombre']?.toLowerCase() ?? '';
@@ -176,7 +166,7 @@ class _MunicipiosAdminScreenState extends ConsumerState<MunicipiosAdminScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBarWithLogo(
-        title: 'Administración de Municipios',
+        title: 'AdministraciÃ³n de Municipios',
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -337,8 +327,8 @@ class _MunicipiosAdminScreenState extends ConsumerState<MunicipiosAdminScreen> {
               ),
               items: const [
                 DropdownMenuItem(value: 'todos', child: Text('Todos')),
-                DropdownMenuItem(value: 'BOLÍVAR', child: Text('Bolívar')),
-                // Agregar más departamentos según sea necesario
+                DropdownMenuItem(value: 'BOLÃVAR', child: Text('BolÃ­var')),
+                // Agregar mÃ¡s departamentos segÃºn sea necesario
               ],
               onChanged: (value) {
                 if (mounted) {
@@ -410,13 +400,13 @@ class _MunicipiosAdminScreenState extends ConsumerState<MunicipiosAdminScreen> {
         scrollDirection: Axis.horizontal,
         child: DataTable(
           columns: const [
-            DataColumn(label: Text('Código')),
+            DataColumn(label: Text('CÃ³digo')),
             DataColumn(label: Text('Nombre')),
             DataColumn(label: Text('Departamento')),
             DataColumn(label: Text('Estado')),
             DataColumn(label: Text('Gestantes')),
             DataColumn(label: Text('Madrinas')),
-            DataColumn(label: Text('Médicos')),
+            DataColumn(label: Text('MÃ©dicos')),
             DataColumn(label: Text('Acciones')),
           ],
           rows: _municipiosFiltrados.map((municipio) => _buildMunicipioRow(municipio)).toList(),
@@ -490,7 +480,7 @@ class _MunicipiosAdminScreenState extends ConsumerState<MunicipiosAdminScreen> {
             onPressed: _currentPage > 1 ? () => _changePage(_currentPage - 1) : null,
             icon: const Icon(Icons.chevron_left),
           ),
-          Text('Página $_currentPage de $totalPages'),
+          Text('PÃ¡gina $_currentPage de $totalPages'),
           IconButton(
             onPressed: _currentPage < totalPages ? () => _changePage(_currentPage + 1) : null,
             icon: const Icon(Icons.chevron_right),
@@ -517,7 +507,7 @@ class _MunicipiosAdminScreenState extends ConsumerState<MunicipiosAdminScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text('${action.toUpperCase()} Municipio'),
-        content: Text('¿Está seguro que desea $action el municipio ${municipio['nombre']}?'),
+        content: Text('Â¿EstÃ¡ seguro que desea $action el municipio ${municipio['nombre']}?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -537,14 +527,12 @@ class _MunicipiosAdminScreenState extends ConsumerState<MunicipiosAdminScreen> {
       final apiService = ref.read(apiServiceProvider);
       final municipioId = municipio['id'];
 
-      // Usar el endpoint correcto según el estado actual
+      // Usar el endpoint correcto segÃºn el estado actual
       final endpoint = activo
           ? '/municipios/$municipioId/desactivar'
           : '/municipios/$municipioId/activar';
 
-      debugPrint('🔄 Llamando a endpoint: $endpoint');
       final response = await apiService.post(endpoint);
-      debugPrint('📥 Respuesta: ${response.data}');
 
       if (!mounted) return;
 
@@ -557,7 +545,7 @@ class _MunicipiosAdminScreenState extends ConsumerState<MunicipiosAdminScreen> {
         );
         _loadData();
       } else {
-        // Mostrar el mensaje de error específico del backend
+        // Mostrar el mensaje de error especÃ­fico del backend
         final errorMsg = response.data['error'] ?? 'Error desconocido';
         throw Exception(errorMsg);
       }
@@ -590,14 +578,14 @@ class _MunicipiosAdminScreenState extends ConsumerState<MunicipiosAdminScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Código: ${municipio['codigo']}'),
+              Text('CÃ³digo: ${municipio['codigo']}'),
               Text('Departamento: ${municipio['departamento']}'),
               Text('Estado: ${municipio['activo'] ? 'Activo' : 'Inactivo'}'),
               const SizedBox(height: 16),
-              const Text('Estadísticas:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text('EstadÃ­sticas:', style: TextStyle(fontWeight: FontWeight.bold)),
               Text('Gestantes: ${municipio['estadisticas']?['gestantes'] ?? 0}'),
               Text('Madrinas: ${municipio['estadisticas']?['madrinas'] ?? 0}'),
-              Text('Médicos: ${municipio['estadisticas']?['medicos'] ?? 0}'),
+              Text('MÃ©dicos: ${municipio['estadisticas']?['medicos'] ?? 0}'),
             ],
           ),
         ),
@@ -617,8 +605,8 @@ class _MunicipiosAdminScreenState extends ConsumerState<MunicipiosAdminScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Importar Municipios'),
         content: const Text(
-          'Esta función importará los municipios desde el archivo Bolivar.txt. '
-          '¿Desea continuar?'
+          'Esta funciÃ³n importarÃ¡ los municipios desde el archivo Bolivar.txt. '
+          'Â¿Desea continuar?'
         ),
         actions: [
           TextButton(
@@ -641,7 +629,7 @@ class _MunicipiosAdminScreenState extends ConsumerState<MunicipiosAdminScreen> {
     if (!mounted) return;
 
     try {
-      // Mostrar diálogo de progreso
+      // Mostrar diÃ¡logo de progreso
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -651,7 +639,7 @@ class _MunicipiosAdminScreenState extends ConsumerState<MunicipiosAdminScreen> {
             children: [
               CircularProgressIndicator(),
               SizedBox(height: 16),
-              Text('Importando municipios de Bolívar...'),
+              Text('Importando municipios de BolÃ­var...'),
               Text('Este proceso puede tomar unos minutos.'),
             ],
           ),
@@ -659,12 +647,12 @@ class _MunicipiosAdminScreenState extends ConsumerState<MunicipiosAdminScreen> {
       );
 
       // final response = await ApiService.importarMunicipiosBolivar();
-      final response = {'success': true, 'message': 'Importación simulada'}; // Temporal fix
+      final response = {'success': true, 'message': 'ImportaciÃ³n simulada'}; // Temporal fix
 
       // Verificar si el widget sigue montado antes de usar context
       if (!mounted) return;
 
-      // Cerrar diálogo de progreso
+      // Cerrar diÃ¡logo de progreso
       Navigator.pop(context);
 
       if (response['success'] == true) {
@@ -683,7 +671,7 @@ class _MunicipiosAdminScreenState extends ConsumerState<MunicipiosAdminScreen> {
     } catch (e) {
       if (!mounted) return;
 
-      // Cerrar diálogo de progreso si está abierto
+      // Cerrar diÃ¡logo de progreso si estÃ¡ abierto
       if (Navigator.canPop(context)) {
         Navigator.pop(context);
       }
@@ -697,3 +685,4 @@ class _MunicipiosAdminScreenState extends ConsumerState<MunicipiosAdminScreen> {
     }
   }
 }
+

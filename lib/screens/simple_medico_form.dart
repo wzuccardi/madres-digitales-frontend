@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 class SimpleMedicoForm extends StatefulWidget {
   const SimpleMedicoForm({super.key});
@@ -18,11 +18,10 @@ class _SimpleMedicoFormState extends State<SimpleMedicoForm> {
 
   @override
   Widget build(BuildContext context) {
-    print('🏥 SimpleMedicoForm: Construyendo formulario ultra-simple');
     
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Nuevo Médico - Minimalista'),
+        title: const Text('Nuevo MÃ©dico - Minimalista'),
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
       ),
@@ -38,23 +37,22 @@ class _SimpleMedicoFormState extends State<SimpleMedicoForm> {
             TextField(
               controller: _nombreController,
               decoration: const InputDecoration(
-                labelText: 'Nombre del Médico',
+                labelText: 'Nombre del MÃ©dico',
                 border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
-                print('🏥 Guardando médico: ${_nombreController.text}');
                 Navigator.of(context).pop();
               },
               child: const Text('Guardar'),
             ),
             const SizedBox(height: 20),
-            const Text('✅ Sin setState durante build'),
-            const Text('✅ Sin widgets complejos'),
-            const Text('✅ Sin providers'),
-            const Text('✅ Sin riverpod'),
+            const Text('âœ… Sin setState durante build'),
+            const Text('âœ… Sin widgets complejos'),
+            const Text('âœ… Sin providers'),
+            const Text('âœ… Sin riverpod'),
           ],
         ),
       ),

@@ -1,4 +1,4 @@
-// Helper para reproducir audio en Flutter Web
+﻿// Helper para reproducir audio en Flutter Web
 // Este archivo solo se usa en la plataforma web
 
 import 'dart:js' as js;
@@ -30,7 +30,7 @@ void playWebBeep() {
       })();
     ''']);
   } catch (e) {
-    print('Error en playWebBeep: $e');
   }
 }
+
 

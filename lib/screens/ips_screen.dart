@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../services/ips_service.dart';
@@ -107,7 +107,7 @@ class _IpsScreenState extends ConsumerState<IpsScreen> {
             _filteredIpsList = _ipsList.where((ips) {
               final nombre = (ips['nombre'] ?? '').toString().toLowerCase();
               final nit = (ips['nit'] ?? '').toString().toLowerCase();
-              final municipio = (ips['municipio']?['nombre'] ?? '').toString().toLowerCase();
+              final municipio = (ips['municipio'] ?? '').toString().toLowerCase();
               final searchLower = query.toLowerCase();
               return nombre.contains(searchLower) ||
                      nit.contains(searchLower) ||
@@ -126,8 +126,8 @@ class _IpsScreenState extends ConsumerState<IpsScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirmar eliminación'),
-        content: Text('¿Está seguro de eliminar la IPS "$nombre"?'),
+        title: const Text('Confirmar eliminaciÃ³n'),
+        content: Text('Â¿EstÃ¡ seguro de eliminar la IPS "$nombre"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -202,7 +202,7 @@ class _IpsScreenState extends ConsumerState<IpsScreen> {
       ),
       body: Column(
         children: [
-          // Barra de búsqueda
+          // Barra de bÃºsqueda
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(
@@ -216,7 +216,7 @@ class _IpsScreenState extends ConsumerState<IpsScreen> {
                         onPressed: () {
                           _searchController.clear();
                           _filterIps('');
-                          appLogger.info('_IpsScreenState: Búsqueda limpiada');
+                          appLogger.info('_IpsScreenState: BÃºsqueda limpiada');
                         },
                       )
                     : null,
@@ -290,11 +290,11 @@ class _IpsScreenState extends ConsumerState<IpsScreen> {
                                   if (ips['nit'] != null) Text('NIT: ${ips['nit']}'),
                                   Text('Nivel: ${_getNivelAtencionLabel(ips['nivel'])}'),
                                   if (ips['direccion'] != null)
-                                    Text('📍 ${ips['direccion']}'),
+                                    Text('ðŸ“ ${ips['direccion']}'),
                                   if (ips['telefono'] != null)
-                                    Text('📞 ${ips['telefono']}'),
+                                    Text('ðŸ“ž ${ips['telefono']}'),
                                   if (ips['municipio'] != null)
-                                    Text('🏛️ ${ips['municipio']['nombre'] ?? 'Sin municipio'}'),
+                                    Text('ðŸ›ï¸ ${ips['municipio']}'),
                                 ],
                               ),
                               trailing: PopupMenuButton(
@@ -322,16 +322,12 @@ class _IpsScreenState extends ConsumerState<IpsScreen> {
                                 ],
                                 onSelected: (value) async {
                                   if (value == 'edit') {
-                                    print('🏥 IpsScreen: ========== EDITANDO IPS ==========');
-                                    print('🏥 IpsScreen: ID de la IPS: ${ips['id']}');
-                                    print('🏥 IpsScreen: Navegando al formulario de edición con GoRouter...');
                                     
                                     context.push('/ips/editar/${ips['id']}', extra: ips);
                                     
-                                    // Recargar después de un delay
+                                    // Recargar despuÃ©s de un delay
                                     Future.delayed(const Duration(seconds: 1), () {
                                       if (mounted && !_isDisposed) {
-                                        print('🏥 IpsScreen: Recargando lista de IPS...');
                                         _loadIps();
                                       }
                                     });
@@ -350,15 +346,12 @@ class _IpsScreenState extends ConsumerState<IpsScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          print('🏥 IpsScreen: ========== CREANDO NUEVA IPS ==========');
-          print('🏥 IpsScreen: Navegando al formulario de creación con GoRouter...');
           
           context.push('/ips/nuevo');
           
-          // Recargar después de un delay
+          // Recargar despuÃ©s de un delay
           Future.delayed(const Duration(seconds: 1), () {
             if (mounted && !_isDisposed) {
-              print('🏥 IpsScreen: Recargando lista de IPS...');
               _loadIps();
             }
           });

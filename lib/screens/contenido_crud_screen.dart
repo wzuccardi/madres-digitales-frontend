@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../features/contenido/data/models/contenido_model.dart' as ContenidoModelAlias;
@@ -34,7 +34,6 @@ class _ContenidoCrudScreenState extends ConsumerState<ContenidoCrudScreen> {
   }
 
   Future<void> _cargarContenidos() async {
-    print('🔄 CRUD: Iniciando carga de contenidos...');
     setState(() {
       _isLoading = true;
       _error = null;
@@ -42,19 +41,15 @@ class _ContenidoCrudScreenState extends ConsumerState<ContenidoCrudScreen> {
 
     try {
       final contenidoService = await ref.read(contenidoServiceProvider.future);
-      print('🔄 CRUD: Llamando a getAllContenidos()...');
       final contenidos = await contenidoService.getAllContenidos();
-      print('✅ CRUD: Recibidos ${contenidos.length} contenidos');
 
       if (mounted) {
         setState(() {
           _contenidos = contenidos.map((c) => _convertToContenidoModel(c)).toList();
           _isLoading = false;
         });
-        print('✅ CRUD: Estado actualizado con ${contenidos.length} contenidos');
       }
     } catch (e) {
-      print('❌ CRUD: Error al cargar contenidos: $e');
       if (mounted) {
         setState(() {
           _error = 'Error al cargar contenidos: $e';
@@ -68,8 +63,8 @@ class _ContenidoCrudScreenState extends ConsumerState<ContenidoCrudScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirmar eliminación'),
-        content: const Text('¿Estás seguro de que deseas eliminar este contenido?'),
+        title: const Text('Confirmar eliminaciÃ³n'),
+        content: const Text('Â¿EstÃ¡s seguro de que deseas eliminar este contenido?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -93,7 +88,7 @@ class _ContenidoCrudScreenState extends ConsumerState<ContenidoCrudScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✅ Contenido eliminado exitosamente'),
+            content: Text('âœ… Contenido eliminado exitosamente'),
             backgroundColor: Colors.green,
           ),
         );
@@ -103,7 +98,7 @@ class _ContenidoCrudScreenState extends ConsumerState<ContenidoCrudScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Error al eliminar: $e'),
+            content: Text('âŒ Error al eliminar: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -115,9 +110,9 @@ class _ContenidoCrudScreenState extends ConsumerState<ContenidoCrudScreen> {
     try {
       final contenidoService = await ref.read(contenidoServiceProvider.future);
       
-      // Crear una copia del contenido con "Copia" en el título
+      // Crear una copia del contenido con "Copia" en el tÃ­tulo
       final contenidoDuplicado = ContenidoUnificado(
-        id: '', // ID vacío para nuevo contenido
+        id: '', // ID vacÃ­o para nuevo contenido
         titulo: '${contenido.titulo} (Copia)',
         descripcion: contenido.descripcion,
         categoria: contenido.categoria,
@@ -137,7 +132,7 @@ class _ContenidoCrudScreenState extends ConsumerState<ContenidoCrudScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✅ Contenido duplicado exitosamente'),
+            content: Text('âœ… Contenido duplicado exitosamente'),
             backgroundColor: Colors.green,
           ),
         );
@@ -147,7 +142,7 @@ class _ContenidoCrudScreenState extends ConsumerState<ContenidoCrudScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Error al duplicar: $e'),
+            content: Text('âŒ Error al duplicar: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -182,7 +177,7 @@ class _ContenidoCrudScreenState extends ConsumerState<ContenidoCrudScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(activo ? '✅ Contenido activado' : '🔴 Contenido desactivado'),
+            content: Text(activo ? 'âœ… Contenido activado' : 'ðŸ”´ Contenido desactivado'),
             backgroundColor: activo ? Colors.green : Colors.orange,
           ),
         );
@@ -192,7 +187,7 @@ class _ContenidoCrudScreenState extends ConsumerState<ContenidoCrudScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Error al cambiar estado: $e'),
+            content: Text('âŒ Error al cambiar estado: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -209,7 +204,7 @@ class _ContenidoCrudScreenState extends ConsumerState<ContenidoCrudScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('❌ No se puede abrir la URL'),
+              content: Text('âŒ No se puede abrir la URL'),
               backgroundColor: Colors.red,
             ),
           );
@@ -279,7 +274,7 @@ class _ContenidoCrudScreenState extends ConsumerState<ContenidoCrudScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${activo ? '✅' : '🔴'} ${_selectedContenidos.length} contenido(s) ${activo ? 'activado(s)' : 'desactivado(s)'}'),
+            content: Text('${activo ? 'âœ…' : 'ðŸ”´'} ${_selectedContenidos.length} contenido(s) ${activo ? 'activado(s)' : 'desactivado(s)'}'),
             backgroundColor: activo ? Colors.green : Colors.orange,
           ),
         );
@@ -293,7 +288,7 @@ class _ContenidoCrudScreenState extends ConsumerState<ContenidoCrudScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Error al cambiar estado: $e'),
+            content: Text('âŒ Error al cambiar estado: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -305,8 +300,8 @@ class _ContenidoCrudScreenState extends ConsumerState<ContenidoCrudScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirmar eliminación masiva'),
-        content: Text('¿Estás seguro de que deseas eliminar ${_selectedContenidos.length} contenidos? Esta acción no se puede deshacer.'),
+        title: const Text('Confirmar eliminaciÃ³n masiva'),
+        content: Text('Â¿EstÃ¡s seguro de que deseas eliminar ${_selectedContenidos.length} contenidos? Esta acciÃ³n no se puede deshacer.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -333,7 +328,7 @@ class _ContenidoCrudScreenState extends ConsumerState<ContenidoCrudScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ ${_selectedContenidos.length} contenido(s) eliminado(s)'),
+            content: Text('âœ… ${_selectedContenidos.length} contenido(s) eliminado(s)'),
             backgroundColor: Colors.green,
           ),
         );
@@ -347,7 +342,7 @@ class _ContenidoCrudScreenState extends ConsumerState<ContenidoCrudScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Error al eliminar: $e'),
+            content: Text('âŒ Error al eliminar: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -410,7 +405,7 @@ class _ContenidoCrudScreenState extends ConsumerState<ContenidoCrudScreen> {
                   children: [
                     Icon(Icons.title, size: 20),
                     SizedBox(width: 8),
-                    Text('Ordenar por título'),
+                    Text('Ordenar por tÃ­tulo'),
                   ],
                 ),
               ),
@@ -430,7 +425,7 @@ class _ContenidoCrudScreenState extends ConsumerState<ContenidoCrudScreen> {
                   children: [
                     Icon(Icons.category, size: 20),
                     SizedBox(width: 8),
-                    Text('Ordenar por categoría'),
+                    Text('Ordenar por categorÃ­a'),
                   ],
                 ),
               ),
@@ -475,7 +470,7 @@ class _ContenidoCrudScreenState extends ConsumerState<ContenidoCrudScreen> {
       ),
       body: Column(
         children: [
-          // Barra de herramientas de selección
+          // Barra de herramientas de selecciÃ³n
           if (_showSelectedActions)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -515,13 +510,13 @@ class _ContenidoCrudScreenState extends ConsumerState<ContenidoCrudScreen> {
                         _showSelectedActions = false;
                       });
                     },
-                    tooltip: 'Cancelar selección',
+                    tooltip: 'Cancelar selecciÃ³n',
                   ),
                 ],
               ),
             ),
           
-          // Barra de búsqueda
+          // Barra de bÃºsqueda
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(
@@ -601,7 +596,7 @@ class _ContenidoCrudScreenState extends ConsumerState<ContenidoCrudScreen> {
                                   leading: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      // Checkbox para selección múltiple
+                                      // Checkbox para selecciÃ³n mÃºltiple
                                       Checkbox(
                                         value: isSelected,
                                         onChanged: (value) {
@@ -795,21 +790,21 @@ class _ContenidoCrudScreenState extends ConsumerState<ContenidoCrudScreen> {
     }
   }
   
-  // Función para convertir ContenidoUnificado a ContenidoModel
+  // FunciÃ³n para convertir ContenidoUnificado a ContenidoModel
   ContenidoModelAlias.ContenidoModel _convertToContenidoModel(ContenidoUnificado contenido) {
     return ContenidoModelAlias.ContenidoModel(
       id: contenido.id,
       titulo: contenido.titulo,
-      descripcion: contenido.descripcion ?? '', // Corrección: descripcion es nullable
+      descripcion: contenido.descripcion ?? '', // CorrecciÃ³n: descripcion es nullable
       categoria: contenido.categoria,
-      tipo: contenido.tipo, // Corrección: usar tipo
+      tipo: contenido.tipo, // CorrecciÃ³n: usar tipo
       url: contenido.urlContenido,
       urlContenido: contenido.urlContenido,
       thumbnailUrl: null,
-      imagenUrl: contenido.urlImagen, // Corrección: usar urlImagen
-      duracion: contenido.duracionMinutos, // Corrección: usar duracionMinutos
-      nivel: contenido.nivel ?? 'basico', // Corrección: usar nivel
-      etiquetas: contenido.tags ?? [], // Corrección: usar tags
+      imagenUrl: contenido.urlImagen, // CorrecciÃ³n: usar urlImagen
+      duracion: contenido.duracionMinutos, // CorrecciÃ³n: usar duracionMinutos
+      nivel: contenido.nivel ?? 'basico', // CorrecciÃ³n: usar nivel
+      etiquetas: contenido.tags ?? [], // CorrecciÃ³n: usar tags
       activo: contenido.activo,
       favorito: false,
       fechaPublicacion: contenido.fechaCreacion,
@@ -819,27 +814,28 @@ class _ContenidoCrudScreenState extends ConsumerState<ContenidoCrudScreen> {
       progreso: null,
       isAvailableOffline: false,
       createdAt: contenido.fechaCreacion,
-      updatedAt: contenido.fechaActualizacion, // Corrección: usar fechaActualizacion
+      updatedAt: contenido.fechaActualizacion, // CorrecciÃ³n: usar fechaActualizacion
     );
   }
   
-  // Función para convertir ContenidoModel a ContenidoUnificado
+  // FunciÃ³n para convertir ContenidoModel a ContenidoUnificado
   ContenidoUnificado _convertToContenidoUnificado(ContenidoModelAlias.ContenidoModel contenido) {
     return ContenidoUnificado(
       id: contenido.id,
       titulo: contenido.titulo,
       descripcion: contenido.descripcion,
       categoria: contenido.categoria,
-      tipo: contenido.tipo, // Corrección: usar tipo
+      tipo: contenido.tipo, // CorrecciÃ³n: usar tipo
       urlContenido: contenido.urlContenido ?? contenido.url,
-      urlImagen: contenido.imagenUrl, // Corrección: usar urlImagen
-      duracionMinutos: contenido.duracion, // Corrección: usar duracionMinutos
-      nivel: contenido.nivel, // Corrección: usar nivel
-      tags: contenido.etiquetas, // Corrección: usar tags
+      urlImagen: contenido.imagenUrl, // CorrecciÃ³n: usar urlImagen
+      duracionMinutos: contenido.duracion, // CorrecciÃ³n: usar duracionMinutos
+      nivel: contenido.nivel, // CorrecciÃ³n: usar nivel
+      tags: contenido.etiquetas, // CorrecciÃ³n: usar tags
       fechaCreacion: contenido.fechaCreacion,
-      fechaActualizacion: contenido.updatedAt, // Corrección: usar fechaActualizacion
+      fechaActualizacion: contenido.updatedAt, // CorrecciÃ³n: usar fechaActualizacion
       activo: contenido.activo,
     );
   }
 }
+
 
