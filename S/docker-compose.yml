@@ -1,0 +1,137 @@
+# ========================================
+# Docker Compose - Desarrollo Local
+# Madres Digitales
+# ========================================
+
+version: '3.8'
+
+services:
+  # Base de Datos PostgreSQL con PostGIS
+  postgres:
+    image: postgis/postgis:15-3.3-alpine
+    container_name: madres_digitales_postgres_dev
+    environment:
+      POSTGRES_DB: madres_digitales
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - madres_digitales_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis para caché y sesiones
+  redis:
+    image: redis:7-alpine
+    container_name: madres_digitales_redis_dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data_dev:/data
+    networks:
+      - madres_digitales_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend Node.js/TypeScript
+  backend:
+    build:
+      context: ./aplicacionWZC/madres-digitales-backend
+      dockerfile: Dockerfile.dev
+    container_name: madres_digitales_backend_dev
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://postgres:postgres123@postgres:5432/madres_digitales
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: development_jwt_secret_key_change_in_production
+      JWT_REFRESH_SECRET: development_refresh_secret_key_change_in_production
+      CORS_ORIGIN: http://localhost:3008,http://localhost:3000
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./aplicacionWZC/madres-digitales-backend/src:/app/src
+      - ./aplicacionWZC/madres-digitales-backend/prisma:/app/prisma
+      - ./aplicacionWZC/madres-digitales-backend/uploads:/app/uploads
+      - backend_logs_dev:/app/logs
+    networks:
+      - madres_digitales_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    command: npm run dev
+
+  # Frontend Flutter Web
+  frontend:
+    build:
+      context: ./aplicacionWZC/madres_digitales_flutter_new
+      dockerfile: Dockerfile.dev
+    container_name: madres_digitales_frontend_dev
+    environment:
+      FLUTTER_WEB_USE_SKIA: true
+      FLUTTER_WEB_CANVASKIT: true
+    ports:
+      - "3008:3008"
+    volumes:
+      - ./aplicacionWZC/madres_digitales_flutter_new/lib:/app/lib
+      - ./aplicacionWZC/madres_digitales_flutter_new/assets:/app/assets
+      - ./aplicacionWZC/madres_digitales_flutter_new/web:/app/web
+    networks:
+      - madres_digitales_network
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # PgAdmin para administración de base de datos (opcional)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: madres_digitales_pgadmin_dev
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@madresdigitales.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data_dev:/var/lib/pgadmin
+    networks:
+      - madres_digitales_network
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    profiles:
+      - tools
+
+# Volúmenes persistentes
+volumes:
+  postgres_data_dev:
+    driver: local
+  redis_data_dev:
+    driver: local
+  backend_logs_dev:
+    driver: local
+  pgadmin_data_dev:
+    driver: local
+
+# Redes
+networks:
+  madres_digitales_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

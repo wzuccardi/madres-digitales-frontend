@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Backend - Madres Digitales</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .endpoint { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        pre { background-color: #f8f9fa; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Test Backend - Madres Digitales</h1>
+    <div id="results"></div>
+
+    <script>
+        const backendUrl = 'http://localhost:3000';
+        const resultsDiv = document.getElementById('results');
+
+        async function testEndpoint(endpoint, name) {
+            const div = document.createElement('div');
+            div.className = 'endpoint';
+            
+            try {
+                const response = await fetch(`${backendUrl}${endpoint}`);
+                const data = await response.json();
+                
+                div.classList.add('success');
+                div.innerHTML = `
+                    <h3>${name} - ✅ ÉXITO</h3>
+                    <p><strong>Status:</strong> ${response.status}</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                div.classList.add('error');
+                div.innerHTML = `
+                    <h3>${name} - ❌ ERROR</h3>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                `;
+            }
+            
+            resultsDiv.appendChild(div);
+        }
+
+        // Test endpoints
+        testEndpoint('/api/gestantes', 'Gestantes');
+        testEndpoint('/api/health', 'Health Check');
+        
+        // Test with authentication if you have credentials
+        setTimeout(() => {
+            testEndpoint('/api/users', 'Users');
+        }, 1000);
+    </script>
+</body>
+</html>

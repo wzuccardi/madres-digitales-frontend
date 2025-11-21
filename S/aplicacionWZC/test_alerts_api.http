@@ -1,0 +1,16 @@
+### Test API de Alertas
+### Primero obtener token de autenticación
+POST http://localhost:54112/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "admin123"
+}
+
+### Luego usar el token para obtener alertas
+GET http://localhost:54112/api/alertas
+Authorization: Bearer {{token}}
+Cache-Control: no-cache, no-store, must-revalidate
+Pragma: no-cache
+Expires: 0
