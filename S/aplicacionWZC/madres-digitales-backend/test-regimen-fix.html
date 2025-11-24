@@ -1,0 +1,31 @@
+// Simple test to verify regimen_salud fix
+fetch('http://localhost:3000/api/gestantes', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer YOUR_TOKEN_HERE'
+  },
+  body: JSON.stringify({
+    documento: '3333333333',
+    nombre: 'Test Sin Regimen',
+    email: 'test.sin.regimen@example.com',
+    telefono: '3003333333',
+    direccion: 'Test Address',
+    fecha_nacimiento: '1990-03-03',
+    municipio_id: '13042',
+    activa: true
+    // Note: NO regimen_salud field - should default to 'subsidiado'
+  })
+})
+.then(response => response.json())
+.then(data => {
+  if (data.success) {
+    console.log('✅ SUCCESS: Gestante created without regimen_salud field!');
+    console.log('📝 Response:', data);
+  } else {
+    console.log('❌ Error:', data.error);
+  }
+})
+.catch(error => {
+  console.error('❌ Request failed:', error);
+});

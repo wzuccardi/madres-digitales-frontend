@@ -1,0 +1,63 @@
+{
+  "root": true,
+  "env": {
+    "es2020": true,
+    "node": true
+  },
+  "parserOptions": {
+    "ecmaVersion": 2020,
+    "sourceType": "module"
+  },
+  "extends": ["eslint:recommended"],
+  "ignorePatterns": ["dist/**", "node_modules/**"],
+  "overrides": [
+    {
+      "files": ["src/domain/**/*.{ts,js}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": ["express", "@prisma/client"],
+            "patterns": [
+              "**/src/infrastructure/**",
+              "**/src/controllers/**",
+              "**/src/middlewares/**",
+              "**/src/config/**"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/core/**/*.{ts,js}", "src/application/**/*.{ts,js}", "src/services/**/*.{ts,js}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": ["@prisma/client", "express"],
+            "patterns": [
+              "**/src/infrastructure/**",
+              "**/src/config/database*",
+              "**/src/config/prisma-fix*"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/controllers/**/*.{ts,js}", "src/routes/**/*.{ts,js}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": ["@prisma/client"],
+            "patterns": [
+              "**/src/core/database/**",
+              "**/src/infrastructure/**"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
