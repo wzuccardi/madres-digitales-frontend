@@ -1,0 +1,1 @@
+// Backup del dashboard original antes de los cambios

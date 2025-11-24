@@ -1,0 +1,1 @@
+ C:\\Madrinas\\S\\aplicacionWZC\\madres_digitales_flutter_new\\.dart_tool\\flutter_build\\b09bef0f99a97b9ba588392dae63bfaf\\native_assets.json: 

@@ -1,0 +1,42 @@
+{
+  "dart.flutterSdkPath": ".fvm/versions/3.19.6",
+  "dart.sdkPath": "C:\\flutter-sdk\\bin\\cache\\dart-sdk",
+  "dart.analysisServerFolding": true,
+  "dart.closingLabels": true,
+  "dart.enableSdkFormatter": true,
+  "dart.lineLength": 80,
+  "dart.previewFlutterUiGuides": true,
+  "dart.previewFlutterUiGuidesCustomTracking": true,
+  "dart.showTodos": true,
+  "dart.warnWhenEditingFilesOutsideWorkspace": false,
+  "dart.allowAnalytics": false,
+  "dart.checkForSdkUpdates": false,
+  "dart.analysisExcludedFolders": [
+    "C:\\flutter-sdk"
+  ],
+  "dart.flutterSdkPaths": [
+    "C:\\flutter-sdk"
+  ],
+  "dart.runPubGetOnPubspecChanges": true,
+  "dart.openDevTools": "flutter",
+  "dart.debugExternalPackageLibraries": false,
+  "dart.debugSdkLibraries": false,
+  "dart.flutterHotReloadOnSave": "always",
+  "dart.flutterCreateAndroidLanguage": "kotlin",
+  "dart.flutterCreateIOSLanguage": "swift",
+  "files.associations": {
+    "*.dart": "dart"
+  },
+  "[dart]": {
+    "editor.formatOnSave": true,
+    "editor.formatOnType": true,
+    "editor.rulers": [
+      80
+    ],
+    "editor.selectionHighlight": false,
+    "editor.suggest.snippetsPreventQuickSuggestions": false,
+    "editor.suggestSelection": "first",
+    "editor.tabCompletion": "onlySnippets",
+    "editor.wordBasedSuggestions": false
+  }
+}
