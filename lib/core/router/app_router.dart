@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../constants/app_constants.dart';
 import '../../presentation/pages/auth/login_page.dart';
+import '../../presentation/pages/auth/register_page.dart';
 import '../../presentation/pages/dashboard/dashboard_page_optimized.dart';
 import '../../presentation/widgets/layout/main_layout.dart';
   import '../../features/gestante/presentation/pages/gestantes_list_page.dart';
@@ -72,6 +73,13 @@ class AppRouter {
         builder: (context, state) => const LoginPage(),
       ),
       
+      // Ruta de Registro
+      GoRoute(
+        path: AppConstants.registerRoute,
+        name: RouteNames.register,
+        builder: (context, state) => const RegisterPage(),
+      ),
+      
       // Ruta de Dashboard
       GoRoute(
         path: AppConstants.dashboardRoute,
@@ -81,8 +89,6 @@ class AppRouter {
           child: DashboardPageOptimized(),
         ),
       ),
-      
-      // Ruta de Registro (legacy) removida
       
       // Ruta de Gestantes
       GoRoute(
