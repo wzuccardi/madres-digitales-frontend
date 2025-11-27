@@ -447,7 +447,7 @@ class AuthProvider extends StateNotifier<AuthState> {
     state = state.copyWith(isLoading: true, error: null);
     
     try {
-      final response = await _apiService.post('/auth/reset-password', data: {
+      final response = await _apiService.post('/auth/forgot-password', data: {
         'email': email,
       });
       
@@ -483,7 +483,7 @@ class AuthProvider extends StateNotifier<AuthState> {
     state = state.copyWith(isLoading: true, error: null);
     
     try {
-      final response = await _apiService.post('/auth/confirm-reset-password', data: {
+      final response = await _apiService.post('/auth/reset-password', data: {
         'token': token,
         'newPassword': newPassword,
       });
