@@ -12,11 +12,14 @@ class ResetPasswordPage extends ConsumerStatefulWidget {
 class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
   final _passwordController = TextEditingController();
   bool _loading = false;
+  bool _obscurePassword = true;
+  
   @override
   void dispose() {
     _passwordController.dispose();
     super.dispose();
   }
+  
   Future<void> _submit() async {
     final token = widget.token ?? '';
     final newPassword = _passwordController.text.trim();
@@ -31,6 +34,7 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
       if (mounted) setState(() => _loading = false);
     }
   }
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -39,7 +43,17 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            TextField(controller: _passwordController, decoration: const InputDecoration(labelText: 'Nueva contraseña'), obscureText: true),
+            TextField(
+              controller: _passwordController,
+              decoration: InputDecoration(
+                labelText: 'Nueva contraseña',
+                suffixIcon: IconButton(
+                  icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
+                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                ),
+              ),
+              obscureText: _obscurePassword,
+            ),
             const SizedBox(height: 12),
             ElevatedButton(onPressed: _loading ? null : _submit, child: const Text('Actualizar')),
           ],
