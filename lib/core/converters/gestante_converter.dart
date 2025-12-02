@@ -148,7 +148,7 @@ Map<String, dynamic> gestanteToApiImpl(Gestante g) {
     'created_at': g.createdAt.toIso8601String(),
     'updated_at': g.updatedAt.toIso8601String(),
     'tipo_documento': tipoDocumentoBackend,
-    'fecha_ultima_mestruacion': g.fechaUltimaMestruacion?.toIso8601String(),
+    'fecha_ultima_menstruacion': g.fechaUltimaMestruacion?.toIso8601String(),
     'barrio': g.barrio,
     'latitud': latitud,
     'longitud': longitud,

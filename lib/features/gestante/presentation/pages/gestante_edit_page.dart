@@ -24,6 +24,8 @@ class _GestanteEditPageState extends ConsumerState<GestanteEditPage> {
   String? _municipioId;
   bool _loadingMunicipios = true;
   List<Map<String, String>> _municipios = [];
+  DateTime? _fechaUltimaMenstruacion;
+  DateTime? _fechaProbableParto;
 
   @override
   void initState() {
@@ -55,6 +57,8 @@ class _GestanteEditPageState extends ConsumerState<GestanteEditPage> {
     _telefonoCtrl.text = _gestante!.telefono;
     _emailCtrl.text = _gestante!.email;
     _municipioId = _gestante!.municipioId;
+    _fechaUltimaMenstruacion = _gestante!.fechaUltimaMestruacion;
+    _fechaProbableParto = _gestante!.fechaProbableParto;
     _municipios = munList.map((m) => {'id': m.id, 'nombre': m.nombre}).toList();
     setState(() {
       _isLoading = false;
@@ -73,6 +77,8 @@ class _GestanteEditPageState extends ConsumerState<GestanteEditPage> {
       telefono: _telefonoCtrl.text.trim(),
       email: _emailCtrl.text.trim(),
       municipioId: _municipioId,
+      fechaUltimaMestruacion: _fechaUltimaMenstruacion,
+      fechaProbableParto: _fechaProbableParto,
       updatedAt: DateTime.now(),
     );
     final res = await repo.updateGestante(updated);
@@ -83,6 +89,29 @@ class _GestanteEditPageState extends ConsumerState<GestanteEditPage> {
       return;
     }
     Navigator.pop(context, res.dataOrThrow);
+  }
+
+  Future<void> _selectFUM() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _fechaUltimaMenstruacion ?? DateTime.now().subtract(const Duration(days: 90)),
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      lastDate: DateTime.now(),
+      helpText: 'Seleccionar Fecha Última Menstruación',
+    );
+    if (picked != null) {
+      setState(() {
+        _fechaUltimaMenstruacion = picked;
+        // Calcular FPP automáticamente (FUM + 280 días)
+        _fechaProbableParto = picked.add(const Duration(days: 280));
+      });
+    }
+  }
+
+  String _calcularFPP() {
+    if (_fechaUltimaMenstruacion == null) return 'No calculada';
+    final fpp = _fechaUltimaMenstruacion!.add(const Duration(days: 280));
+    return '${fpp.day}/${fpp.month}/${fpp.year}';
   }
 
   @override
@@ -152,6 +181,65 @@ class _GestanteEditPageState extends ConsumerState<GestanteEditPage> {
                             if (!pattern.hasMatch(v.trim())) return 'Email inválido';
                             return null;
                           }),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Datos Obstétricos', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 12),
+                          ListTile(
+                            title: const Text('Fecha Última Menstruación (FUM)'),
+                            subtitle: Text(
+                              _fechaUltimaMenstruacion != null
+                                  ? '${_fechaUltimaMenstruacion!.day}/${_fechaUltimaMenstruacion!.month}/${_fechaUltimaMenstruacion!.year}'
+                                  : 'No registrada',
+                              style: TextStyle(
+                                color: _fechaUltimaMenstruacion == null ? Colors.red : Colors.blue,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            trailing: const Icon(Icons.calendar_today),
+                            onTap: () => _selectFUM(),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
+                              side: BorderSide(color: Colors.grey[400]!),
+                            ),
+                          ),
+                          if (_fechaUltimaMenstruacion != null) ...[
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.blue[50],
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.child_care, color: Colors.blue),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text('Fecha Probable de Parto (FPP)', style: TextStyle(fontSize: 12)),
+                                        Text(
+                                          _calcularFPP(),
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),

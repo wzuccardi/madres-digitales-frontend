@@ -18,7 +18,7 @@ class _GestantesListPageState extends ConsumerState<GestantesListPage> {
   bool isLoading = true;
   String? errorMessage;
   int page = 1;
-  final int limit = 20;
+  final int limit = 40;
   List<Map<String, String>> _municipios = [];
   String? _selectedMunicipioId;
   bool _loadingMunicipios = true;
