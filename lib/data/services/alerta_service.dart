@@ -52,11 +52,10 @@ class AlertaService {
       }
       
       // Si no hay en caché, obtener del servidor
-      final response = await _apiService.get<Map<String, dynamic>>('/alertas/active');
+      final response = await _apiService.get<Map<String, dynamic>>('/alertas');
       if (response.success) {
-        final alertas = (response.data!['data'] as List<dynamic>)
-            .map((json) => Alerta.fromJson(json))
-            .toList();
+        final list = _apiService.extractList(response.data);
+        final alertas = list.map((json) => Alerta.fromJson(json)).toList();
         
         // Guardar en caché para futuras consultas
         await _cacheService.cacheAlertas(alertas);
