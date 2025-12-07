@@ -88,12 +88,8 @@ flutter:
     - assets/images/
     - assets/icons/
 
-  # fonts:
-  #   - family: Roboto
-  #     fonts:
-  #       - asset: assets/fonts/Roboto-Regular.ttf
-  #       - asset: assets/fonts/Roboto-Medium.ttf
-  #       - asset: assets/fonts/Roboto-Bold.ttf
+  # Fonts are loaded from Google Fonts CDN for web
+  # No local font assets needed
 
 flutter_launcher_icons:
   android: true

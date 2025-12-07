@@ -18,8 +18,11 @@ ENVIRONMENT_VALUE=${ENVIRONMENT:-production}
 API_URL_VALUE=${API_URL:-https://madres-digitales-backend.vercel.app}
 BACKEND_URL_VALUE=${BACKEND_URL:-}
 flutter build web --release \
+  --web-renderer canvaskit \
   --dart-define=ENVIRONMENT=$ENVIRONMENT_VALUE \
   --dart-define=API_URL=$API_URL_VALUE \
-  --dart-define=BACKEND_URL=$BACKEND_URL_VALUE
+  --dart-define=BACKEND_URL=$BACKEND_URL_VALUE \
+  --dart-define=FLUTTER_WEB_USE_SKIA=false \
+  --dart-define=FLUTTER_WEB_CANVASKIT_URL=https://www.gstatic.com/flutter-canvaskit/
 
 echo "Build completed successfully!"
