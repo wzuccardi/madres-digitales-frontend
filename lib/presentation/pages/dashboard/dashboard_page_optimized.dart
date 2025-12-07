@@ -123,6 +123,12 @@ class _DashboardPageOptimizedState extends ConsumerState<DashboardPageOptimized>
         elevation: 0,
         actions: [
           const CompactSyncStatusWidget(),
+          // Botón de perfil
+          IconButton(
+            onPressed: () => context.go(AppConstants.profileRoute),
+            icon: const Icon(Icons.account_circle),
+            tooltip: 'Mi Perfil',
+          ),
           IconButton(
             onPressed: () async {
               await authNotifier.logout();
@@ -135,6 +141,7 @@ class _DashboardPageOptimizedState extends ConsumerState<DashboardPageOptimized>
           ),
         ],
       ),
+      floatingActionButton: _buildFloatingActionButton(userRole),
       body: RefreshIndicator(
         onRefresh: _loadDashboardData,
         child: SingleChildScrollView(
@@ -573,6 +580,145 @@ class _DashboardPageOptimizedState extends ConsumerState<DashboardPageOptimized>
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget? _buildFloatingActionButton(String? userRole) {
+    // Super Admin y Admin: Gestión completa de usuarios
+    if (userRole == AppConstants.superAdminRole || userRole == AppConstants.adminRole) {
+      return FloatingActionButton.extended(
+        onPressed: () => _showAdminMenu(context, userRole),
+        backgroundColor: Colors.pink,
+        icon: const Icon(Icons.admin_panel_settings),
+        label: const Text('Gestión'),
+      );
+    }
+    
+    // Coordinador: Solo editar madrinas
+    if (userRole == AppConstants.coordinatorRole) {
+      return FloatingActionButton.extended(
+        onPressed: () => context.go('/usuarios'),
+        backgroundColor: Colors.blue,
+        icon: const Icon(Icons.people),
+        label: const Text('Madrinas'),
+      );
+    }
+    
+    // Madrina y otros: Editar su propio perfil
+    return FloatingActionButton(
+      onPressed: () => context.go('/perfil/editar'),
+      backgroundColor: Colors.pink,
+      tooltip: 'Editar mi perfil',
+      child: const Icon(Icons.edit),
+    );
+  }
+
+  void _showAdminMenu(BuildContext context, String? userRole) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                'Gestión de Usuarios',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.people, color: Colors.blue),
+              ),
+              title: const Text('Ver Usuarios'),
+              subtitle: const Text('Lista completa de usuarios del sistema'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () {
+                Navigator.pop(context);
+                context.go('/usuarios');
+              },
+            ),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.person_add, color: Colors.green),
+              ),
+              title: const Text('Crear Usuario'),
+              subtitle: const Text('Registrar un nuevo usuario'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () {
+                Navigator.pop(context);
+                context.go('/usuarios/nuevo');
+              },
+            ),
+            if (userRole == AppConstants.superAdminRole || userRole == AppConstants.adminRole)
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.purple.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.badge, color: Colors.purple),
+                ),
+                title: const Text('Asignar Roles'),
+                subtitle: const Text('Gestionar roles de usuarios'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () {
+                  Navigator.pop(context);
+                  context.go('/usuarios');
+                },
+              ),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.edit, color: Colors.orange),
+              ),
+              title: const Text('Mi Perfil'),
+              subtitle: const Text('Editar mi información personal'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () {
+                Navigator.pop(context);
+                context.go('/perfil/editar');
+              },
+            ),
+            const SizedBox(height: 20),
+          ],
         ),
       ),
     );
