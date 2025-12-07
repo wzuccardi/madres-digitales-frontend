@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../providers/auth_provider.dart';
-import '../../../data/services/api_service.dart';
+import '../../../core/network/api_service.dart';
 
 class EditProfilePage extends ConsumerStatefulWidget {
   const EditProfilePage({super.key});
@@ -32,14 +32,15 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   Future<void> _loadProfile() async {
     setState(() => _isLoading = true);
     try {
-      final apiService = ref.read(apiServiceProvider);
-      final response = await apiService.get('/usuarios/me/perfil');
+      final apiService = ApiService();
+      final response = await apiService.get<Map<String, dynamic>>('/usuarios/me/perfil');
+      final data = response.data;
       
-      if (response['id'] != null) {
-        _nombreController.text = response['nombre'] ?? '';
-        _documentoController.text = response['documento'] ?? '';
-        _telefonoController.text = response['telefono'] ?? '';
-        _tipoDocumento = response['tipo_documento'] ?? 'cedula';
+      if (data != null && data['id'] != null) {
+        _nombreController.text = data['nombre'] ?? '';
+        _documentoController.text = data['documento'] ?? '';
+        _telefonoController.text = data['telefono'] ?? '';
+        _tipoDocumento = data['tipo_documento'] ?? 'cedula';
       }
     } catch (e) {
       if (mounted) {
@@ -57,8 +58,8 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
     setState(() => _isSaving = true);
     try {
-      final apiService = ref.read(apiServiceProvider);
-      await apiService.put('/usuarios/me/perfil', {
+      final apiService = ApiService();
+      await apiService.put<Map<String, dynamic>>('/usuarios/me/perfil', data: {
         'nombre': _nombreController.text.trim(),
         'documento': _documentoController.text.trim(),
         'telefono': _telefonoController.text.trim(),
