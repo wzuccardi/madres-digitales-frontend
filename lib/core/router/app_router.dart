@@ -36,6 +36,7 @@ import '../../features/controles_v2/presentation/controles_list_optimized_page.d
 import '../../features/gestante/presentation/pages/assign_madrinas_to_coordinator_page.dart';
 import '../../presentation/widgets/common/route_guard.dart';
 import '../../presentation/pages/profile/profile_page.dart';
+import '../../presentation/pages/profile/edit_profile_page.dart';
 import '../../presentation/pages/help/help_page.dart';
 import '../../presentation/pages/about/about_page.dart';
 
@@ -329,13 +330,21 @@ class AppRouter {
         },
       ),
       
-      // Ruta de Perfil (placeholder)
+      // Ruta de Perfil
       GoRoute(
         path: AppConstants.profileRoute,
         name: RouteNames.profile,
         builder: (context, state) => const MainLayout(
           currentRoute: AppConstants.profileRoute,
           child: ProfilePage(),
+        ),
+      ),
+      GoRoute(
+        path: '/perfil/editar',
+        name: 'perfil_editar',
+        builder: (context, state) => const MainLayout(
+          currentRoute: AppConstants.profileRoute,
+          child: EditProfilePage(),
         ),
       ),
       
