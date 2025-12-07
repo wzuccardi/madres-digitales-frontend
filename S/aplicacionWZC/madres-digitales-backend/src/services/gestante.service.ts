@@ -171,9 +171,20 @@ export class GestanteService {
 				municipalityId: data.municipio_id,
 				eps: data.eps,
 				active: data.activa,
+				lastMenstruation: data.fecha_ultima_menstruacion ? new Date(data.fecha_ultima_menstruacion) : undefined,
 				probableDelivery: data.fecha_probable_parto ? new Date(data.fecha_probable_parto) : undefined,
 				healthRegime: data.regimen_salud,
 			} as any;
+			
+			// Si se proporciona FUM, calcular automáticamente FPP (FUM + 280 días)
+			if (data.fecha_ultima_menstruacion && !data.fecha_probable_parto) {
+				const fum = new Date(data.fecha_ultima_menstruacion);
+				const fpp = new Date(fum);
+				fpp.setDate(fpp.getDate() + 280);
+				dto.probableDelivery = fpp;
+				log.info(`GestanteService: FPP calculada automáticamente desde FUM: ${fpp.toISOString()}`);
+			}
+			
 			const updated = await this.repo.update(id, dto);
 			return {
 				id: updated.id,
@@ -186,6 +197,7 @@ export class GestanteService {
 				municipio_id: updated.municipalityId,
 				eps: updated.eps,
 				activa: updated.active,
+				fecha_ultima_menstruacion: updated.lastMenstruation,
 				fecha_probable_parto: updated.probableDelivery,
 				fecha_actualizacion: updated.updatedAt,
 			} as any;

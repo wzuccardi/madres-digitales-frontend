@@ -74,17 +74,39 @@ class AuthRepositoryImpl implements AuthRepository {
     required String email,
     required String password,
     String? role,
+    String? documento,
+    String? tipoDocumento,
+    String? telefono,
+    String? municipioId,
   }) async {
     try {
       AppLogger.info('Auth signUp start', context: {'email': email});
+      
+      // Preparar datos del registro
+      final Map<String, dynamic> registerData = {
+        'nombre': name,
+        'email': email,
+        'password': password,
+        'rol': role ?? 'gestante',
+      };
+      
+      // Agregar campos opcionales solo si tienen valor
+      if (documento != null && documento.isNotEmpty) {
+        registerData['documento'] = documento;
+      }
+      if (tipoDocumento != null && tipoDocumento.isNotEmpty) {
+        registerData['tipo_documento'] = tipoDocumento;
+      }
+      if (telefono != null && telefono.isNotEmpty) {
+        registerData['telefono'] = telefono;
+      }
+      if (municipioId != null && municipioId.isNotEmpty) {
+        registerData['municipioId'] = municipioId;
+      }
+      
       final response = await _apiService.post<Map<String, dynamic>>(
         '/auth/register',
-        data: {
-          'nombre': name,
-          'email': email,
-          'password': password,
-          'rol': role ?? 'gestante',
-        },
+        data: registerData,
       );
       if (!response.success) {
         final error = AuthenticationError(response.error?.message ?? 'Error al registrar usuario');

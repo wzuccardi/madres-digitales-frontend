@@ -102,20 +102,31 @@ class _ControlPrenatalMejoradoScreenState extends ConsumerState<ControlPrenatalM
   }
 
   void _calcularSemanasGestacion() {
-    final fum = _gestanteActual?['fechaUltimaMestruacion'] ?? _gestanteActual?['fecha_ultima_mestruacion'];
+    // Buscar fecha_ultima_menstruacion (snake_case del backend)
+    final fum = _gestanteActual?['fecha_ultima_menstruacion'] ?? 
+                _gestanteActual?['fechaUltimaMenstruacion'] ?? 
+                _gestanteActual?['fechaUltimaMestruacion'];
+    
     if (fum is String && fum.isNotEmpty) {
       try {
         final dt = DateTime.parse(fum);
         final diff = DateTime.now().difference(dt);
-        setState(() => _semanasGestacion = (diff.inDays / 7).floor());
-        return;
+        final semanasCalculadas = (diff.inDays / 7).floor();
+        // Validar que sea un valor razonable (entre 0 y 42 semanas)
+        if (semanasCalculadas >= 0 && semanasCalculadas <= 42) {
+          setState(() => _semanasGestacion = semanasCalculadas);
+          return;
+        }
       } catch (_) {}
     }
-    final semanas = _gestanteActual?['semanasGestacion'] ?? _gestanteActual?['semanas_gestacion'];
-    if (semanas is int) {
+    
+    // Si no se pudo calcular, buscar semanas guardadas
+    final semanas = _gestanteActual?['semanas_gestacion'] ?? _gestanteActual?['semanasGestacion'];
+    if (semanas is int && semanas >= 0 && semanas <= 42) {
       setState(() => _semanasGestacion = semanas);
     } else {
-      setState(() => _semanasGestacion = 24);
+      // No usar valor por defecto - dejar que el usuario lo ingrese manualmente
+      setState(() => _semanasGestacion = 0);
     }
   }
 

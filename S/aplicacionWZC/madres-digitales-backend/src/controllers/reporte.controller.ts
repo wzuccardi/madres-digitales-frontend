@@ -634,6 +634,184 @@ class ReporteController extends BaseController {
         }
     }
 
+    // ========== EXPORTAR REPORTES (PDF/EXCEL) ==========
+
+    // Exportar reportes en diferentes formatos
+    async exportarReporte(req: AuthenticatedRequest, res: Response) {
+        try {
+            const { tipo, formato } = req.params;
+            const { fechaInicio, fechaFin, municipioId, madrinaId } = req.query;
+
+            console.log(`📊 Controller: Exportando reporte ${tipo} en formato ${formato}...`);
+
+            // Validar permisos
+            if (!this.validarPermisosReportes(req)) {
+                return res.status(403).json({
+                    success: false,
+                    error: 'No tiene permiso para exportar reportes'
+                });
+            }
+
+            // Validar parámetros
+            if (!tipo || !formato) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Tipo y formato son requeridos'
+                });
+            }
+
+            if (!['pdf', 'excel'].includes(formato as string)) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Formato debe ser pdf o excel'
+                });
+            }
+
+            // Obtener datos según el tipo de reporte
+            let datos;
+            switch (tipo) {
+                case 'resumen-general':
+                    datos = await this.obtenerDatosResumenGeneral({ fechaInicio, fechaFin, municipioId, madrinaId });
+                    break;
+                default:
+                    return res.status(400).json({
+                        success: false,
+                        error: 'Tipo de reporte no válido'
+                    });
+            }
+
+            // Generar archivo según formato
+            if (formato === 'pdf') {
+                const pdfBuffer = await exportPdfService.generateReportPDF(tipo as string, datos);
+                res.setHeader('Content-Type', 'application/pdf');
+                res.setHeader('Content-Disposition', `attachment; filename="reporte_${tipo}_${new Date().toISOString().split('T')[0]}.pdf"`);
+                res.send(pdfBuffer);
+            } else {
+                const excelBuffer = await exportExcelService.generateReportExcel(tipo as string, datos);
+                res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+                res.setHeader('Content-Disposition', `attachment; filename="reporte_${tipo}_${new Date().toISOString().split('T')[0]}.xlsx"`);
+                res.send(excelBuffer);
+            }
+
+        } catch (error) {
+            console.error('Error exportando reporte:', error);
+            res.status(500).json({
+                success: false,
+                error: `Error generando reporte: ${(error as Error).message}`
+            });
+        }
+    }
+
+    // Función auxiliar para obtener datos del resumen general
+    private async obtenerDatosResumenGeneral(filtros: any) {
+        try {
+            const prisma = (await import('../config/database')).default;
+            const whereGestantes: any = { activa: true };
+            const whereControles: any = {};
+            const whereAlertas: any = {};
+
+            // Aplicar filtros de fecha
+            if (filtros.fechaInicio && filtros.fechaFin) {
+                const fechaInicio = new Date(filtros.fechaInicio);
+                const fechaFin = new Date(filtros.fechaFin);
+                
+                whereControles.fecha_control = {
+                    gte: fechaInicio,
+                    lte: fechaFin
+                };
+                
+                whereAlertas.fecha_creacion = {
+                    gte: fechaInicio,
+                    lte: fechaFin
+                };
+            }
+
+            // Aplicar filtros de municipio y madrina
+            if (filtros.municipioId) {
+                whereGestantes.municipio_id = filtros.municipioId;
+                whereControles.gestante = { municipio_id: filtros.municipioId };
+                whereAlertas.gestante = { municipio_id: filtros.municipioId };
+            }
+
+            if (filtros.madrinaId) {
+                whereGestantes.madrina_id = filtros.madrinaId;
+                whereControles.gestante = { 
+                    ...whereControles.gestante,
+                    madrina_id: filtros.madrinaId 
+                };
+                whereAlertas.gestante = { 
+                    ...whereAlertas.gestante,
+                    madrina_id: filtros.madrinaId 
+                };
+            }
+
+            // Obtener estadísticas de gestantes
+            const totalGestantes = await prisma.gestantes.count({ where: whereGestantes });
+            const gestantesAltoRiesgo = await prisma.gestantes.count({ 
+                where: { ...whereGestantes, riesgo_alto: true } 
+            });
+            const gestantesSinFUM = await prisma.gestantes.count({ 
+                where: { ...whereGestantes, fecha_ultima_menstruacion: null } 
+            });
+
+            // Obtener estadísticas de controles
+            const totalControles = await prisma.control_prenatal.count({ where: whereControles });
+            
+            // Obtener estadísticas de alertas
+            const totalAlertas = await prisma.alertas.count({ where: whereAlertas });
+            const alertasActivas = await prisma.alertas.count({ 
+                where: { ...whereAlertas, estado: 'activa' } 
+            });
+
+            // Obtener distribución por municipio
+            const gestantesPorMunicipio = await prisma.gestantes.groupBy({
+                by: ['municipio_id'],
+                where: whereGestantes,
+                _count: { id: true },
+                orderBy: { _count: { id: 'desc' } }
+            });
+
+            // Obtener nombres de municipios
+            const municipiosIds = gestantesPorMunicipio.map(g => g.municipio_id).filter(Boolean);
+            const municipios = await prisma.municipios.findMany({
+                where: { id: { in: municipiosIds } },
+                select: { id: true, nombre: true }
+            });
+
+            const municipiosMap = municipios.reduce((acc, m) => {
+                acc[m.id] = m.nombre;
+                return acc;
+            }, {} as Record<string, string>);
+
+            // Formatear distribución por municipio
+            const distribucionMunicipios = gestantesPorMunicipio.map(g => ({
+                municipio: municipiosMap[g.municipio_id || ''] || 'Sin municipio',
+                total: g._count.id
+            }));
+
+            return {
+                total_gestantes: totalGestantes,
+                gestantes_alto_riesgo: gestantesAltoRiesgo,
+                gestantes_sin_fum: gestantesSinFUM,
+                total_controles: totalControles,
+                total_alertas: totalAlertas,
+                alertas_activas: alertasActivas,
+                distribucion_municipios: distribucionMunicipios,
+                fecha_generacion: new Date().toISOString(),
+                filtros_aplicados: {
+                    fecha_inicio: filtros.fechaInicio,
+                    fecha_fin: filtros.fechaFin,
+                    municipio_id: filtros.municipioId,
+                    madrina_id: filtros.madrinaId
+                }
+            };
+        } catch (error) {
+            console.error('Error obteniendo datos de resumen general:', error);
+            throw new Error(`Error obteniendo datos: ${(error as Error).message}`);
+        }
+    }
+    }
+
     // Limpiar todo el caché
     async clearAllCache(req: AuthenticatedRequest, res: Response) {
         try {
@@ -696,4 +874,7 @@ export const getReporteMensual = (req: Request, res: Response) => reporteControl
 export const getReporteAnual = (req: Request, res: Response) => reporteController.getReporteAnual(req, res);
 export const getReportePorMunicipio = (req: Request, res: Response) => reporteController.getReportePorMunicipio(req, res);
 export const getComparativa = (req: Request, res: Response) => reporteController.getComparativa(req, res);
+
+// Exportación genérica de reportes
+export const exportarReporte = (req: Request, res: Response) => reporteController.exportarReporte(req, res);
 

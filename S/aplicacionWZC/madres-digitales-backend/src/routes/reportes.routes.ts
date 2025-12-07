@@ -30,7 +30,9 @@ import {
     getReporteMensual,
     getReporteAnual,
     getReportePorMunicipio,
-    getComparativa
+    getComparativa,
+    // Exportar reportes genérico
+    exportarReporte
 } from '../controllers/reporte.controller';
 import { authMiddleware } from '../middlewares/auth.middleware';
 
@@ -555,6 +557,73 @@ router.get('/consolidados/municipio', authMiddleware, getReportePorMunicipio);
  *         description: Error del servidor
  */
 router.get('/consolidados/comparativa', authMiddleware, getComparativa);
+
+// ========== RUTA GENÉRICA PARA EXPORTAR REPORTES ==========
+/**
+ * @swagger
+ * /api/reportes/descargar/{tipo}/{formato}:
+ *   get:
+ *     summary: Exportar reporte en formato PDF o Excel
+ *     tags: [Reportes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: tipo
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [resumen-general]
+ *         description: Tipo de reporte
+ *       - in: path
+ *         name: formato
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [pdf, excel]
+ *         description: Formato de exportación
+ *       - in: query
+ *         name: fechaInicio
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Fecha de inicio (opcional)
+ *       - in: query
+ *         name: fechaFin
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Fecha de fin (opcional)
+ *       - in: query
+ *         name: municipioId
+ *         schema:
+ *           type: string
+ *         description: ID del municipio (opcional)
+ *       - in: query
+ *         name: madrinaId
+ *         schema:
+ *           type: string
+ *         description: ID de la madrina (opcional)
+ *     responses:
+ *       200:
+ *         description: Reporte generado exitosamente
+ *         content:
+ *           application/pdf:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *           application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       400:
+ *         description: Parámetros inválidos
+ *       403:
+ *         description: Sin permisos
+ *       500:
+ *         description: Error del servidor
+ */
+router.get('/descargar/:tipo/:formato', authMiddleware, exportarReporte);
 
 export default router;
 

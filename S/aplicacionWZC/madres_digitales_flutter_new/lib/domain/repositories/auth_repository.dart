@@ -24,6 +24,10 @@ abstract class AuthRepository {
   /// [email] Correo electrónico del usuario
   /// [password] Contraseña del usuario
   /// [role] Rol del usuario (opcional, por defecto 'gestante')
+  /// [documento] Número de documento (opcional)
+  /// [tipoDocumento] Tipo de documento (opcional)
+  /// [telefono] Teléfono (opcional)
+  /// [municipioId] ID del municipio (opcional)
   /// 
   /// Retorna [User] si el registro es exitoso
   /// Lanza [AuthException] si hay un error de registro
@@ -32,6 +36,10 @@ abstract class AuthRepository {
     required String email,
     required String password,
     String? role,
+    String? documento,
+    String? tipoDocumento,
+    String? telefono,
+    String? municipioId,
   });
 
   /// Cierra la sesión del usuario actual

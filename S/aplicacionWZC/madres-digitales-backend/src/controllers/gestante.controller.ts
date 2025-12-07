@@ -12,6 +12,7 @@ import {
 	busquedaGeograficaSchema,
 	asignarMadrinaSchema,
 } from '../types/gestante.dto';
+import prisma from '../config/database';
 
 const gestanteService = new GestanteService();
 
@@ -131,8 +132,9 @@ export const createGestante = async (req: Request, res: Response) => {
 			}
 		}
 
-		// Validar formato de documento
-		if (documento.length < 6) {
+		// Validar formato de documento (permitir documentos con espacios o guiones)
+		const documentoLimpio = documento.replace(/[\s-]/g, '');
+		if (documentoLimpio.length < 6) {
 			return res.status(400).json({
 				error: 'El documento debe tener al menos 6 caracteres'
 			});
@@ -145,55 +147,51 @@ export const createGestante = async (req: Request, res: Response) => {
 			});
 		}
 
-  const repo = new GestanteRepositoryImpl();
-  const body = req.body;
-  
-  // Manejar ambos formatos: fecha_nacimiento (snake_case) y fechaNacimiento (camelCase)
-  const fechaNacimiento = body.fecha_nacimiento || body.fechaNacimiento;
-  const fechaUltimaMenstruacion = body.fecha_ultima_menstruacion || body.fechaUltimaMestruacion;
-  const fechaProbableParto = body.fecha_probable_parto || body.fechaProbableParto;
-  
-  const data: CreateGestanteData = {
-    name: body.nombre,
-    document: body.documento,
-    documentType: body.tipo_documento,
-    birthDate: fechaNacimiento ? new Date(fechaNacimiento) : new Date(),
-    phone: body.telefono,
-    address: body.direccion,
-    coordinates: body.latitud && body.longitud ? { latitude: body.latitud, longitude: body.longitud } : undefined,
-    lastMenstruation: fechaUltimaMenstruacion ? new Date(fechaUltimaMenstruacion) : undefined,
-    probableDelivery: fechaProbableParto ? new Date(fechaProbableParto) : undefined,
-    eps: body.eps,
-    healthRegime: body.regimen_salud || 'subsidiado',
-    municipalityId: body.municipio_id,
-    madrinaId: body.madrina_id,
-    medicoTratanteId: body.medico_tratante_id,
-    ipsAsignadaId: body.ips_asignada_id,
-  };
-  const created = await repo.create(data);
+		// Manejar ambos formatos: fecha_nacimiento (snake_case) y fechaNacimiento (camelCase)
+		const fechaNacimiento = req.body.fecha_nacimiento || req.body.fechaNacimiento;
+		const fechaUltimaMenstruacion = req.body.fecha_ultima_menstruacion || req.body.fechaUltimaMestruacion;
+		const fechaProbableParto = req.body.fecha_probable_parto || req.body.fechaProbableParto;
+		
+		console.log('📅 Fechas recibidas:', { fechaNacimiento, fechaUltimaMenstruacion, fechaProbableParto });
+		
+		// Preparar datos para Prisma directamente
+		const gestanteData: any = {
+			id: `gestante_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+			nombre: req.body.nombre,
+			apellido: req.body.apellido || '',
+			documento: req.body.documento,
+			tipo_documento: req.body.tipo_documento || 'CC',
+			fecha_nacimiento: fechaNacimiento ? new Date(fechaNacimiento) : new Date(),
+			telefono: req.body.telefono || '',
+			direccion: req.body.direccion || '',
+			email: req.body.email || null,
+			coordenadas: req.body.latitud && req.body.longitud 
+				? { type: 'Point', coordinates: [req.body.longitud, req.body.latitud] }
+				: null,
+			fecha_ultima_menstruacion: fechaUltimaMenstruacion ? new Date(fechaUltimaMenstruacion) : null,
+			fecha_probable_parto: fechaProbableParto ? new Date(fechaProbableParto) : null,
+			eps: req.body.eps || null,
+			regimen_salud: req.body.regimen_salud || req.body.regimen || 'subsidiado',
+			municipio_id: req.body.municipio_id || null,
+			madrina_id: req.body.madrina_id || null,
+			medico_tratante_id: req.body.medico_tratante_id || null,
+			ips_asignada_id: req.body.ips_asignada_id || null,
+			activa: true,
+			riesgo_alto: req.body.riesgo_alto || req.body.esAltoRiesgo || false,
+			grupo_sanguineo: req.body.grupo_sanguineo || req.body.grupoSanguineo || null,
+			barrio: req.body.barrio || null,
+			foto_url: req.body.foto_url || req.body.fotoUrl || null,
+			factores_riesgo: req.body.factores_riesgo || req.body.factoresRiesgo || null,
+		};
 
-  const gestante = {
-    id: created.id,
-    documento: created.document,
-    tipo_documento: created.documentType,
-    nombre: created.name,
-    fecha_nacimiento: created.birthDate,
-    telefono: created.phone,
-    direccion: created.address,
-    coordenadas: created.coordinates ? { type: 'Point', coordinates: [created.coordinates.longitude, created.coordinates.latitude] } : null,
-    fecha_ultima_menstruacion: created.lastMenstruation,
-    fecha_probable_parto: created.probableDelivery,
-    eps: created.eps,
-    regimen_salud: created.healthRegime,
-    municipio_id: created.municipalityId,
-    madrina_id: created.madrinaId,
-    medico_tratante_id: created.medicoTratanteId,
-    ips_asignada_id: created.ipsAsignadaId,
-    activa: created.active,
-    riesgo_alto: created.highRisk,
-    fecha_creacion: created.createdAt,
-    fecha_actualizacion: created.updatedAt,
-  } as any;
+		console.log('💾 Datos a guardar:', JSON.stringify(gestanteData, null, 2));
+
+		const created = await prisma.gestantes.create({ data: gestanteData });
+
+		console.log('✅ Gestante creada en BD:', created.id);
+
+		// La respuesta ya viene en el formato correcto de Prisma
+		const gestante = created;
 
 		console.log('✅ Controller: Gestante created successfully:', gestante.id);
 

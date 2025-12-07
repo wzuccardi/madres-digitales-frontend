@@ -169,6 +169,80 @@ export class ExportExcelService {
   }
 
   /**
+   * Método genérico para generar reportes Excel según tipo
+   */
+  async generateReportExcel(tipo: string, data: any): Promise<Buffer> {
+    switch (tipo) {
+      case 'resumen-general':
+        return this.generateResumenGeneralExcelNew(data);
+      default:
+        throw new Error(`Tipo de reporte Excel no soportado: ${tipo}`);
+    }
+  }
+
+  /**
+   * Generar Excel de resumen general (versión mejorada)
+   */
+  private generateResumenGeneralExcelNew(data: any): Buffer {
+    const wb = XLSX.utils.book_new();
+    
+    // Hoja 1: Estadísticas Generales
+    const statsData = [
+      { Concepto: 'Resumen General - Madres Digitales', Valor: '' },
+      { Concepto: 'Fecha de generación', Valor: data.fecha_generacion ? new Date(data.fecha_generacion).toLocaleDateString() : new Date().toLocaleDateString() },
+      { Concepto: '', Valor: '' },
+      { Concepto: 'Estadística', Valor: 'Valor' },
+      { Concepto: 'Total de gestantes', Valor: data.total_gestantes || 0 },
+      { Concepto: 'Gestantes de alto riesgo', Valor: data.gestantes_alto_riesgo || 0 },
+      { Concepto: 'Gestantes sin FUM', Valor: data.gestantes_sin_fum || 0 },
+      { Concepto: 'Total de controles', Valor: data.total_controles || 0 },
+      { Concepto: 'Total de alertas', Valor: data.total_alertas || 0 },
+      { Concepto: 'Alertas activas', Valor: data.alertas_activas || 0 },
+    ];
+    
+    const ws1 = XLSX.utils.json_to_sheet(statsData);
+    ws1['!cols'] = [{ wch: 30 }, { wch: 15 }];
+    XLSX.utils.book_append_sheet(wb, ws1, 'Estadísticas Generales');
+    
+    // Hoja 2: Distribución por Municipio
+    if (data.distribucion_municipios && data.distribucion_municipios.length > 0) {
+      const municipiosData = data.distribucion_municipios.map((municipio: any) => ({
+        'Municipio': municipio.municipio,
+        'Total Gestantes': municipio.total,
+      }));
+      
+      const ws2 = XLSX.utils.json_to_sheet(municipiosData);
+      ws2['!cols'] = [{ wch: 30 }, { wch: 20 }];
+      XLSX.utils.book_append_sheet(wb, ws2, 'Distribución por Municipio');
+    }
+    
+    // Hoja 3: Filtros Aplicados
+    if (data.filtros_aplicados) {
+      const filtrosData = [];
+      if (data.filtros_aplicados.fecha_inicio) {
+        filtrosData.push({ Filtro: 'Fecha Inicio', Valor: data.filtros_aplicados.fecha_inicio });
+      }
+      if (data.filtros_aplicados.fecha_fin) {
+        filtrosData.push({ Filtro: 'Fecha Fin', Valor: data.filtros_aplicados.fecha_fin });
+      }
+      if (data.filtros_aplicados.municipio_id) {
+        filtrosData.push({ Filtro: 'Municipio ID', Valor: data.filtros_aplicados.municipio_id });
+      }
+      if (data.filtros_aplicados.madrina_id) {
+        filtrosData.push({ Filtro: 'Madrina ID', Valor: data.filtros_aplicados.madrina_id });
+      }
+      
+      if (filtrosData.length > 0) {
+        const ws3 = XLSX.utils.json_to_sheet(filtrosData);
+        ws3['!cols'] = [{ wch: 20 }, { wch: 30 }];
+        XLSX.utils.book_append_sheet(wb, ws3, 'Filtros Aplicados');
+      }
+    }
+    
+    return XLSX.write(wb, { bookType: 'xlsx', type: 'buffer' });
+  }
+
+  /**
    * Enviar Excel como respuesta HTTP
    */
   sendExcel(res: Response, buffer: Buffer, nombreArchivo: string) {

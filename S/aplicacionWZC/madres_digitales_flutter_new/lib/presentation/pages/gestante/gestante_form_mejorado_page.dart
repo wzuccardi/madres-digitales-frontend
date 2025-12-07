@@ -128,11 +128,18 @@ class _GestanteFormMejoradoScreenState extends ConsumerState<GestanteFormMejorad
       _epsController.text = g['eps'] ?? '';
       _activa = g['activa'] ?? true;
       _riesgoAlto = g['riesgo_alto'] ?? false;
+      _tipoDocumento = g['tipo_documento'] ?? 'cedula';
+      _regimenSalud = g['regimen_salud'] ?? 'subsidiado';
+      _numeroEmbarazo = g['numero_embarazo'] ?? 1;
+      
       if (g['fecha_nacimiento'] != null) {
         _fechaNacimiento = DateTime.parse(g['fecha_nacimiento']);
       }
       if (g['fecha_probable_parto'] != null) {
         _fechaProbableParto = DateTime.parse(g['fecha_probable_parto']);
+      }
+      if (g['fecha_ultima_menstruacion'] != null) {
+        _fechaUltimaMenstruacion = DateTime.parse(g['fecha_ultima_menstruacion']);
       }
       _selectedMunicipioId = g['municipio_id'];
       
@@ -479,21 +486,68 @@ class _GestanteFormMejoradoScreenState extends ConsumerState<GestanteFormMejorad
           ),
           const SizedBox(height: 16),
           
-          // Fecha de última menstruación
-          ListTile(
-            title: const Text('Fecha de Última Menstruación (FUM)'),
-            subtitle: Text(
-              _fechaUltimaMenstruacion != null
-                  ? '${_fechaUltimaMenstruacion!.day}/${_fechaUltimaMenstruacion!.month}/${_fechaUltimaMenstruacion!.year}'
-                  : 'No seleccionada',
-            ),
-            trailing: const Icon(Icons.calendar_today),
-            onTap: () => _selectDate('ultima_menstruacion'),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(4),
-              side: BorderSide(color: Colors.grey[400]!),
+          // Fecha de última menstruación - CAMPO CRÍTICO
+          Card(
+            color: _fechaUltimaMenstruacion == null ? Colors.red[50] : Colors.green[50],
+            elevation: 2,
+            child: ListTile(
+              leading: Icon(
+                Icons.calendar_today,
+                color: _fechaUltimaMenstruacion == null ? Colors.red : Colors.green,
+              ),
+              title: Row(
+                children: [
+                  const Text(
+                    'Fecha de Última Menstruación (FUM)',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(width: 8),
+                  if (_fechaUltimaMenstruacion == null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Text(
+                        'REQUERIDA',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              subtitle: Text(
+                _fechaUltimaMenstruacion != null
+                    ? '${_fechaUltimaMenstruacion!.day}/${_fechaUltimaMenstruacion!.month}/${_fechaUltimaMenstruacion!.year}'
+                    : 'Toca aquí para seleccionar la fecha',
+                style: TextStyle(
+                  color: _fechaUltimaMenstruacion == null ? Colors.red[700] : Colors.green[700],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              trailing: Icon(
+                _fechaUltimaMenstruacion == null ? Icons.error : Icons.check_circle,
+                color: _fechaUltimaMenstruacion == null ? Colors.red : Colors.green,
+              ),
+              onTap: () => _selectDate('ultima_menstruacion'),
             ),
           ),
+          if (_fechaUltimaMenstruacion == null)
+            Padding(
+              padding: const EdgeInsets.only(left: 16, top: 4, bottom: 8),
+              child: Text(
+                '⚠️ La FUM es necesaria para calcular las semanas de gestación',
+                style: TextStyle(
+                  color: Colors.red[700],
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
           const SizedBox(height: 16),
           
           // Fecha probable de parto (calculada automáticamente)
@@ -784,6 +838,48 @@ class _GestanteFormMejoradoScreenState extends ConsumerState<GestanteFormMejorad
       if (_currentPage == 0 && _fechaNacimiento == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Selecciona la fecha de nacimiento')),
+        );
+        return;
+      }
+      
+      // Validar FUM en página 2 (datos obstétricos)
+      if (_currentPage == 1 && _fechaUltimaMenstruacion == null) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.warning, color: Colors.orange),
+                SizedBox(width: 8),
+                Text('FUM no registrada'),
+              ],
+            ),
+            content: const Text(
+              'La Fecha de Última Menstruación (FUM) es muy importante para:\n\n'
+              '• Calcular las semanas de gestación\n'
+              '• Determinar la fecha probable de parto\n'
+              '• Activar alertas automáticas\n'
+              '• Evaluar el riesgo obstétrico\n\n'
+              '¿Deseas continuar sin registrar la FUM?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Volver y agregar FUM'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _pageController.nextPage(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                child: const Text('Continuar sin FUM'),
+              ),
+            ],
+          ),
         );
         return;
       }

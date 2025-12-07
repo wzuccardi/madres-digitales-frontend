@@ -1,10 +1,13 @@
+// Madres Digitales API - Vercel Serverless Function
+// All service dependencies are in the api/ folder for Vercel deployment
+// Environment variables configured in Vercel dashboard
 const express = require('express');
 const cors = require('cors');
 const { PrismaClient } = require('@prisma/client');
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const AlertaAutomaticaService = require('../src/services/alerta-automatica.service');
+const AlertaAutomaticaService = require('./alerta-automatica.service');
 const sosEndpoints = require('./sos-endpoints');
 const missingEndpoints = require('./missing-endpoints');
 
@@ -43,11 +46,12 @@ const login = async (req, res) => {
 
     // Generar token JWT
     const jwt = require('jsonwebtoken');
+    const rolLowercase = user.rol ? String(user.rol).toLowerCase() : 'madrina';
     const token = jwt.sign(
       { 
         id: user.id, 
         email: user.email, 
-        rol: user.rol 
+        rol: rolLowercase
       },
       JWT_SECRET,
       { 
@@ -57,7 +61,7 @@ const login = async (req, res) => {
       }
     );
 
-    console.log('✅ Login exitoso:', user.email, 'Rol:', user.rol);
+    console.log('✅ Login exitoso:', user.email, 'Rol:', user.rol, '(token rol:', rolLowercase + ')');
     
     res.json({
       success: true,
@@ -66,7 +70,7 @@ const login = async (req, res) => {
           id: user.id,
           nombre: user.nombre,
           email: user.email,
-          rol: String(user.rol).toLowerCase()
+          rol: rolLowercase
         },
         token
       }
@@ -80,10 +84,11 @@ const login = async (req, res) => {
 
 const register = async (req, res) => {
   try {
-    const { email, password, nombre, rol } = req.body;
+    const { email, password, nombre, documento, telefono, municipio_id } = req.body;
+    const rolInput = req.body.rol || req.body.role || 'madrina';
     
-    if (!email || !password || !nombre || !rol) {
-      return res.status(400).json({ success: false, error: 'Todos los campos son requeridos' });
+    if (!email || !password || !nombre) {
+      return res.status(400).json({ success: false, error: 'Email, password y nombre son requeridos' });
     }
 
     // Verificar si el usuario ya existe
@@ -95,38 +100,70 @@ const register = async (req, res) => {
       return res.status(400).json({ success: false, error: 'El email ya está registrado' });
     }
 
+    // Mapear rol al formato de Prisma
+    const rolMap = {
+      admin: 'ADMIN',
+      super_admin: 'SUPER_ADMIN',
+      coordinador: 'COORDINADOR',
+      madrina: 'MADRINA',
+      medico: 'MEDICO',
+    };
+    const prismaRol = rolMap[rolInput] || 'MADRINA';
+
     // Hashear contraseña
-    const bcrypt = require('bcrypt');
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Generar ID único
+    const id = `user_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
     // Crear usuario
     const user = await prisma.usuarios.create({
       data: {
+        id,
         email,
         password_hash: hashedPassword,
         nombre,
-        rol,
+        documento: documento || null,
+        telefono: telefono || null,
+        municipio_id: municipio_id || null,
+        rol: prismaRol,
         activo: true
       }
     });
 
-    console.log('✅ Usuario creado:', user.email);
+    console.log('✅ Usuario creado:', user.email, 'Rol:', user.rol);
+
+    // Generar token JWT
+    const token = jwt.sign(
+      { 
+        id: user.id, 
+        email: user.email, 
+        rol: rolInput
+      },
+      JWT_SECRET,
+      { 
+        expiresIn: '24h',
+        issuer: 'madres-digitales',
+        audience: 'madres-digitales-users'
+      }
+    );
     
-    res.json({
+    res.status(201).json({
       success: true,
       data: {
-        usuario: {
+        user: {
           id: user.id,
           nombre: user.nombre,
           email: user.email,
-          rol: String(user.rol).toLowerCase()
-        }
+          rol: rolInput
+        },
+        token
       }
     });
 
   } catch (error) {
     console.error('❌ Error en registro:', error);
-    res.status(500).json({ success: false, error: 'Error interno del servidor' });
+    res.status(500).json({ success: false, error: 'Error interno del servidor: ' + error.message });
   }
 };
 
@@ -136,15 +173,11 @@ const prisma = new PrismaClient();
 const app = express();
 // Configuración de seguridad y entorno
 const NODE_ENV = process.env.NODE_ENV || 'production';
-const JWT_SECRET = process.env.JWT_SECRET;
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET || 'temporary-secret-change-in-production';
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'temporary-refresh-secret-change-in-production';
 
-if (!JWT_SECRET || !JWT_REFRESH_SECRET) {
-  if (NODE_ENV === 'production') {
-    throw new Error('JWT secrets are missing in production environment');
-  } else {
-    console.warn('⚠️ JWT secrets missing. Using development mode without secrets.');
-  }
+if (!process.env.JWT_SECRET || !process.env.JWT_REFRESH_SECRET) {
+  console.warn('⚠️ WARNING: Using default JWT secrets. Configure JWT_SECRET and JWT_REFRESH_SECRET in Vercel environment variables for production!');
 }
 
 // CORS configuration - parametrizado por entorno
@@ -161,7 +194,8 @@ const defaultAllowedOrigins = [
   'https://madres-digitales-frontend.vercel.app',
   'https://madres-digitales.vercel.app',
   'https://madres-digitales-backend.vercel.app',
-  'https://madres-digitales-frontend-1bw6x2ir0.vercel.app'
+  'https://madres-digitales-frontend-1bw6x2ir0.vercel.app',
+  'https://madres-digitales-frontend-qa5yec9v1.vercel.app'
 ];
 
 const allowedOrigins = corsAllowedFromEnv.length > 0 ? corsAllowedFromEnv : defaultAllowedOrigins;
@@ -416,6 +450,138 @@ app.get('/health', (req, res) => {
     status: 'healthy',
     timestamp: new Date().toISOString()
   });
+});
+
+// Endpoint temporal para verificar madrinas asignadas
+app.get('/api/admin/verificar-madrinas', async (req, res) => {
+  try {
+    // Resumen general
+    const resumen = await prisma.$queryRaw`
+      SELECT 
+        COUNT(*)::int as total_gestantes,
+        COUNT(madrina_id)::int as con_madrina,
+        (COUNT(*) - COUNT(madrina_id))::int as sin_madrina
+      FROM gestantes
+      WHERE activa = true
+    `;
+
+    // Gestantes sin madrina
+    const sinMadrina = await prisma.gestantes.findMany({
+      where: {
+        activa: true,
+        madrina_id: null
+      },
+      select: {
+        id: true,
+        nombre: true,
+        documento: true,
+        telefono: true,
+        municipio_id: true,
+        riesgo_alto: true
+      },
+      orderBy: { nombre: 'asc' }
+    });
+
+    // Resumen por madrina
+    const porMadrina = await prisma.$queryRaw`
+      SELECT 
+        u.nombre as madrina,
+        u.email,
+        COUNT(g.id)::int as gestantes_asignadas
+      FROM usuarios u
+      LEFT JOIN gestantes g ON g.madrina_id = u.id AND g.activa = true
+      WHERE u.rol = 'MADRINA' AND u.activo = true
+      GROUP BY u.id, u.nombre, u.email
+      ORDER BY gestantes_asignadas DESC
+    `;
+
+    res.json({
+      success: true,
+      data: {
+        resumen: resumen[0],
+        gestantes_sin_madrina: sinMadrina,
+        distribucion_por_madrina: porMadrina
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error verificando madrinas:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Error verificando madrinas',
+      details: error.message 
+    });
+  }
+});
+
+// Endpoint para ver gestantes asignadas a usuarios de prueba
+app.get('/api/admin/gestantes-usuarios-prueba', async (req, res) => {
+  try {
+    const emailsPrueba = ['crepu@gmail.com', 'madrina@madresdigitales.com'];
+    
+    // Buscar usuarios de prueba
+    const usuariosPrueba = await prisma.usuarios.findMany({
+      where: {
+        email: { in: emailsPrueba }
+      },
+      select: { id: true, email: true, nombre: true }
+    });
+
+    if (usuariosPrueba.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No se encontraron usuarios de prueba',
+        data: { gestantes: [] }
+      });
+    }
+
+    const idsPrueba = usuariosPrueba.map(u => u.id);
+
+    // Obtener gestantes asignadas a usuarios de prueba con detalles
+    const gestantesPrueba = await prisma.gestantes.findMany({
+      where: {
+        madrina_id: { in: idsPrueba },
+        activa: true
+      },
+      select: {
+        id: true,
+        nombre: true,
+        documento: true,
+        telefono: true,
+        direccion: true,
+        municipio_id: true,
+        madrina_id: true,
+        riesgo_alto: true
+      },
+      orderBy: { nombre: 'asc' }
+    });
+
+    // Agrupar por usuario de prueba
+    const porUsuario = usuariosPrueba.map(usuario => ({
+      usuario: {
+        id: usuario.id,
+        nombre: usuario.nombre,
+        email: usuario.email
+      },
+      gestantes: gestantesPrueba.filter(g => g.madrina_id === usuario.id)
+    }));
+
+    res.json({
+      success: true,
+      message: `Se encontraron ${gestantesPrueba.length} gestantes asignadas a usuarios de prueba`,
+      data: {
+        total_gestantes: gestantesPrueba.length,
+        por_usuario: porUsuario,
+        todas_las_gestantes: gestantesPrueba
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error consultando gestantes:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Error consultando gestantes',
+      details: error.message 
+    });
+  }
 });
 
 // Médicos - listar y obtener detalle (API pública con CORS)
@@ -799,9 +965,23 @@ app.post('/api/gestantes', async (req, res) => {
       activa,
     } = req.body;
     if (!nombre) return res.status(400).json({ success: false, error: 'Nombre requerido' });
+    if (!fecha_nacimiento) return res.status(400).json({ success: false, error: 'Fecha de nacimiento requerida' });
+    if (!fecha_ultima_menstruacion) return res.status(400).json({ success: false, error: 'Fecha de última menstruación requerida para calcular semanas de gestación' });
+    
+    // Validar que la fecha de última menstruación sea válida
+    try {
+      const fumDate = new Date(fecha_ultima_menstruacion);
+      const now = new Date();
+      const diffDays = (now - fumDate) / (1000 * 60 * 60 * 24);
+      if (diffDays < 0 || diffDays > 294) { // 294 días = 42 semanas
+        return res.status(400).json({ success: false, error: 'Fecha de última menstruación inválida (debe estar entre hoy y hace 42 semanas)' });
+      }
+    } catch (e) {
+      return res.status(400).json({ success: false, error: 'Formato de fecha de última menstruación inválido' });
+    }
+    
     // Provide default value for regimen_salud if not provided
     const regimenSaludValue = regimen_salud || 'subsidiado';
-    if (!fecha_nacimiento) return res.status(400).json({ success: false, error: 'fecha_nacimiento requerida' });
     const id = `gestante_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
     const g = await prisma.gestantes.create({
       data: {
@@ -976,6 +1156,230 @@ app.post('/api/auth/login', async (req, res) => {
 // AUTH ROUTES - REAL CONTROLLERS
 app.post('/api/auth/login', login);
 app.post('/api/auth/register', register);
+
+// ADMIN: Verificar y corregir semanas de gestación
+app.get('/api/admin/verificar-semanas-gestacion', async (req, res) => {
+  try {
+    // Verificar cuántos controles tienen 24 semanas
+    const controlesConVeinticuatro = await prisma.control_prenatal.count({
+      where: { semanas_gestacion: 24 }
+    });
+
+    // Obtener muestra de controles con sus gestantes
+    const muestra = await prisma.$queryRaw`
+      SELECT 
+        cp.id,
+        cp.gestante_id,
+        g.nombre as gestante_nombre,
+        g.fecha_ultima_menstruacion as fum,
+        cp.fecha_control,
+        cp.semanas_gestacion as semanas_actuales,
+        CASE 
+          WHEN g.fecha_ultima_menstruacion IS NOT NULL 
+          THEN FLOOR(EXTRACT(EPOCH FROM (cp.fecha_control - g.fecha_ultima_menstruacion)) / (7 * 24 * 60 * 60))::INTEGER
+          ELSE NULL
+        END as semanas_calculadas
+      FROM control_prenatal cp
+      JOIN gestantes g ON cp.gestante_id = g.id
+      ORDER BY cp.fecha_control DESC
+      LIMIT 20
+    `;
+
+    res.json({
+      success: true,
+      data: {
+        total_controles_con_24: controlesConVeinticuatro,
+        muestra_controles: muestra
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error verificando semanas:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/admin/corregir-semanas-gestacion', async (req, res) => {
+  try {
+    // Ejecutar la corrección
+    const resultado = await prisma.$executeRaw`
+      UPDATE control_prenatal cp
+      SET semanas_gestacion = FLOOR(
+        EXTRACT(EPOCH FROM (cp.fecha_control - g.fecha_ultima_menstruacion)) / (7 * 24 * 60 * 60)
+      )::INTEGER
+      FROM gestantes g
+      WHERE cp.gestante_id = g.id
+        AND g.fecha_ultima_menstruacion IS NOT NULL
+        AND cp.fecha_control >= g.fecha_ultima_menstruacion
+        AND FLOOR(
+          EXTRACT(EPOCH FROM (cp.fecha_control - g.fecha_ultima_menstruacion)) / (7 * 24 * 60 * 60)
+        ) BETWEEN 0 AND 42
+    `;
+
+    console.log('✅ Semanas de gestación corregidas:', resultado, 'registros');
+
+    res.json({
+      success: true,
+      message: `${resultado} controles actualizados`,
+      registros_actualizados: resultado
+    });
+  } catch (error) {
+    console.error('❌ Error corrigiendo semanas:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Password Reset Routes
+app.post('/api/auth/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ success: false, error: 'Email es requerido' });
+    }
+
+    // Buscar usuario
+    const user = await prisma.usuarios.findUnique({
+      where: { email }
+    });
+
+    // Por seguridad, siempre retornar éxito aunque el usuario no exista
+    if (!user) {
+      console.log('⚠️ Intento de reset para email no existente:', email);
+      return res.json({ 
+        success: true, 
+        message: 'Si el email existe, recibirás instrucciones para restablecer tu contraseña' 
+      });
+    }
+
+    // Generar token de reset (válido por 1 hora)
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpires = new Date(Date.now() + 3600000); // 1 hora
+
+    // Guardar token en BD
+    await prisma.usuarios.update({
+      where: { email },
+      data: {
+        reset_token: resetToken,
+        reset_token_expires: resetTokenExpires
+      }
+    });
+
+    // Enviar email con Resend
+    const { Resend } = require('resend');
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    
+    const resetUrl = `${process.env.FRONTEND_URL || 'https://madres-digitales-frontend.vercel.app'}/#/reset-password?token=${resetToken}`;
+    
+    await resend.emails.send({
+      from: 'Madres Digitales <onboarding@resend.dev>',
+      to: email,
+      subject: 'Restablecer contraseña - Madres Digitales',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2563eb;">Restablecer Contraseña</h2>
+          <p>Hola ${user.nombre},</p>
+          <p>Recibimos una solicitud para restablecer tu contraseña en Madres Digitales.</p>
+          <p>Haz clic en el siguiente botón para crear una nueva contraseña:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${resetUrl}" 
+               style="background-color: #2563eb; color: white; padding: 12px 24px; 
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              Restablecer Contraseña
+            </a>
+          </div>
+          <p style="color: #666; font-size: 14px;">
+            Este enlace expirará en 1 hora por seguridad.
+          </p>
+          <p style="color: #666; font-size: 14px;">
+            Si no solicitaste restablecer tu contraseña, puedes ignorar este correo.
+          </p>
+          <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+          <p style="color: #999; font-size: 12px;">
+            Madres Digitales - Sistema de Seguimiento Prenatal
+          </p>
+        </div>
+      `
+    });
+
+    console.log('✅ Email de reset enviado a:', email);
+    
+    res.json({ 
+      success: true, 
+      message: 'Si el email existe, recibirás instrucciones para restablecer tu contraseña' 
+    });
+
+  } catch (error) {
+    console.error('❌ Error en forgot-password:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Error al procesar la solicitud' 
+    });
+  }
+});
+
+app.post('/api/auth/reset-password', async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+    
+    if (!token || !newPassword) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Token y nueva contraseña son requeridos' 
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'La contraseña debe tener al menos 6 caracteres' 
+      });
+    }
+
+    // Buscar usuario con token válido
+    const user = await prisma.usuarios.findFirst({
+      where: {
+        reset_token: token,
+        reset_token_expires: {
+          gte: new Date() // Token no expirado
+        }
+      }
+    });
+
+    if (!user) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Token inválido o expirado' 
+      });
+    }
+
+    // Hashear nueva contraseña
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Actualizar contraseña y limpiar token
+    await prisma.usuarios.update({
+      where: { id: user.id },
+      data: {
+        password_hash: hashedPassword,
+        reset_token: null,
+        reset_token_expires: null
+      }
+    });
+
+    console.log('✅ Contraseña restablecida para:', user.email);
+    
+    res.json({ 
+      success: true, 
+      message: 'Contraseña actualizada exitosamente' 
+    });
+
+  } catch (error) {
+    console.error('❌ Error en reset-password:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Error al restablecer la contraseña' 
+    });
+  }
+});
 
 // SOS ROUTES - Sistema de emergencias
 app.post('/api/sos/alerta', (req, res) => sosEndpoints.crearAlertaSOS(req, res, null));
@@ -1968,7 +2372,7 @@ app.get('/api/database/status', async (req, res) => {
 app.get('/api/controles', async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
+    const limit = parseInt(req.query.limit) || 3000; // Límite alto para mostrar todos los controles
     const skip = (page - 1) * limit;
     const gestanteId = req.query.gestante_id;
     const medicoId = req.query.medico_id;
@@ -2005,8 +2409,10 @@ app.get('/api/controles', async (req, res) => {
     if (medicoId) whereClause.medico_id = medicoId;
     if (realizado !== undefined) whereClause.realizado = realizado === 'true';
 
-    // Si es madrina, solo ver controles de sus gestantes asignadas
-    if (user && user.rol === 'madrina') {
+    // Filtrar por rol: madrinas solo ven sus gestantes, admins ven todo
+    const userRol = user?.rol ? String(user.rol).toLowerCase() : '';
+    
+    if (userRol === 'madrina') {
       console.log('🔍 DEBUG: Controles - Filtrando por gestantes de madrina:', user.id);
       
       // Primero obtener los IDs de las gestantes asignadas a esta madrina
@@ -2031,6 +2437,10 @@ app.get('/api/controles', async (req, res) => {
           meta: { page, limit, total: 0 }
         });
       }
+    } else if (userRol === 'admin' || userRol === 'super_admin' || userRol === 'coordinador' || userRol === 'medico') {
+      console.log('🔍 DEBUG: Controles - Usuario con permisos completos:', userRol);
+      // Admins, super_admins, coordinadores y médicos ven todos los controles
+      // No agregar filtro adicional
     }
 
     const [controles, totalControles] = await Promise.all([
@@ -3974,21 +4384,7 @@ if (require.main === module) {
 // Export for Vercel
 module.exports = app;
 // Controles - listado mínimo
-app.get('/api/controles', async (req, res) => {
-  try {
-    const gestanteId = req.query.gestanteId;
-    const where = gestanteId ? { gestante_id: gestanteId } : {};
-    const list = await prisma.control_prenatal.findMany({
-      where,
-      orderBy: { fecha_control: 'desc' },
-      select: { id: true, gestante_id: true, fecha_control: true, realizado: true },
-    });
-    res.json({ success: true, data: list });
-  } catch (error) {
-    console.error('❌ Error listando controles:', error);
-    res.status(500).json({ success: false, error: 'Error listando controles' });
-  }
-});
+// Endpoint duplicado eliminado - usar el de línea 2133 que tiene filtrado por rol
 
 // Contenido - listado vacío para evitar 404 si no hay modelo
 app.get('/api/contenido', async (_req, res) => {

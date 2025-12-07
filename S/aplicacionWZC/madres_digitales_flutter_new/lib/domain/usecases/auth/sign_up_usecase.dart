@@ -13,11 +13,19 @@ class SignUpParams {
     required this.email,
     required this.password,
     this.role,
+    this.documento,
+    this.tipoDocumento,
+    this.telefono,
+    this.municipioId,
   });
   final String name;
   final String email;
   final String password;
   final String? role;
+  final String? documento;
+  final String? tipoDocumento;
+  final String? telefono;
+  final String? municipioId;
 }
 
 /// Caso de uso para registrar un nuevo usuario
@@ -48,6 +56,10 @@ class SignUpUseCase implements UseCase<Result<User, AppError>, SignUpParams> {
       email: params.email,
       password: params.password,
       role: params.role ?? 'gestante',
+      documento: params.documento,
+      tipoDocumento: params.tipoDocumento,
+      telefono: params.telefono,
+      municipioId: params.municipioId,
     );
     return result;
   }

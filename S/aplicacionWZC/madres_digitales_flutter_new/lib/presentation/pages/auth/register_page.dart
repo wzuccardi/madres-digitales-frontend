@@ -26,11 +26,14 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   final TextEditingController contactoEmergenciaTelefonoController = TextEditingController();
 
   bool isLoading = false;
+  bool isLoadingMunicipios = false;
   String? errorMessage;
   String selectedRol = 'madrina'; // Rol por defecto
   String selectedTipoDocumento = 'cedula';
   DateTime? fechaNacimiento;
   String? selectedGrupoSanguineo;
+  String? selectedMunicipioId;
+  List<Map<String, dynamic>> municipios = [];
 
   // Opciones
   final List<String> _tiposDocumento = ['cedula', 'tarjeta_identidad', 'pasaporte', 'registro_civil'];
@@ -39,6 +42,30 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   @override
   void initState() {
     super.initState();
+    _loadMunicipios();
+  }
+
+  Future<void> _loadMunicipios() async {
+    setState(() => isLoadingMunicipios = true);
+    try {
+      final authNotifier = ref.read(authProvider.notifier);
+      final response = await authNotifier.apiService.get('/municipios');
+      
+      if (response != null && response is List) {
+        setState(() {
+          municipios = List<Map<String, dynamic>>.from(
+            response.where((m) => m['activo'] == true).map((m) => {
+              'id': m['id'].toString(),
+              'nombre': m['nombre'].toString(),
+            })
+          );
+          isLoadingMunicipios = false;
+        });
+      }
+    } catch (e) {
+      print('Error cargando municipios: $e');
+      setState(() => isLoadingMunicipios = false);
+    }
   }
 
   @override
@@ -69,12 +96,16 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     try {
       final authNotifier = ref.read(authProvider.notifier);
 
-      // Registrar usuario usando el provider
+      // Registrar usuario usando el provider con todos los campos
       await authNotifier.register(
         nombreController.text.trim(),
         emailController.text.trim(),
         passwordController.text,
         selectedRol,
+        documento: documentoController.text.trim().isNotEmpty ? documentoController.text.trim() : null,
+        tipoDocumento: selectedTipoDocumento,
+        telefono: telefonoController.text.trim().isNotEmpty ? telefonoController.text.trim() : null,
+        municipioId: selectedMunicipioId,
       );
 
       if (!mounted) return;
@@ -309,6 +340,47 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   return null;
                 },
               ),
+              const SizedBox(height: 16),
+
+              // Municipio
+              if (isLoadingMunicipios)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: CircularProgressIndicator(),
+                  ),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: selectedMunicipioId,
+                      isExpanded: true,
+                      hint: const Text('Seleccione un municipio'),
+                      items: [
+                        const DropdownMenuItem(
+                          value: null,
+                          child: Text('Sin municipio'),
+                        ),
+                        ...municipios.map((municipio) {
+                          return DropdownMenuItem<String>(
+                            value: municipio['id'],
+                            child: Text(municipio['nombre']),
+                          );
+                        }),
+                      ],
+                      onChanged: (value) {
+                        setState(() => selectedMunicipioId = value);
+                      },
+                    ),
+                  ),
+                ),
               const SizedBox(height: 16),
 
               TextFormField(

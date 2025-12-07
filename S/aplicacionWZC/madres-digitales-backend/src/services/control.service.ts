@@ -74,6 +74,35 @@ export class ControlService {
 		 return { id } as any;
 	}
 
+	// Método auxiliar para calcular semanas de gestación
+	private calcularSemanasGestacion(fechaUltimaMenstruacion: Date | null, fechaControl: Date): number | null {
+		if (!fechaUltimaMenstruacion) {
+			log.warn('No se puede calcular semanas de gestación: FUM no disponible');
+			return null;
+		}
+
+		const fum = new Date(fechaUltimaMenstruacion);
+		const control = new Date(fechaControl);
+		
+		// Calcular diferencia en milisegundos
+		const diferenciaMilisegundos = control.getTime() - fum.getTime();
+		
+		// Convertir a días
+		const diferenciaDias = Math.floor(diferenciaMilisegundos / (1000 * 60 * 60 * 24));
+		
+		// Convertir a semanas (redondeado)
+		const semanas = Math.floor(diferenciaDias / 7);
+		
+		// Validar rango (0-42 semanas)
+		if (semanas < 0 || semanas > 42) {
+			log.warn(`Semanas de gestación fuera de rango: ${semanas}. FUM: ${fum.toISOString()}, Control: ${control.toISOString()}`);
+			return null;
+		}
+		
+		log.info(`Semanas de gestación calculadas: ${semanas} (FUM: ${fum.toISOString().split('T')[0]}, Control: ${control.toISOString().split('T')[0]})`);
+		return semanas;
+	}
+
 	// Método para crear control con validaciones
 	async createControlCompleto(data: any) {
 		log.info('ControlService: Creating new control');
@@ -87,15 +116,41 @@ export class ControlService {
 				throw new Error(`No se encontró gestante con ID ${data.gestante_id}`);
 			}
 
-			// Crear el control
+			// Calcular semanas de gestación automáticamente si no se proporciona o es 0
+			let semanasGestacion = data.semanas_gestacion ? parseInt(data.semanas_gestacion.toString()) : null;
+			
+			if (!semanasGestacion || semanasGestacion === 0) {
+				semanasGestacion = this.calcularSemanasGestacion(
+					gestante.fecha_ultima_menstruacion,
+					new Date(data.fecha_control)
+				);
+				log.info(`Semanas de gestación calculadas automáticamente: ${semanasGestacion}`);
+			}
+
+			// Crear el control con todos los campos
 			const newControl = await this.controlRepo.create({
 				gestante_id: data.gestante_id,
 				medico_id: data.medico_id || 'c66fdb18-76f4-4767-95ad-9b4b81fa6add',
 				fecha_control: new Date(data.fecha_control),
-				semanas_gestacion: data.semanas_gestacion ? parseInt(data.semanas_gestacion.toString()) : null,
+				semanas_gestacion: semanasGestacion,
 				peso: data.peso ? parseFloat(data.peso.toString()) : null,
 				presion_sistolica: data.presion_sistolica ? parseInt(data.presion_sistolica.toString()) : null,
 				presion_diastolica: data.presion_diastolica ? parseInt(data.presion_diastolica.toString()) : null,
+				frecuencia_cardiaca: data.frecuencia_cardiaca ? parseInt(data.frecuencia_cardiaca.toString()) : null,
+				frecuencia_respiratoria: data.frecuencia_respiratoria ? parseInt(data.frecuencia_respiratoria.toString()) : null,
+				temperatura: data.temperatura ? parseFloat(data.temperatura.toString()) : null,
+				altura_uterina: data.altura_uterina ? parseFloat(data.altura_uterina.toString()) : null,
+				// Convertir booleanos a strings esperados por el schema
+				movimientos_fetales: data.movimientos_fetales ? (typeof data.movimientos_fetales === 'string' ? data.movimientos_fetales : 'presentes') : 'ausentes',
+				edemas: data.edemas ? (typeof data.edemas === 'string' ? data.edemas : 'presentes') : 'ausentes',
+				proteinuria: data.proteinuria || null,
+				glucosuria: data.glucosuria || null,
+				hallazgos: data.hallazgos || null,
+				recomendaciones: data.recomendaciones || null,
+				observaciones: data.observaciones || null,
+				proximo_control: data.proximo_control ? new Date(data.proximo_control) : null,
+				examenes_solicitados: data.examenes_solicitados || null,
+				resultados_examenes: data.resultados_examenes || null,
 			});
 
 			log.info(`ControlService: Control created with ID: ${newControl.id}`);
@@ -256,12 +311,23 @@ export class ControlService {
 				historialControles = await this.controlRepo.findLastForGestante(data.gestante_id, 5);
 			}
 
+			// Calcular semanas de gestación automáticamente si no se proporciona o es 0
+			let semanasGestacion = data.semanas_gestacion || null;
+			
+			if (!semanasGestacion || semanasGestacion === 0) {
+				semanasGestacion = this.calcularSemanasGestacion(
+					gestante.fecha_ultima_menstruacion,
+					new Date(data.fecha_control)
+				);
+				log.info(`Semanas de gestación calculadas automáticamente: ${semanasGestacion}`);
+			}
+
 			// Preparar datos para creación con logging detallado
 			const controlData = {
 				gestante_id: data.gestante_id,
 				medico_id: data.medico_id || 'c66fdb18-76f4-4767-95ad-9b4b81fa6add', // Usuario por defecto (admin)
 				fecha_control: new Date(data.fecha_control),
-				semanas_gestacion: data.semanas_gestacion || null,
+				semanas_gestacion: semanasGestacion,
 				peso: data.peso || null,
 				presion_sistolica: data.presion_sistolica || null,
 				presion_diastolica: data.presion_diastolica || null,
@@ -269,9 +335,27 @@ export class ControlService {
 				frecuencia_respiratoria: data.frecuencia_respiratoria || null,
 				temperatura: data.temperatura || null,
 				altura_uterina: data.altura_uterina || null,
-				movimientos_fetales: !!data.movimientos_fetales,
-				edemas: !!data.edemas,
+				// Convertir booleanos a strings esperados por el schema
+				movimientos_fetales: data.movimientos_fetales ? (typeof data.movimientos_fetales === 'string' ? data.movimientos_fetales : 'presentes') : 'ausentes',
+				edemas: data.edemas ? (typeof data.edemas === 'string' ? data.edemas : 'presentes') : 'ausentes',
+				proteinuria: data.proteinuria || null,
+				glucosuria: data.glucosuria || null,
+				hallazgos: data.hallazgos || null,
 				recomendaciones: data.recomendaciones || null,
+				observaciones: data.observaciones || null,
+				proximo_control: data.proximo_control ? new Date(data.proximo_control) : null,
+				examenes_solicitados: data.examenes_solicitados || null,
+				resultados_examenes: data.resultados_examenes || null,
+				// Campos MEOWS si están presentes
+				meows_score: data.meows_score || null,
+				meows_alert_level: data.meows_alert_level || null,
+				meows_component_scores: data.meows_component_scores || null,
+				meows_triggered_alerts: data.meows_triggered_alerts || null,
+				meows_recommendations: data.meows_recommendations || null,
+				nivel_conciencia: data.nivel_conciencia || null,
+				sangrado_ml: data.sangrado_ml || null,
+				sintomas_neurologicos: data.sintomas_neurologicos || false,
+				tiene_sepsis: data.tiene_sepsis || false,
 			};
 
 			log.debug('Data for creating control', { controlData });

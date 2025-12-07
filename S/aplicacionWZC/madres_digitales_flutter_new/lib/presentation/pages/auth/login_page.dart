@@ -21,6 +21,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final TextEditingController passwordController = TextEditingController();
   bool isLoading = false;
   String? errorMessage;
+  bool _obscurePassword = true;
 
   @override
   void initState() {
@@ -142,8 +143,35 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             const SizedBox(height: 40),
             CustomTextField(labelText: 'Correo electrónico', controller: emailController),
             const SizedBox(height: 16),
-            CustomTextField(labelText: 'Contraseña', controller: passwordController, obscureText: true),
-            const SizedBox(height: 24),
+            TextField(
+              controller: passwordController,
+              obscureText: _obscurePassword,
+              decoration: InputDecoration(
+                labelText: 'Contraseña',
+                border: const OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
+                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () {
+                  context.go('/forgot-password');
+                },
+                child: Text(
+                  '¿Olvidaste tu contraseña?',
+                  style: TextStyle(
+                    color: Colors.pink.shade700,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
             if (errorMessage != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),

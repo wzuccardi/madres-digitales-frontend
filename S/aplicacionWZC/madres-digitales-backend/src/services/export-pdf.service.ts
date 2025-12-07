@@ -411,6 +411,94 @@ export class ExportPdfService {
   }
 
   /**
+   * Método genérico para generar reportes PDF según tipo
+   */
+  async generateReportPDF(tipo: string, data: any): Promise<Buffer> {
+    switch (tipo) {
+      case 'resumen-general':
+        return this.generateResumenGeneralPDFNew(data);
+      default:
+        throw new Error(`Tipo de reporte PDF no soportado: ${tipo}`);
+    }
+  }
+
+  /**
+   * Generar PDF de resumen general (versión mejorada)
+   */
+  private generateResumenGeneralPDFNew(data: any): Buffer {
+    const doc = new PDFDocument({
+      size: 'A4',
+      margin: 50
+    });
+
+    const buffers: Buffer[] = [];
+    doc.on('data', (chunk) => buffers.push(chunk));
+
+    // Validar datos
+    if (!data) {
+      throw new Error('No se proporcionaron datos para generar el PDF');
+    }
+
+    // Título
+    doc.fontSize(20).font('Helvetica-Bold').text('Resumen General - Madres Digitales', { align: 'center' });
+    doc.moveDown();
+
+    // Fecha de generación
+    const fechaGeneracion = data.fecha_generacion 
+      ? new Date(data.fecha_generacion).toLocaleDateString()
+      : new Date().toLocaleDateString();
+    doc.fontSize(12).font('Helvetica').text(`Fecha de generación: ${fechaGeneracion}`, { align: 'right' });
+    doc.moveDown();
+
+    // Filtros aplicados
+    if (data.filtros_aplicados) {
+      doc.fontSize(14).font('Helvetica-Bold').text('Filtros Aplicados:', { underline: true });
+      doc.moveDown(0.3);
+      doc.fontSize(10).font('Helvetica');
+      
+      if (data.filtros_aplicados.fecha_inicio && data.filtros_aplicados.fecha_fin) {
+        doc.text(`Período: ${data.filtros_aplicados.fecha_inicio} - ${data.filtros_aplicados.fecha_fin}`);
+      }
+      if (data.filtros_aplicados.municipio_id) {
+        doc.text(`Municipio ID: ${data.filtros_aplicados.municipio_id}`);
+      }
+      if (data.filtros_aplicados.madrina_id) {
+        doc.text(`Madrina ID: ${data.filtros_aplicados.madrina_id}`);
+      }
+      doc.moveDown();
+    }
+
+    // Estadísticas generales
+    doc.fontSize(16).font('Helvetica-Bold').text('Estadísticas Generales', { underline: true });
+    doc.moveDown(0.5);
+
+    doc.fontSize(12).font('Helvetica');
+    doc.text(`Total de gestantes: ${data.total_gestantes || 0}`);
+    doc.text(`Gestantes de alto riesgo: ${data.gestantes_alto_riesgo || 0}`);
+    doc.text(`Gestantes sin FUM: ${data.gestantes_sin_fum || 0}`);
+    doc.text(`Total de controles: ${data.total_controles || 0}`);
+    doc.text(`Total de alertas: ${data.total_alertas || 0}`);
+    doc.text(`Alertas activas: ${data.alertas_activas || 0}`);
+    doc.moveDown();
+
+    // Distribución por municipio
+    if (data.distribucion_municipios && data.distribucion_municipios.length > 0) {
+      doc.fontSize(16).font('Helvetica-Bold').text('Distribución por Municipio', { underline: true });
+      doc.moveDown(0.5);
+
+      data.distribucion_municipios.forEach((municipio: any) => {
+        doc.fontSize(12).font('Helvetica').text(`${municipio.municipio}: ${municipio.total} gestantes`);
+      });
+    } else {
+      doc.fontSize(12).font('Helvetica').text('No hay datos de distribución por municipio disponibles.');
+    }
+
+    doc.end();
+
+    return Buffer.concat(buffers);
+  }
+
+  /**
    * Enviar PDF como respuesta HTTP
    */
   sendPDF(res: Response, buffer: Buffer, nombreArchivo: string) {

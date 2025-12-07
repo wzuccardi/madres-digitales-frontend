@@ -95,6 +95,8 @@ model usuarios {
   activo              Boolean   @default(true)
   ultimo_acceso       DateTime?
   refresh_token       String?
+  reset_token         String?
+  reset_token_expires DateTime?
   fecha_creacion      DateTime  @default(now())
   fecha_actualizacion DateTime  @updatedAt
 
@@ -203,6 +205,14 @@ model gestantes {
   fecha_creacion            DateTime  @default(now())
   fecha_actualizacion       DateTime  @updatedAt
   riesgo_alto               Boolean   @default(false)
+  
+  // Campos adicionales
+  grupo_sanguineo           String?
+  barrio                    String?
+  foto_url                  String?
+  factores_riesgo           Json?
+  email                     String?
+  apellido                  String?
 
   // Relaciones
   municipios                municipios?             @relation(fields: [municipio_id], references: [id])

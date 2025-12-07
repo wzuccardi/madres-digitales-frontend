@@ -20,14 +20,48 @@ class _GestantesScreenState extends ConsumerState<GestantesScreen> {
   void initState() {
     super.initState();
     final svc = ref.read(gestanteServiceProvider);
-    _futureGestantes = svc.getGestantes(page: 1, limit: 50);
+    _futureGestantes = svc.getGestantes(page: 1, limit: 40);
   }
 
   Future<void> _reload() async {
     final svc = ref.read(gestanteServiceProvider);
     setState(() {
-      _futureGestantes = svc.getGestantes(page: 1, limit: 50);
+      _futureGestantes = svc.getGestantes(page: 1, limit: 40);
     });
+  }
+
+  Future<void> _editarGestante(BuildContext context, Gestante gestante) async {
+    // Convertir Gestante a Map para pasar al formulario
+    final gestanteData = {
+      'id': gestante.id,
+      'documento': gestante.documento,
+      'tipo_documento': gestante.tipoDocumento ?? 'cedula',
+      'nombre': gestante.nombre,
+      'telefono': gestante.telefono,
+      'direccion': gestante.direccion,
+      'municipio_id': gestante.municipioId,
+      'eps': gestante.eps,
+      'regimen_salud': gestante.regimen,
+      'activa': gestante.activa,
+      'riesgo_alto': gestante.riesgoAlto,
+      'fecha_nacimiento': gestante.fechaNacimiento?.toIso8601String(),
+      'fecha_ultima_menstruacion': gestante.fechaUltimaMestruacion?.toIso8601String(),
+      'fecha_probable_parto': gestante.fechaProbableParto?.toIso8601String(),
+      'coordenadas': gestante.coordenadas,
+      'numero_embarazo': gestante.numeroEmbarazo ?? 1,
+      'createdAt': gestante.createdAt.toIso8601String(),
+    };
+
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => GestanteFormMejoradoScreen(gestante: gestanteData),
+      ),
+    );
+
+    if (result == true) {
+      await _reload();
+    }
   }
 
   @override
@@ -84,8 +118,37 @@ class _GestantesScreenState extends ConsumerState<GestantesScreen> {
                       return ListTile(
                         leading: CircleAvatar(child: Text((index + 1).toString())),
                         title: Text(g.nombre.isNotEmpty ? g.nombre : 'Sin nombre'),
-                        subtitle: Text(g.documento),
-                        trailing: g.riesgoAlto == true ? const Icon(Icons.warning, color: Colors.orange) : null,
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(g.documento),
+                            if (g.telefono.isNotEmpty)
+                              Text('Tel: ${g.telefono}', style: const TextStyle(fontSize: 12)),
+                            if (g.fechaUltimaMestruacion != null)
+                              Text(
+                                'FUM: ${g.fechaUltimaMestruacion!.day}/${g.fechaUltimaMestruacion!.month}/${g.fechaUltimaMestruacion!.year}',
+                                style: const TextStyle(fontSize: 12, color: Colors.blue),
+                              )
+                            else
+                              const Text(
+                                'FUM: No registrada',
+                                style: TextStyle(fontSize: 12, color: Colors.red),
+                              ),
+                          ],
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (g.riesgoAlto == true)
+                              const Icon(Icons.warning, color: Colors.orange),
+                            IconButton(
+                              icon: const Icon(Icons.edit, color: AppTheme.primaryColor),
+                              onPressed: () => _editarGestante(context, g),
+                              tooltip: 'Editar gestante',
+                            ),
+                          ],
+                        ),
+                        isThreeLine: true,
                       );
                     },
                   ),

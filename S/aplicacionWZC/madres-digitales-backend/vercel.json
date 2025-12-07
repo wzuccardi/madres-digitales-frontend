@@ -2,6 +2,11 @@
   "version": 2,
   "buildCommand": "npm run vercel-build",
   "installCommand": "npm install",
+  "functions": {
+    "api/index.js": {
+      "includeFiles": "api/**"
+    }
+  },
   "rewrites": [
     {
       "source": "/(.*)",
