@@ -326,33 +326,227 @@ export const createUsuario = async (req: Request, res: Response) => {
 export const updateUsuario = async (req: Request, res: Response) => {
   try {
     const actorRol = (req as any).user?.rol as string | undefined;
-    if (!actorRol) return res.status(401).json({ error: 'No autenticado' });
+    const actorId = (req as any).user?.id as string | undefined;
+    if (!actorRol || !actorId) return res.status(401).json({ error: 'No autenticado' });
+    
     const { id } = req.params;
-    const target = await prisma.usuario.findUnique({ where: { id } });
+    const target = await prisma.usuarios.findUnique({ where: { id } });
     if (!target) return res.status(404).json({ error: 'Usuario no encontrado' });
 
-    const rolUpper = String(req.body?.rol ?? target.rol).toUpperCase();
-    const isAdmin = actorRol.toUpperCase() === 'ADMIN';
-    if (isAdmin && rolUpper === UsuarioRol.SUPER_ADMIN) {
-      return res.status(403).json({ error: 'El administrador no puede promover usuarios a SUPER_ADMIN' });
+    const actorRolUpper = actorRol.toUpperCase();
+    const isSuper = actorRolUpper === 'SUPER_ADMIN';
+    const isAdmin = actorRolUpper === 'ADMIN';
+    const isCoordinador = actorRolUpper === 'COORDINADOR';
+    const isSelf = actorId === id;
+
+    // Verificar permisos según rol
+    if (!isSuper && !isAdmin && !isCoordinador && !isSelf) {
+      return res.status(403).json({ error: 'No tienes permiso para editar este usuario' });
     }
 
-    const user = await prisma.usuario.update({
+    // Coordinadores solo pueden editar madrinas
+    if (isCoordinador && !isSelf) {
+      if (String(target.rol).toUpperCase() !== 'MADRINA') {
+        return res.status(403).json({ error: 'Los coordinadores solo pueden editar madrinas' });
+      }
+    }
+
+    // Preparar datos de actualización
+    const updateData: any = {};
+    
+    // Campos que todos pueden editar en su propio perfil
+    if (req.body.nombre !== undefined) updateData.nombre = req.body.nombre;
+    if (req.body.telefono !== undefined) updateData.telefono = req.body.telefono;
+    if (req.body.documento !== undefined) updateData.documento = req.body.documento;
+    if (req.body.tipo_documento !== undefined) updateData.tipo_documento = req.body.tipo_documento;
+    
+    // Solo admins y super_admins pueden cambiar email
+    if ((isSuper || isAdmin) && req.body.email !== undefined) {
+      updateData.email = req.body.email;
+    }
+    
+    // Solo admins y super_admins pueden cambiar municipio
+    if ((isSuper || isAdmin || isCoordinador) && req.body.municipio_id !== undefined) {
+      updateData.municipio_id = req.body.municipio_id;
+    }
+    
+    // Solo admins y super_admins pueden cambiar estado activo
+    if ((isSuper || isAdmin) && req.body.activo !== undefined) {
+      updateData.activo = req.body.activo;
+    }
+
+    // Cambio de rol solo para super_admin y admin (en endpoint separado)
+    // No permitir cambio de rol aquí
+
+    const user = await prisma.usuarios.update({
       where: { id },
-      data: {
-        nombre: req.body?.nombre ?? target.nombre,
-        email: req.body?.email ?? target.email,
-        rol: rolUpper as any,
-        activo: req.body?.activo ?? target.activo,
-      },
-      select: { id: true, email: true, nombre: true, rol: true, activo: true }
+      data: updateData,
+      select: { 
+        id: true, 
+        email: true, 
+        nombre: true, 
+        documento: true,
+        tipo_documento: true,
+        telefono: true,
+        rol: true, 
+        municipio_id: true,
+        activo: true,
+        fecha_creacion: true,
+        fecha_actualizacion: true
+      }
     });
+    
     return res.json({
       ...user,
       rol: (user as any).rol ? String((user as any).rol).toLowerCase() : (user as any).rol
     });
   } catch (e: any) {
     return res.status(500).json({ error: e?.message || 'Error actualizando usuario' });
+  }
+};
+
+// Nuevo endpoint para asignar roles (solo super_admin y admin)
+export const asignarRol = async (req: Request, res: Response) => {
+  try {
+    const actorRol = (req as any).user?.rol as string | undefined;
+    if (!actorRol) return res.status(401).json({ error: 'No autenticado' });
+    
+    const { id } = req.params;
+    const { rol } = req.body;
+    
+    if (!rol) {
+      return res.status(400).json({ error: 'El rol es requerido' });
+    }
+
+    const target = await prisma.usuarios.findUnique({ where: { id } });
+    if (!target) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    const actorRolUpper = actorRol.toUpperCase();
+    const rolUpper = String(rol).toUpperCase();
+    const isSuper = actorRolUpper === 'SUPER_ADMIN';
+    const isAdmin = actorRolUpper === 'ADMIN';
+
+    // Solo super_admin y admin pueden asignar roles
+    if (!isSuper && !isAdmin) {
+      return res.status(403).json({ error: 'No tienes permiso para asignar roles' });
+    }
+
+    // Admin no puede crear/promover a SUPER_ADMIN
+    if (isAdmin && rolUpper === 'SUPER_ADMIN') {
+      return res.status(403).json({ error: 'El administrador no puede promover usuarios a SUPER_ADMIN' });
+    }
+
+    // Admin no puede modificar a otro SUPER_ADMIN
+    if (isAdmin && String(target.rol).toUpperCase() === 'SUPER_ADMIN') {
+      return res.status(403).json({ error: 'El administrador no puede modificar un SUPER_ADMIN' });
+    }
+
+    const user = await prisma.usuarios.update({
+      where: { id },
+      data: { rol: rolUpper as any },
+      select: { 
+        id: true, 
+        email: true, 
+        nombre: true, 
+        rol: true, 
+        activo: true 
+      }
+    });
+    
+    return res.json({
+      ...user,
+      rol: (user as any).rol ? String((user as any).rol).toLowerCase() : (user as any).rol,
+      message: 'Rol asignado exitosamente'
+    });
+  } catch (e: any) {
+    return res.status(500).json({ error: e?.message || 'Error asignando rol' });
+  }
+};
+
+// Endpoint para que un usuario obtenga su propio perfil
+export const getMiPerfil = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) return res.status(401).json({ error: 'No autenticado' });
+
+    const usuario = await prisma.usuarios.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        nombre: true,
+        documento: true,
+        tipo_documento: true,
+        telefono: true,
+        rol: true,
+        municipio_id: true,
+        activo: true,
+        fecha_creacion: true,
+        fecha_actualizacion: true,
+        municipios: {
+          select: {
+            id: true,
+            nombre: true,
+            departamento: true
+          }
+        }
+      }
+    });
+
+    if (!usuario) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    res.json({
+      ...usuario,
+      rol: (usuario as any).rol ? String((usuario as any).rol).toLowerCase() : (usuario as any).rol
+    });
+  } catch (error) {
+    console.error('Error al obtener perfil:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+};
+
+// Endpoint para actualizar el propio perfil
+export const actualizarMiPerfil = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) return res.status(401).json({ error: 'No autenticado' });
+
+    const { nombre, telefono, documento, tipo_documento } = req.body;
+
+    const updateData: any = {};
+    if (nombre !== undefined) updateData.nombre = nombre;
+    if (telefono !== undefined) updateData.telefono = telefono;
+    if (documento !== undefined) updateData.documento = documento;
+    if (tipo_documento !== undefined) updateData.tipo_documento = tipo_documento;
+
+    const usuario = await prisma.usuarios.update({
+      where: { id: userId },
+      data: updateData,
+      select: {
+        id: true,
+        email: true,
+        nombre: true,
+        documento: true,
+        tipo_documento: true,
+        telefono: true,
+        rol: true,
+        municipio_id: true,
+        activo: true,
+        fecha_creacion: true,
+        fecha_actualizacion: true
+      }
+    });
+
+    res.json({
+      ...usuario,
+      rol: (usuario as any).rol ? String((usuario as any).rol).toLowerCase() : (usuario as any).rol,
+      message: 'Perfil actualizado exitosamente'
+    });
+  } catch (error) {
+    console.error('Error al actualizar perfil:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 };
 

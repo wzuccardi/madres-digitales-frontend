@@ -10,6 +10,7 @@ import 'package:madres_digitales_flutter_new/presentation/widgets/common/v2_page
 import 'package:madres_digitales_flutter_new/presentation/widgets/common/v2_card_list_tile.dart';
 import 'package:madres_digitales_flutter_new/core/utils/logger.dart';
 import 'package:madres_digitales_flutter_new/core/utils/permissions_helper.dart';
+import 'package:madres_digitales_flutter_new/presentation/widgets/admin/assign_role_dialog.dart';
 
 class UsuariosScreen extends ConsumerStatefulWidget {
   const UsuariosScreen({super.key});
@@ -237,8 +238,24 @@ class _UsuariosScreenState extends ConsumerState<UsuariosScreen> {
                 Container(width: 12, height: 12, decoration: BoxDecoration(color: usuario.activo ? Colors.green : Colors.red, shape: BoxShape.circle)),
                 const SizedBox(width: 8),
                 PopupMenuButton<String>(
-                  onSelected: (value) {
+                  onSelected: (value) async {
                     switch (value) {
+                      case 'edit':
+                        context.push('/usuarios/editar/${usuario.id}');
+                        break;
+                      case 'assign_role':
+                        final result = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AssignRoleDialog(
+                            userId: usuario.id,
+                            userName: usuario.nombreCompleto,
+                            currentRole: usuario.rol,
+                          ),
+                        );
+                        if (result == true) {
+                          _loadUsuarios();
+                        }
+                        break;
                       case 'toggle':
                         _toggleUsuarioActivo(usuario);
                         break;
@@ -248,6 +265,15 @@ class _UsuariosScreenState extends ConsumerState<UsuariosScreen> {
                     }
                   },
                   itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'edit',
+                      child: Row(children: [Icon(Icons.edit, size: 20), SizedBox(width: 8), Text('Editar')]),
+                    ),
+                    if (roleLower == AppConstants.superAdminRole || roleLower == AppConstants.adminRole)
+                      const PopupMenuItem(
+                        value: 'assign_role',
+                        child: Row(children: [Icon(Icons.badge, size: 20), SizedBox(width: 8), Text('Asignar Rol')]),
+                      ),
                     PopupMenuItem(
                       value: 'toggle',
                       child: Row(children: [Icon(usuario.activo ? Icons.block : Icons.check_circle, size: 20), const SizedBox(width: 8), Text(usuario.activo ? 'Desactivar' : 'Activar')]),
