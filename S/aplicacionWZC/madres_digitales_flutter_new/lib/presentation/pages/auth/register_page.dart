@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../presentation/widgets/common/custom_button.dart';
 import 'package:madres_digitales_flutter_new/presentation/providers/auth_provider.dart';
+import 'package:madres_digitales_flutter_new/core/providers/service_providers.dart';
 
 class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key});
@@ -48,19 +49,27 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   Future<void> _loadMunicipios() async {
     setState(() => isLoadingMunicipios = true);
     try {
-      final authNotifier = ref.read(authProvider.notifier);
-      final response = await authNotifier.apiService.get('/municipios');
+      // Usar el apiService directamente desde el provider
+      final apiService = ref.read(apiServiceProvider);
+      final response = await apiService.get('/municipios');
       
-      if (response != null && response is List) {
+      if (response.success && response.data != null) {
+        final List<dynamic> municipiosList = response.data is List 
+          ? response.data as List<dynamic>
+          : [];
+        
         setState(() {
-          municipios = List<Map<String, dynamic>>.from(
-            response.where((m) => m['activo'] == true).map((m) => {
+          municipios = municipiosList
+            .where((m) => m['activo'] == true)
+            .map((m) => {
               'id': m['id'].toString(),
               'nombre': m['nombre'].toString(),
             })
-          );
+            .toList();
           isLoadingMunicipios = false;
         });
+      } else {
+        setState(() => isLoadingMunicipios = false);
       }
     } catch (e) {
       print('Error cargando municipios: $e');
