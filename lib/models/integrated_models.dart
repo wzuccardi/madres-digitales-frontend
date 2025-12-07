@@ -116,12 +116,18 @@ class UsuarioModel {
     required this.email,
     this.rol = 'USER',
     this.activo = true,
+    this.documento,
+    this.telefono,
+    this.municipioId,
   });
   final String id;
   final String nombre;
   final String email;
   final String rol;
   final bool activo;
+  final String? documento;
+  final String? telefono;
+  final String? municipioId;
 
   String get nombreCompleto => nombre;
 
@@ -131,6 +137,9 @@ class UsuarioModel {
     String? email,
     String? rol,
     bool? activo,
+    String? documento,
+    String? telefono,
+    String? municipioId,
   }) {
     return UsuarioModel(
       id: id ?? this.id,
@@ -138,6 +147,9 @@ class UsuarioModel {
       email: email ?? this.email,
       rol: rol ?? this.rol,
       activo: activo ?? this.activo,
+      documento: documento ?? this.documento,
+      telefono: telefono ?? this.telefono,
+      municipioId: municipioId ?? this.municipioId,
     );
   }
 }

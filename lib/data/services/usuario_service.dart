@@ -39,6 +39,9 @@ class UsuarioService {
           email: (m['email'] ?? '').toString(),
           rol: (m['role'] ?? m['rol'] ?? 'USER').toString(),
           activo: (m['activo'] is bool) ? (m['activo'] as bool) : true,
+          documento: m['documento']?.toString(),
+          telefono: m['telefono']?.toString(),
+          municipioId: m['municipio_id']?.toString(),
         );
       }).toList();
     } catch (e, stackTrace) {
@@ -54,6 +57,9 @@ class UsuarioService {
         'email': usuario.email,
         'role': usuario.rol,
         'activo': usuario.activo,
+        'documento': usuario.documento,
+        'telefono': usuario.telefono,
+        'municipio_id': usuario.municipioId,
       });
     } catch (e) {
       AppLogger.error('UsuarioService.actualizarUsuario error', error: e);

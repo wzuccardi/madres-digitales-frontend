@@ -241,7 +241,7 @@ class _UsuariosScreenState extends ConsumerState<UsuariosScreen> {
                   onSelected: (value) async {
                     switch (value) {
                       case 'edit':
-                        context.push('/usuarios/editar/${usuario.id}');
+                        context.push('/usuarios/editar/${usuario.id}', extra: usuario);
                         break;
                       case 'assign_role':
                         final result = await showDialog<bool>(

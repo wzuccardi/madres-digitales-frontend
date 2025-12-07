@@ -314,10 +314,13 @@ class AppRouter {
       GoRoute(
         path: '/usuarios/editar/:id',
         name: 'usuarios_editar',
-        builder: (context, state) => const MainLayout(
-          currentRoute: '/usuarios',
-          child: UsuarioFormScreen(),
-        ),
+        builder: (context, state) {
+          final usuario = state.extra as UsuarioModel?;
+          return MainLayout(
+            currentRoute: '/usuarios',
+            child: UsuarioFormScreen(usuario: usuario),
+          );
+        },
       ),
 
       // Ruta de Detalle de Contenido
