@@ -207,7 +207,16 @@ class AuthProvider extends StateNotifier<AuthState> {
   }
 
   // Registrar usuario usando caso de uso
-  Future<void> register(String name, String email, String password, String role) async {
+  Future<void> register(
+    String name, 
+    String email, 
+    String password, 
+    String role, {
+    String? documento,
+    String? tipoDocumento,
+    String? telefono,
+    String? municipioId,
+  }) async {
     state = state.copyWith(isLoading: true, error: null);
     
     try {
@@ -216,6 +225,10 @@ class AuthProvider extends StateNotifier<AuthState> {
         email: email,
         password: password,
         role: role,
+        documento: documento,
+        tipoDocumento: tipoDocumento,
+        telefono: telefono,
+        municipioId: municipioId,
       );
       final result = await _signUpUseCase(params);
       if (result.isFailure) {
