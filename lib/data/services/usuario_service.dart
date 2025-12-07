@@ -9,12 +9,28 @@ class UsuarioService {
   Future<List<UsuarioModel>> obtenerUsuarios() async {
     try {
       final resp = await _apiService.get<Map<String, dynamic>>('/usuarios');
-      if (!resp.success || resp.data == null) return [];
+      if (!resp.success || resp.data == null) {
+        AppLogger.warning('UsuarioService.obtenerUsuarios: No data received');
+        return [];
+      }
+      
       final root = resp.data as Map<String, dynamic>;
-      final container = root.containsKey('data') ? root['data'] : root;
-      final list = (container is Map && container['usuarios'] is List)
-          ? (container['usuarios'] as List)
-          : (container is List ? container : (root['usuarios'] as List?) ?? []);
+      
+      // El backend devuelve {success: true, data: [...]}
+      List<dynamic> list;
+      if (root.containsKey('data') && root['data'] is List) {
+        list = root['data'] as List;
+      } else if (root.containsKey('usuarios') && root['usuarios'] is List) {
+        list = root['usuarios'] as List;
+      } else if (root is List) {
+        list = root;
+      } else {
+        AppLogger.warning('UsuarioService.obtenerUsuarios: Unexpected data format', context: {'root': root});
+        return [];
+      }
+      
+      AppLogger.info('UsuarioService.obtenerUsuarios: Found ${list.length} users');
+      
       return list.map((j) {
         final m = j as Map<String, dynamic>;
         return UsuarioModel(
@@ -25,8 +41,8 @@ class UsuarioService {
           activo: (m['activo'] is bool) ? (m['activo'] as bool) : true,
         );
       }).toList();
-    } catch (e) {
-      AppLogger.error('UsuarioService.obtenerUsuarios error', error: e);
+    } catch (e, stackTrace) {
+      AppLogger.error('UsuarioService.obtenerUsuarios error', error: e, context: {'stackTrace': stackTrace.toString()});
       return [];
     }
   }
