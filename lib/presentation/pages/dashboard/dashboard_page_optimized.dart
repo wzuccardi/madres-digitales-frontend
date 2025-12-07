@@ -377,6 +377,13 @@ class _DashboardPageOptimizedState extends ConsumerState<DashboardPageOptimized>
         ),
         if (isAdmin) ...[
           _buildStatCard(
+            'Usuarios',
+            (_stats!['totalUsuarios'] ?? 0).toString(),
+            Colors.purple,
+            Icons.people,
+            () => context.go('/usuarios'),
+          ),
+          _buildStatCard(
             'Médicos',
             (_stats!['totalMedicos'] ?? 0).toString(),
             Colors.indigo,
