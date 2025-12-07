@@ -427,8 +427,14 @@ class _ReportesScreenState extends ConsumerState<ReportesScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al descargar: $e'),
+            content: Text('Error al descargar: El servidor aún no tiene implementada la generación de reportes en $formato. Por favor contacte al administrador.'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'OK',
+              textColor: Colors.white,
+              onPressed: () {},
+            ),
           ),
         );
       }

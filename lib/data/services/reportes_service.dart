@@ -240,9 +240,19 @@ class ReportesService {
       final response = await _dio.get(
         '/reportes/descargar/$endpoint/pdf',
         queryParameters: params,
-        options: Options(responseType: ResponseType.bytes),
+        options: Options(
+          responseType: ResponseType.bytes,
+          validateStatus: (status) => status! < 500, // Aceptar respuestas < 500
+        ),
       );
-      return response.data as List<int>;
+      
+      // Si la respuesta es exitosa y contiene bytes
+      if (response.statusCode == 200 && response.data is List<int>) {
+        return response.data as List<int>;
+      }
+      
+      // Si no hay datos o el formato es incorrecto, generar un PDF simple
+      throw Exception('El servidor no devolvió un PDF válido');
     } catch (e) {
       throw Exception('Error al descargar PDF: $e');
     }
@@ -254,9 +264,17 @@ class ReportesService {
       final response = await _dio.get(
         '/reportes/descargar/$endpoint/excel',
         queryParameters: params,
-        options: Options(responseType: ResponseType.bytes),
+        options: Options(
+          responseType: ResponseType.bytes,
+          validateStatus: (status) => status! < 500,
+        ),
       );
-      return response.data as List<int>;
+      
+      if (response.statusCode == 200 && response.data is List<int>) {
+        return response.data as List<int>;
+      }
+      
+      throw Exception('El servidor no devolvió un archivo Excel válido');
     } catch (e) {
       throw Exception('Error al descargar Excel: $e');
     }
