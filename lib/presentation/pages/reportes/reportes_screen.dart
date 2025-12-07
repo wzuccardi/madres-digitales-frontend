@@ -182,19 +182,31 @@ class _ReportesScreenState extends ConsumerState<ReportesScreen> {
             childAspectRatio: 1.5,
             children: [
               _buildStatCard(
-                'Gestantes',
+                'Gestantes Activas',
                 data['total_gestantes']?.toString() ?? '0',
                 Colors.pink,
                 Icons.pregnant_woman,
               ),
               _buildStatCard(
-                'Controles',
-                data['total_controles']?.toString() ?? '0',
-                Colors.blue,
-                Icons.assignment,
+                'Gestantes Nuevas',
+                data['gestantes_nuevas']?.toString() ?? '0',
+                Colors.purple,
+                Icons.person_add,
               ),
               _buildStatCard(
-                'Alertas Activas',
+                'Controles Realizados',
+                data['controles_realizados']?.toString() ?? '0',
+                Colors.green,
+                Icons.check_circle,
+              ),
+              _buildStatCard(
+                'Controles Pendientes',
+                data['controles_pendientes']?.toString() ?? '0',
+                Colors.blue,
+                Icons.pending,
+              ),
+              _buildStatCard(
+                'Alertas Generadas',
                 data['total_alertas_activas']?.toString() ?? '0',
                 Colors.orange,
                 Icons.warning,
