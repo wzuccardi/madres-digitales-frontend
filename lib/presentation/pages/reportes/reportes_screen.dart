@@ -183,12 +183,12 @@ class _ReportesScreenState extends ConsumerState<ReportesScreen> {
             children: [
               _buildStatCard(
                 'Gestantes Activas',
-                data['total_gestantes']?.toString() ?? '0',
+                data['gestantes_activas']?.toString() ?? '0',
                 Colors.pink,
                 Icons.pregnant_woman,
               ),
               _buildStatCard(
-                'Gestantes Nuevas',
+                'Nuevas (Este Mes)',
                 data['gestantes_nuevas']?.toString() ?? '0',
                 Colors.purple,
                 Icons.person_add,
@@ -206,7 +206,7 @@ class _ReportesScreenState extends ConsumerState<ReportesScreen> {
                 Icons.pending,
               ),
               _buildStatCard(
-                'Alertas Generadas',
+                'Alertas Activas',
                 data['total_alertas_activas']?.toString() ?? '0',
                 Colors.orange,
                 Icons.warning,
@@ -280,20 +280,7 @@ class _ReportesScreenState extends ConsumerState<ReportesScreen> {
             color: Colors.orange,
             endpoint: 'estadisticas-alertas',
           ),
-          _buildReporteCardWithDownload(
-            titulo: 'Estadísticas de Riesgo',
-            descripcion: 'Distribución de gestantes por nivel de riesgo',
-            icono: Icons.warning,
-            color: Colors.red,
-            endpoint: 'estadisticas-riesgo',
-          ),
-          _buildReporteCardWithDownload(
-            titulo: 'Tendencias',
-            descripcion: 'Análisis de tendencias temporales',
-            icono: Icons.trending_up,
-            color: Colors.teal,
-            endpoint: 'tendencias',
-          ),
+
         ],
       ),
     );
