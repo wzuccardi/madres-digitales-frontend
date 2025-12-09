@@ -22,8 +22,6 @@ class UsuarioService {
         list = root['data'] as List;
       } else if (root.containsKey('usuarios') && root['usuarios'] is List) {
         list = root['usuarios'] as List;
-      } else if (root is List) {
-        list = root;
       } else {
         AppLogger.warning('UsuarioService.obtenerUsuarios: Unexpected data format', context: {'root': root});
         return [];

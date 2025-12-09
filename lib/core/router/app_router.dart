@@ -28,6 +28,7 @@ import '../../features/contenido/presentation/pages/contenido_detail_page.dart';
   import '../../features/municipios/presentation/screens/municipios_admin_screen.dart';
   import '../../presentation/pages/alertas/alertas_dashboard_screen.dart';
   import '../../presentation/pages/home/sos_mejorado_screen.dart';
+  import '../../models/integrated_models.dart';
   import '../../presentation/pages/admin/usuarios_screen.dart';
 import '../../presentation/pages/admin/usuario_form_screen.dart';
 import '../../features/gestante/presentation/pages/assign_gestante_page.dart';
