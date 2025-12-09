@@ -80,6 +80,15 @@
 </head>
 <body>
   <script>
+    // Disable service worker to avoid 404 errors
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for(let registration of registrations) {
+          registration.unregister();
+        }
+      });
+    }
+    
     // Intercept font loading errors and redirect to CDN
     window.addEventListener('error', function(e) {
       if (e.target.tagName === 'LINK' && e.target.href.includes('MaterialIcons')) {
@@ -88,9 +97,12 @@
       }
     }, true);
     
-    // Configure Flutter to use CanvasKit from CDN
+    // Configure Flutter to use CanvasKit from CDN and disable service worker
     window.flutterConfiguration = {
-      canvasKitBaseUrl: "https://www.gstatic.com/flutter-canvaskit/"
+      canvasKitBaseUrl: "https://www.gstatic.com/flutter-canvaskit/",
+      serviceWorkerSettings: {
+        serviceWorkerVersion: null,
+      }
     };
   </script>
   <script src="flutter_bootstrap.js" async></script>

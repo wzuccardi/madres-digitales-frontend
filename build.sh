@@ -19,6 +19,7 @@ API_URL_VALUE=${API_URL:-https://madres-digitales-backend.vercel.app}
 BACKEND_URL_VALUE=${BACKEND_URL:-}
 flutter build web --release \
   --base-href="/" \
+  --pwa-strategy=none \
   --dart-define=ENVIRONMENT=$ENVIRONMENT_VALUE \
   --dart-define=API_URL=$API_URL_VALUE \
   --dart-define=BACKEND_URL=$BACKEND_URL_VALUE
