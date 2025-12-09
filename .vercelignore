@@ -1,43 +1,16 @@
-# Flutter
+flutter/
 .dart_tool/
 .packages
-.pub-cache/
-.pub/
-build/
-!build/web/
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Git
-.git/
-.gitignore
-
-# Tests
-test/
-integration_test/
-coverage/
-
-# Documentation
-*.md
-!README.md
-
-# Android/iOS
+.flutter-plugins
+.flutter-plugins-dependencies
+pubspec.lock
 android/
 ios/
 linux/
 macos/
 windows/
-
-# Misc
-*.log
-.env
-.env.local
+test/
+.git/
+.gitignore
+README.md
+analysis_options.yaml
