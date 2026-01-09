@@ -10,7 +10,8 @@ import '../../presentation/widgets/layout/main_layout.dart';
   import '../../features/gestante/presentation/pages/gestante_create_page.dart';
   import '../../features/gestante/presentation/pages/gestante_edit_page.dart';
 import '../../features/alertas/presentation/pages/alertas_page.dart';
-import '../../presentation/pages/reportes/reportes_screen.dart';
+// import '../../presentation/pages/reportes/reportes_screen.dart';
+import '../../presentation/pages/dashboard_reportes_page.dart';
 import '../../presentation/pages/notifications/notifications_page.dart';
 import '../../presentation/providers/auth_provider.dart';
 import '../../presentation/pages/auth/forgot_password_page.dart';
@@ -236,13 +237,23 @@ class AppRouter {
         ),
       ),
       
-      // Ruta de Reportes
+      // Ruta de Reportes (comentada temporalmente por conflictos)
+      // GoRoute(
+      //   path: AppConstants.reportsRoute,
+      //   name: RouteNames.reportes,
+      //   builder: (context, state) => const MainLayout(
+      //     currentRoute: AppConstants.reportsRoute,
+      //     child: RouteGuard(allowedRoles: [AppConstants.adminRole, AppConstants.superAdminRole, AppConstants.coordinatorRole], child: ReportesScreen()),
+      //   ),
+      // ),
+      
+      // Ruta de Dashboard de Reportes
       GoRoute(
-        path: AppConstants.reportsRoute,
-        name: RouteNames.reportes,
+        path: '/dashboard-reportes',
+        name: 'dashboard_reportes',
         builder: (context, state) => const MainLayout(
-          currentRoute: AppConstants.reportsRoute,
-          child: RouteGuard(allowedRoles: [AppConstants.adminRole, AppConstants.superAdminRole, AppConstants.coordinatorRole], child: ReportesScreen()),
+          currentRoute: '/dashboard-reportes',
+          child: RouteGuard(allowedRoles: [AppConstants.adminRole, AppConstants.superAdminRole, AppConstants.coordinatorRole], child: DashboardReportesPage()),
         ),
       ),
 

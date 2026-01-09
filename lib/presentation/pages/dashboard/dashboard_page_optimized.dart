@@ -7,6 +7,7 @@ import 'package:madres_digitales_flutter_new/core/providers/service_providers.da
 import 'package:madres_digitales_flutter_new/presentation/widgets/contenido/sync_status_widget.dart';
 import '../../../core/constants/app_constants.dart';
 import 'package:madres_digitales_flutter_new/features/alertas/presentation/providers/alerta_provider.dart';
+import 'package:madres_digitales_flutter_new/presentation/widgets/dashboard/puerperio_stats_widget.dart';
 
 /// Dashboard optimizado siguiendo especificaciones de newgeneration.md
 /// - Elimina redundancias
@@ -161,6 +162,11 @@ class _DashboardPageOptimizedState extends ConsumerState<DashboardPageOptimized>
                   _buildCriticalAlertsCard(),
                   const SizedBox(height: 16),
                 ],
+                
+                // Widget de estadísticas de puerperio
+                const PuerperioStatsWidget(),
+                
+                const SizedBox(height: 16),
                 
                 // Estadísticas principales
                 _buildStatsGrid(userRole),

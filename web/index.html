@@ -96,15 +96,9 @@
         e.target.href = 'https://fonts.googleapis.com/icon?family=Material+Icons';
       }
     }, true);
-    
-    // Configure Flutter to use CanvasKit from CDN and disable service worker
-    window.flutterConfiguration = {
-      canvasKitBaseUrl: "https://www.gstatic.com/flutter-canvaskit/",
-      serviceWorkerSettings: {
-        serviceWorkerVersion: null,
-      }
-    };
   </script>
+  
+  <!-- Use the standard Flutter bootstrap approach -->
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

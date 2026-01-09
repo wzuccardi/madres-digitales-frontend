@@ -8,14 +8,14 @@ class AppConfig {
   // URLs configurables desde variables de entorno
   static const String backendBaseUrlProductionEnv = String.fromEnvironment(
     'API_URL',
-    defaultValue: 'https://madres-digitales-backend.vercel.app/api',
+    defaultValue: 'https://madres-digitales-backend.vercel.app',
   );
   static const String backendUrlPlainEnv = String.fromEnvironment(
     'BACKEND_URL',
     defaultValue: '',
   );
-  static const String backendBaseUrlLocal = 'http://localhost:3000/api';
-  static const String androidEmulatorUrl = 'http://10.0.2.2:3000/api';
+  static const String backendBaseUrlLocal = 'http://localhost:3000';
+  static const String androidEmulatorUrl = 'http://10.0.2.2:3000';
   static const String webUrlProduction = 'https://madres-digitales-frontend.vercel.app';
   static const String webUrlLocal = 'http://localhost:3008';
 
@@ -23,7 +23,7 @@ class AppConfig {
     final base = backendUrlPlainEnv.isNotEmpty ? backendUrlPlainEnv : backendBaseUrlProductionEnv;
     return base.endsWith('/api') ? base : '$base/api';
   }
-  static String get backendBaseUrl => isLocalMode ? backendBaseUrlLocal : backendBaseUrlEffective;
+  static String get backendBaseUrl => backendBaseUrlEffective;
   static String get webUrl => isLocalMode ? webUrlLocal : webUrlProduction;
 
   // Configuración de timeouts

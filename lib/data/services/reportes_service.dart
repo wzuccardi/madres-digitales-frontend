@@ -1,318 +1,159 @@
-import 'package:dio/dio.dart';
-import 'package:madres_digitales_flutter_new/core/network/api_service.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
+import 'dart:js' as js;
+import '../../models/reporte_model.dart';
+import '../../core/constants/app_constants.dart';
 
 class ReportesService {
-  ReportesService(this._dio) : _api = null;
-  ReportesService.fromApiService(ApiService api)
-      : _api = api,
-        _dio = api.dioInstance;
-  final Dio _dio;
-  final ApiService? _api;
+  static String get baseUrl => AppConstants.apiBaseUrl;
 
-  // Obtener resumen general
-  Future<Map<String, dynamic>> getResumenGeneral() async {
-    try {
-      if (_api != null) {
-        final resp = await _api!.get<Map<String, dynamic>>('/reportes/resumen-general');
-        if (!resp.success) {
-          throw Exception(resp.message ?? 'No autorizado');
-        }
-        return _api!.extractObject(resp.data);
-      }
-      final response = await _dio.get('/reportes/resumen-general');
-      return response.data['data'] ?? response.data;
-    } catch (e) {
-      throw Exception('Error al obtener resumen general: $e');
-    }
-  }
-
-  // Obtener estadísticas de gestantes
-  Future<Map<String, dynamic>> getEstadisticasGestantes({
+  Future<ReporteCompleto> generarReporte({
     String? municipioId,
-    String? riesgo,
     String? madrinaId,
+    DateTime? fechaInicio,
+    DateTime? fechaFin,
   }) async {
     try {
-      final params = <String, dynamic>{};
-      if (municipioId != null) params['municipio_id'] = municipioId;
-      if (riesgo != null) params['riesgo'] = riesgo;
-      if (madrinaId != null) params['madrina_id'] = madrinaId;
+      final queryParams = <String, String>{};
+      
+      if (municipioId != null) queryParams['municipioId'] = municipioId;
+      if (madrinaId != null) queryParams['madrinaId'] = madrinaId;
+      if (fechaInicio != null) queryParams['fechaInicio'] = fechaInicio.toIso8601String();
+      if (fechaFin != null) queryParams['fechaFin'] = fechaFin.toIso8601String();
 
-      if (_api != null) {
-        final resp = await _api!.get<Map<String, dynamic>>('/reportes/estadisticas-gestantes', queryParameters: params);
-        if (!resp.success) {
-          throw Exception(resp.message ?? 'No autorizado');
-        }
-        return _api!.extractObject(resp.data);
-      }
-      final response = await _dio.get('/reportes/estadisticas-gestantes', queryParameters: params);
-      return response.data['data'] ?? response.data;
-    } catch (e) {
-      throw Exception('Error al obtener estadísticas de gestantes: $e');
-    }
-  }
+      final uri = Uri.parse('$baseUrl/reportes/generar')
+          .replace(queryParameters: queryParams);
 
-  // Obtener estadísticas de controles
-  Future<Map<String, dynamic>> getEstadisticasControles({
-    String? municipioId,
-    String? medicoId,
-    String? fechaInicio,
-    String? fechaFin,
-  }) async {
-    try {
-      final params = <String, dynamic>{};
-      if (municipioId != null) params['municipio_id'] = municipioId;
-      if (medicoId != null) params['medico_id'] = medicoId;
-      if (fechaInicio != null && fechaFin != null) {
-        params['fecha_inicio'] = fechaInicio;
-        params['fecha_fin'] = fechaFin;
-      }
+      print('🔍 Generando reporte: $uri');
 
-      if (_api != null) {
-        final resp = await _api!.get<Map<String, dynamic>>('/reportes/estadisticas-controles', queryParameters: params);
-        if (!resp.success) {
-          throw Exception(resp.message ?? 'No autorizado');
-        }
-        return _api!.extractObject(resp.data);
-      }
-      final response = await _dio.get('/reportes/estadisticas-controles', queryParameters: params);
-      return response.data['data'] ?? response.data;
-    } catch (e) {
-      throw Exception('Error al obtener estadísticas de controles: $e');
-    }
-  }
-
-  // Obtener estadísticas de alertas
-  Future<Map<String, dynamic>> getEstadisticasAlertas({
-    String? municipioId,
-    String? tipoAlerta,
-    String? fechaInicio,
-    String? fechaFin,
-  }) async {
-    try {
-      final params = <String, dynamic>{};
-      if (municipioId != null) params['municipio_id'] = municipioId;
-      if (tipoAlerta != null) params['tipo_alerta'] = tipoAlerta;
-      if (fechaInicio != null && fechaFin != null) {
-        params['fecha_inicio'] = fechaInicio;
-        params['fecha_fin'] = fechaFin;
-      }
-
-      if (_api != null) {
-        final resp = await _api!.get<Map<String, dynamic>>('/reportes/estadisticas-alertas', queryParameters: params);
-        if (!resp.success) {
-          throw Exception(resp.message ?? 'No autorizado');
-        }
-        return _api!.extractObject(resp.data);
-      }
-      final response = await _dio.get('/reportes/estadisticas-alertas', queryParameters: params);
-      return response.data['data'] ?? response.data;
-    } catch (e) {
-      throw Exception('Error al obtener estadísticas de alertas: $e');
-    }
-  }
-
-  // Descargar CSV
-  Future<dynamic> descargarCSV(String endpoint, {Map<String, dynamic>? params}) async {
-    try {
-      final response = await _dio.get('/reportes/$endpoint', queryParameters: params, options: Options(responseType: ResponseType.bytes));
-      return response.data;
-    } catch (e) {
-      throw Exception('Error al descargar CSV: $e');
-    }
-  }
-
-  // Descargar TXT
-  Future<dynamic> descargarTXT(String endpoint, {Map<String, dynamic>? params}) async {
-    try {
-      final response = await _dio.get('/reportes/$endpoint', queryParameters: params, options: Options(responseType: ResponseType.bytes));
-      return response.data;
-    } catch (e) {
-      throw Exception('Error al descargar TXT: $e');
-    }
-  }
-
-  // Obtener reporte mensual consolidado
-  Future<Map<String, dynamic>> getReporteMensual({
-    int? mes,
-    int? anio,
-  }) async {
-    try {
-      final params = <String, dynamic>{};
-      if (mes != null) params['mes'] = mes;
-      if (anio != null) params['anio'] = anio;
-
-      if (_api != null) {
-        final resp = await _api!.get<Map<String, dynamic>>('/reportes/consolidados/mensual', queryParameters: params);
-        if (!resp.success) {
-          throw Exception(resp.message ?? 'No autorizado');
-        }
-        return _api!.extractObject(resp.data);
-      }
-      final response = await _dio.get('/reportes/consolidados/mensual', queryParameters: params);
-      return response.data['data'] ?? response.data;
-    } catch (e) {
-      throw Exception('Error al obtener reporte mensual: $e');
-    }
-  }
-
-  // Obtener reporte anual consolidado
-  Future<Map<String, dynamic>> getReporteAnual({
-    int? anio,
-  }) async {
-    try {
-      final params = <String, dynamic>{};
-      if (anio != null) params['anio'] = anio;
-
-      if (_api != null) {
-        final resp = await _api!.get<Map<String, dynamic>>('/reportes/consolidados/anual', queryParameters: params);
-        if (!resp.success) {
-          throw Exception(resp.message ?? 'No autorizado');
-        }
-        return _api!.extractObject(resp.data);
-      }
-      final response = await _dio.get('/reportes/consolidados/anual', queryParameters: params);
-      return response.data['data'] ?? response.data;
-    } catch (e) {
-      throw Exception('Error al obtener reporte anual: $e');
-    }
-  }
-
-  // Obtener reporte por municipio
-  Future<Map<String, dynamic>> getReportePorMunicipio({
-    required String municipioId,
-    int? mes,
-    int? anio,
-  }) async {
-    try {
-      final params = <String, dynamic>{
-        'municipio_id': municipioId,
-      };
-      if (mes != null) params['mes'] = mes;
-      if (anio != null) params['anio'] = anio;
-
-      if (_api != null) {
-        final resp = await _api!.get<Map<String, dynamic>>('/reportes/consolidados/municipio', queryParameters: params);
-        if (!resp.success) {
-          throw Exception(resp.message ?? 'No autorizado');
-        }
-        return _api!.extractObject(resp.data);
-      }
-      final response = await _dio.get('/reportes/consolidados/municipio', queryParameters: params);
-      return response.data['data'] ?? response.data;
-    } catch (e) {
-      throw Exception('Error al obtener reporte por municipio: $e');
-    }
-  }
-
-  // Obtener comparativa entre períodos
-  Future<Map<String, dynamic>> getComparativa({
-    required int mes1,
-    required int anio1,
-    required int mes2,
-    required int anio2,
-  }) async {
-    try {
-      final params = {
-        'mes1': mes1,
-        'anio1': anio1,
-        'mes2': mes2,
-        'anio2': anio2,
-      };
-
-      if (_api != null) {
-        final resp = await _api!.get<Map<String, dynamic>>('/reportes/consolidados/comparativa', queryParameters: params);
-        if (!resp.success) {
-          throw Exception(resp.message ?? 'No autorizado');
-        }
-        return _api!.extractObject(resp.data);
-      }
-      final response = await _dio.get('/reportes/consolidados/comparativa', queryParameters: params);
-      return response.data['data'] ?? response.data;
-    } catch (e) {
-      throw Exception('Error al obtener comparativa: $e');
-    }
-  }
-
-  // Descargar reporte como PDF
-  Future<List<int>> descargarPDF(String endpoint, {Map<String, dynamic>? params}) async {
-    try {
-      final response = await _dio.get(
-        '/reportes/descargar/$endpoint/pdf',
-        queryParameters: params,
-        options: Options(
-          responseType: ResponseType.bytes,
-          validateStatus: (status) => status! < 500, // Aceptar respuestas < 500
-        ),
+      final response = await http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+        },
       );
-      
-      // Si la respuesta es exitosa y contiene bytes
-      if (response.statusCode == 200 && response.data is List<int>) {
-        return response.data as List<int>;
-      }
-      
-      // Si no hay datos o el formato es incorrecto, generar un PDF simple
-      throw Exception('El servidor no devolvió un PDF válido');
-    } catch (e) {
-      throw Exception('Error al descargar PDF: $e');
-    }
-  }
 
-  // Descargar reporte como Excel/CSV
-  Future<List<int>> descargarExcel(String endpoint, {Map<String, dynamic>? params}) async {
-    try {
-      final response = await _dio.get(
-        '/reportes/descargar/$endpoint/excel',
-        queryParameters: params,
-        options: Options(
-          responseType: ResponseType.bytes,
-          validateStatus: (status) => status! < 500,
-        ),
-      );
-      
-      if (response.statusCode == 200 && response.data is List<int>) {
-        return response.data as List<int>;
-      }
-      
-      throw Exception('El servidor no devolvió un archivo Excel válido');
-    } catch (e) {
-      throw Exception('Error al descargar Excel: $e');
-    }
-  }
+      print('📊 Respuesta reporte: ${response.statusCode}');
 
-  // Obtener estadísticas de caché
-  Future<Map<String, dynamic>> getCacheEstadisticas() async {
-    try {
-      if (_api != null) {
-        final resp = await _api!.get<Map<String, dynamic>>('/reportes/cache/estadisticas');
-        if (!resp.success) {
-          throw Exception(resp.message ?? 'No autorizado');
+      if (response.statusCode == 200) {
+        final data = json.decode(utf8.decode(response.bodyBytes));
+        
+        if (data['success'] == true) {
+          return ReporteCompleto.fromJson(data['data']);
+        } else {
+          throw Exception(data['error'] ?? 'Error desconocido');
         }
-        return _api!.extractObject(resp.data);
+      } else {
+        throw Exception('Error del servidor: ${response.statusCode}');
       }
-      final response = await _dio.get('/reportes/cache/estadisticas');
-      return response.data['data'] ?? response.data;
     } catch (e) {
-      throw Exception('Error al obtener estadísticas de caché: $e');
+      print('❌ Error generando reporte: $e');
+      throw Exception('Error generando reporte: $e');
     }
   }
 
-  // Limpiar caché expirado
-  Future<void> limpiarCacheExpirado() async {
+  Future<List<Municipio>> obtenerMunicipios() async {
     try {
-      await _dio.post('/reportes/cache/limpiar-expirado');
+      final response = await http.get(
+        Uri.parse('$baseUrl/reportes/municipios'),
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(utf8.decode(response.bodyBytes));
+        
+        if (data['success'] == true) {
+          return (data['data'] as List)
+              .map((m) => Municipio.fromJson(m))
+              .toList();
+        } else {
+          throw Exception(data['error'] ?? 'Error desconocido');
+        }
+      } else {
+        throw Exception('Error del servidor: ${response.statusCode}');
+      }
     } catch (e) {
-      throw Exception('Error al limpiar caché expirado: $e');
+      print('❌ Error obteniendo municipios: $e');
+      throw Exception('Error obteniendo municipios: $e');
     }
   }
 
-  // Limpiar todo el caché
-  Future<void> limpiarTodoCache() async {
+  Future<List<Madrina>> obtenerMadrinas(String? municipioId) async {
     try {
-      await _dio.post('/reportes/cache/limpiar-todo');
+      final queryParams = <String, String>{};
+      if (municipioId != null) queryParams['municipioId'] = municipioId;
+
+      final uri = Uri.parse('$baseUrl/reportes/madrinas')
+          .replace(queryParameters: queryParams);
+
+      final response = await http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(utf8.decode(response.bodyBytes));
+        
+        if (data['success'] == true) {
+          return (data['data'] as List)
+              .map((m) => Madrina.fromJson(m))
+              .toList();
+        } else {
+          throw Exception(data['error'] ?? 'Error desconocido');
+        }
+      } else {
+        throw Exception('Error del servidor: ${response.statusCode}');
+      }
     } catch (e) {
-      throw Exception('Error al limpiar caché: $e');
+      print('❌ Error obteniendo madrinas: $e');
+      throw Exception('Error obteniendo madrinas: $e');
+    }
+  }
+
+  Future<void> descargarReporte({
+    required String formato,
+    String? municipioId,
+    String? madrinaId,
+    DateTime? fechaInicio,
+    DateTime? fechaFin,
+  }) async {
+    try {
+      final queryParams = <String, String>{};
+      
+      if (municipioId != null) queryParams['municipioId'] = municipioId;
+      if (madrinaId != null) queryParams['madrinaId'] = madrinaId;
+      if (fechaInicio != null) queryParams['fechaInicio'] = fechaInicio.toIso8601String();
+      if (fechaFin != null) queryParams['fechaFin'] = fechaFin.toIso8601String();
+      queryParams['formato'] = formato;
+
+      final uri = Uri.parse('$baseUrl/reportes/dashboard/descargar')
+          .replace(queryParameters: queryParams);
+
+      print('📥 Descargando reporte: $uri');
+
+      // En Flutter web, abrimos la URL en una nueva pestaña para descargar
+      if (kIsWeb) {
+        _abrirEnlaceDescarga(uri.toString());
+      } else {
+        // Para móvil, usaríamos un método diferente
+        throw UnimplementedError('Descarga en móvil no implementada aún');
+      }
+    } catch (e) {
+      print('❌ Error descargando reporte: $e');
+      throw Exception('Error descargando reporte: $e');
+    }
+  }
+
+  void _abrirEnlaceDescarga(String url) {
+    if (kIsWeb) {
+      // ignore: avoid_web_libraries_in_flutter
+      // ignore: undefined_prefixed_name
+      js.context.callMethod('open', [url, '_blank']);
     }
   }
 }
-

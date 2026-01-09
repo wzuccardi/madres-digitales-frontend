@@ -71,6 +71,8 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
         return 8;
       case AppConstants.reportsRoute:
         return 9;
+      case '/dashboard-reportes':
+        return 9;
       default:
         return 0;
     }
@@ -165,7 +167,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
         context.go('/mensajes');
         break;
       case 9:
-        context.go(AppConstants.reportsRoute);
+        context.go('/dashboard-reportes');
         break;
     }
   }
