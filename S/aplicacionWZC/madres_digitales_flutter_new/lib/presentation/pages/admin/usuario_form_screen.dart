@@ -26,7 +26,6 @@ class _UsuarioFormScreenState extends ConsumerState<UsuarioFormScreen> {
   final _apellidoController = TextEditingController();
   final _documentoController = TextEditingController();
   final _telefonoController = TextEditingController();
-  final _direccionController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
@@ -83,9 +82,28 @@ class _UsuarioFormScreenState extends ConsumerState<UsuarioFormScreen> {
   void _loadUsuarioData() {
     final usuario = widget.usuario!;
     _emailController.text = usuario.email;
-    _nombreController.text = usuario.nombre;
+    
+    // Separar nombre completo en nombres y apellidos
+    final nombreCompleto = usuario.nombre.split(' ');
+    if (nombreCompleto.length >= 2) {
+      _nombreController.text = nombreCompleto.first;
+      _apellidoController.text = nombreCompleto.sublist(1).join(' ');
+    } else {
+      _nombreController.text = usuario.nombre;
+    }
+    
     _selectedRol = usuario.rol;
-    _selectedMunicipioId = _municipiosList.isNotEmpty ? _municipiosList.first['id'] : null;
+    
+    // Cargar otros campos si existen
+    if (usuario.documento != null) {
+      _documentoController.text = usuario.documento!;
+    }
+    if (usuario.telefono != null) {
+      _telefonoController.text = usuario.telefono!;
+    }
+    
+    // Cargar municipio si existe
+    _selectedMunicipioId = usuario.municipioId;
   }
 
   /// Obtener roles permitidos según el rol del usuario actual
@@ -99,7 +117,6 @@ class _UsuarioFormScreenState extends ConsumerState<UsuarioFormScreen> {
     _nombreController.dispose();
     _documentoController.dispose();
     _telefonoController.dispose();
-    _direccionController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -355,19 +372,6 @@ class _UsuarioFormScreenState extends ConsumerState<UsuarioFormScreen> {
                 border: OutlineInputBorder(),
               ),
               keyboardType: TextInputType.phone,
-            ),
-            const SizedBox(height: 16),
-
-            // Dirección
-            TextFormField(
-              controller: _direccionController,
-              decoration: const InputDecoration(
-                labelText: 'Dirección',
-                hintText: 'Ej: Calle 123 #45-67',
-                prefixIcon: Icon(Icons.location_on),
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 2,
             ),
             const SizedBox(height: 16),
 

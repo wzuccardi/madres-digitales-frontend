@@ -18,8 +18,32 @@ ENVIRONMENT_VALUE=${ENVIRONMENT:-production}
 API_URL_VALUE=${API_URL:-https://madres-digitales-backend.vercel.app}
 BACKEND_URL_VALUE=${BACKEND_URL:-}
 flutter build web --release \
+  --base-href="/" \
+  --pwa-strategy=none \
   --dart-define=ENVIRONMENT=$ENVIRONMENT_VALUE \
   --dart-define=API_URL=$API_URL_VALUE \
   --dart-define=BACKEND_URL=$BACKEND_URL_VALUE
 
 echo "Build completed successfully!"
+
+# Verify critical files exist
+echo "Verifying build output..."
+if [ -f "build/web/index.html" ]; then
+  echo "✓ index.html found"
+else
+  echo "✗ index.html NOT found"
+fi
+
+if [ -f "build/web/manifest.json" ]; then
+  echo "✓ manifest.json found"
+else
+  echo "✗ manifest.json NOT found"
+fi
+
+if [ -f "build/web/flutter_bootstrap.js" ]; then
+  echo "✓ flutter_bootstrap.js found"
+else
+  echo "✗ flutter_bootstrap.js NOT found"
+fi
+
+echo "Build verification complete!"

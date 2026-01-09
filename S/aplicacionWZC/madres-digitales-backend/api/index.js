@@ -903,6 +903,8 @@ app.get('/api/gestantes', async (req, res) => {
           activa: true,
           riesgo_alto: true,
           fecha_probable_parto: true,
+          fecha_ultima_menstruacion: true,
+          fecha_nacimiento: true,
         },
       }),
       prisma.gestantes.count({ where }),
@@ -930,6 +932,8 @@ app.get('/api/gestantes/:id', async (req, res) => {
         activa: true,
         riesgo_alto: true,
         fecha_probable_parto: true,
+        fecha_ultima_menstruacion: true,
+        fecha_nacimiento: true,
       },
     });
     if (!g) return res.status(404).json({ success: false, error: 'Gestante no encontrada' });
@@ -3604,6 +3608,7 @@ app.get('/api/dashboard/statistics', async (req, res) => {
       totalGestantes,
       totalMedicos,
       totalIps,
+      totalUsuarios,
       gestantesAltoRiesgo,
       alertasActivas,
       controlesRealizados,
@@ -3612,6 +3617,7 @@ app.get('/api/dashboard/statistics', async (req, res) => {
       prisma.gestantes.count({ where: gestanteWhere }),
       prisma.medicos.count({ where: { activo: true } }),
       prisma.ips.count({ where: { activo: true } }),
+      prisma.usuarios.count({ where: { activo: true } }),
       prisma.gestantes.count({ where: { ...gestanteWhere, riesgo_alto: true } }),
       prisma.alertas.count({ where: alertaWhere }),
       prisma.control_prenatal.count({ where: { ...controlWhere, realizado: true } }),
@@ -3642,6 +3648,7 @@ app.get('/api/dashboard/statistics', async (req, res) => {
       alertasActivas,
       totalMedicos,
       totalIps,
+      totalUsuarios,
       gestantesAltoRiesgo,
       controlesHoy,
       proximosCitas
@@ -3705,17 +3712,78 @@ app.get('/api/dashboard', async (req, res) => {
   }
 });
 
-app.get('/api/reportes/descargar/estadisticas-gestantes', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Estadísticas de gestantes obtenidas exitosamente',
-    data: {
-      id: 'estadisticas-gestantes',
-      titulo: 'Estadísticas de Gestantes',
-      fechaGeneracion: new Date().toISOString(),
-      datos: []
+// Descargar estadísticas de gestantes como PDF
+app.get('/api/reportes/descargar/estadisticas-gestantes/pdf', async (req, res) => {
+  try {
+    console.log('📄 Generando PDF de estadísticas de gestantes...');
+
+    // Obtener datos de estadísticas
+    const estadisticasResponse = await fetch(`${req.protocol}://${req.get('host')}/api/reportes/estadisticas-gestantes?${new URLSearchParams(req.query)}`);
+    const estadisticasData = await estadisticasResponse.json();
+
+    if (!estadisticasData.success) {
+      throw new Error('Error obteniendo datos de estadísticas');
     }
-  });
+
+    // Generar PDF usando el servicio
+    const reportesGenerator = require('../src/services/reportes-generator.service');
+    const pdfBuffer = await reportesGenerator.generateEstadisticasGestantesPDF(estadisticasData.data);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="estadisticas-gestantes.pdf"');
+    res.send(pdfBuffer);
+
+    console.log('📄 PDF de estadísticas de gestantes generado exitosamente');
+  } catch (error) {
+    console.error('❌ Error generando PDF de estadísticas de gestantes:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error generando PDF de estadísticas de gestantes: ' + error.message
+    });
+  }
+});
+
+// Descargar estadísticas de gestantes como Excel
+app.get('/api/reportes/descargar/estadisticas-gestantes/excel', async (req, res) => {
+  try {
+    console.log('📊 Generando Excel de estadísticas de gestantes...');
+
+    // Obtener datos de estadísticas
+    const estadisticasResponse = await fetch(`${req.protocol}://${req.get('host')}/api/reportes/estadisticas-gestantes?${new URLSearchParams(req.query)}`);
+    const estadisticasData = await estadisticasResponse.json();
+
+    if (!estadisticasData.success) {
+      throw new Error('Error obteniendo datos de estadísticas');
+    }
+
+    // Generar Excel usando el servicio
+    const reportesGenerator = require('../src/services/reportes-generator.service');
+    const excelBuffer = await reportesGenerator.generateEstadisticasGestantesExcel(estadisticasData.data);
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="estadisticas-gestantes.xlsx"');
+    res.send(excelBuffer);
+
+    console.log('📊 Excel de estadísticas de gestantes generado exitosamente');
+  } catch (error) {
+    console.error('❌ Error generando Excel de estadísticas de gestantes:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error generando Excel de estadísticas de gestantes: ' + error.message
+    });
+  }
+});
+
+// Endpoint genérico para descargar estadísticas de gestantes (redirige según formato)
+app.get('/api/reportes/descargar/estadisticas-gestantes', (req, res) => {
+  const formato = req.query.formato || 'pdf';
+  const queryString = new URLSearchParams(req.query).toString();
+  
+  if (formato === 'excel' || formato === 'xlsx') {
+    res.redirect(`/api/reportes/descargar/estadisticas-gestantes/excel?${queryString}`);
+  } else {
+    res.redirect(`/api/reportes/descargar/estadisticas-gestantes/pdf?${queryString}`);
+  }
 });
 
 // Middleware de validación de datos - NUEVO
@@ -3885,6 +3953,7 @@ app.get('/api/reportes/resumen-general', async (req, res) => {
       gestantesActivas,
       totalControles,
       controlesRealizados,
+      controlesPendientes,
       totalAlertas,
       alertasActivas,
       totalMedicos,
@@ -3896,6 +3965,7 @@ app.get('/api/reportes/resumen-general', async (req, res) => {
       prisma.gestantes.count({ where: { activa: true } }),
       prisma.control_prenatal.count(),
       prisma.control_prenatal.count({ where: { realizado: true } }),
+      prisma.control_prenatal.count({ where: { realizado: false } }),
       prisma.alertas.count(),
       prisma.alertas.count({ where: { resuelta: false } }),
       prisma.medicos.count(),
@@ -3907,10 +3977,15 @@ app.get('/api/reportes/resumen-general', async (req, res) => {
     // Calcular gestantes de alto riesgo
     const gestantesAltoRiesgo = await prisma.gestantes.count({ where: { riesgo_alto: true } });
     
-    // Calcular controles del mes actual
+    // Calcular gestantes nuevas (último mes)
     const inicioMes = new Date();
     inicioMes.setDate(1);
     inicioMes.setHours(0, 0, 0, 0);
+    const gestantesNuevas = await prisma.gestantes.count({
+      where: { fecha_creacion: { gte: inicioMes } }
+    });
+    
+    // Calcular controles del mes actual
     const controlesEsteMes = await prisma.control_prenatal.count({
       where: { fecha_control: { gte: inicioMes } }
     });
@@ -3927,12 +4002,16 @@ app.get('/api/reportes/resumen-general', async (req, res) => {
 
     const resumen = {
       total_gestantes: totalGestantes,
-      total_controles: totalControles,
-      total_alertas_activas: alertasActivas,
+      gestantes_activas: gestantesActivas,
+      gestantes_nuevas: gestantesNuevas,
       gestantes_alto_riesgo: gestantesAltoRiesgo,
+      total_controles: totalControles,
+      controles_realizados: controlesRealizados,
+      controles_pendientes: controlesPendientes,
       controles_este_mes: controlesEsteMes,
-      alertas_criticas: alertasCriticas,
       promedio_controles_por_gestante: promedioControles,
+      total_alertas_activas: alertasActivas,
+      alertas_criticas: alertasCriticas,
       fecha_generacion: new Date()
     };
 
@@ -3964,42 +4043,13 @@ app.get('/api/reportes/descargar/resumen-general/pdf', async (req, res) => {
       throw new Error('Error obteniendo datos del resumen');
     }
 
-    // Por ahora, devolver un PDF simple (en una implementación real usarías una librería como puppeteer o jsPDF)
-    const pdfContent = `
-      RESUMEN GENERAL DEL SISTEMA
-      ===========================
-      
-      Fecha de generación: ${new Date().toLocaleDateString()}
-      
-      GESTANTES:
-      - Total: ${resumenData.data.gestantes.total}
-      - Activas: ${resumenData.data.gestantes.activas}
-      - Inactivas: ${resumenData.data.gestantes.inactivas}
-      
-      CONTROLES PRENATALES:
-      - Total: ${resumenData.data.controles.total}
-      - Realizados: ${resumenData.data.controles.realizados}
-      - Pendientes: ${resumenData.data.controles.pendientes}
-      
-      ALERTAS:
-      - Total: ${resumenData.data.alertas.total}
-      - Activas: ${resumenData.data.alertas.activas}
-      - Resueltas: ${resumenData.data.alertas.resueltas}
-      
-      MÉDICOS:
-      - Total: ${resumenData.data.medicos.total}
-      - Activos: ${resumenData.data.medicos.activos}
-      - Inactivos: ${resumenData.data.medicos.inactivos}
-      
-      IPS:
-      - Total: ${resumenData.data.ips.total}
-      - Activas: ${resumenData.data.ips.activas}
-      - Inactivas: ${resumenData.data.ips.inactivas}
-    `;
+    // Generar PDF usando el servicio
+    const reportesGenerator = require('../src/services/reportes-generator.service');
+    const pdfBuffer = await reportesGenerator.generateResumenGeneralPDF(resumenData.data);
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename="resumen-general.pdf"');
-    res.send(Buffer.from(pdfContent, 'utf8'));
+    res.send(pdfBuffer);
 
     console.log('📄 PDF de resumen general generado exitosamente');
   } catch (error) {
@@ -4024,17 +4074,13 @@ app.get('/api/reportes/descargar/resumen-general/excel', async (req, res) => {
       throw new Error('Error obteniendo datos del resumen');
     }
 
-    // Por ahora, devolver un CSV simple (en una implementación real usarías una librería como exceljs)
-    const csvContent = `Categoría,Total,Activos/Realizados,Inactivos/Pendientes
-Gestantes,${resumenData.data.gestantes.total},${resumenData.data.gestantes.activas},${resumenData.data.gestantes.inactivas}
-Controles,${resumenData.data.controles.total},${resumenData.data.controles.realizados},${resumenData.data.controles.pendientes}
-Alertas,${resumenData.data.alertas.total},${resumenData.data.alertas.activas},${resumenData.data.alertas.resueltas}
-Médicos,${resumenData.data.medicos.total},${resumenData.data.medicos.activos},${resumenData.data.medicos.inactivos}
-IPS,${resumenData.data.ips.total},${resumenData.data.ips.activas},${resumenData.data.ips.inactivas}`;
+    // Generar Excel usando el servicio
+    const reportesGenerator = require('../src/services/reportes-generator.service');
+    const excelBuffer = await reportesGenerator.generateResumenGeneralExcel(resumenData.data);
 
-    res.setHeader('Content-Type', 'application/vnd.ms-excel');
-    res.setHeader('Content-Disposition', 'attachment; filename="resumen-general.csv"');
-    res.send(csvContent);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="resumen-general.xlsx"');
+    res.send(excelBuffer);
 
     console.log('📊 Excel de resumen general generado exitosamente');
   } catch (error) {
@@ -4350,6 +4396,154 @@ app.get('/api/reportes/estadisticas-alertas', async (req, res) => {
   }
 });
 
+// Descargar estadísticas de controles como PDF
+app.get('/api/reportes/descargar/estadisticas-controles/pdf', async (req, res) => {
+  try {
+    console.log('📄 Generando PDF de estadísticas de controles...');
+
+    // Obtener datos de estadísticas
+    const estadisticasResponse = await fetch(`${req.protocol}://${req.get('host')}/api/reportes/estadisticas-controles?${new URLSearchParams(req.query)}`);
+    const estadisticasData = await estadisticasResponse.json();
+
+    if (!estadisticasData.success) {
+      throw new Error('Error obteniendo datos de estadísticas');
+    }
+
+    // Generar PDF usando el servicio
+    const reportesGenerator = require('../src/services/reportes-generator.service');
+    const pdfBuffer = await reportesGenerator.generateEstadisticasControlesPDF(estadisticasData.data);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="estadisticas-controles.pdf"');
+    res.send(pdfBuffer);
+
+    console.log('📄 PDF de estadísticas de controles generado exitosamente');
+  } catch (error) {
+    console.error('❌ Error generando PDF de estadísticas de controles:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error generando PDF de estadísticas de controles: ' + error.message
+    });
+  }
+});
+
+// Descargar estadísticas de controles como Excel
+app.get('/api/reportes/descargar/estadisticas-controles/excel', async (req, res) => {
+  try {
+    console.log('📊 Generando Excel de estadísticas de controles...');
+
+    // Obtener datos de estadísticas
+    const estadisticasResponse = await fetch(`${req.protocol}://${req.get('host')}/api/reportes/estadisticas-controles?${new URLSearchParams(req.query)}`);
+    const estadisticasData = await estadisticasResponse.json();
+
+    if (!estadisticasData.success) {
+      throw new Error('Error obteniendo datos de estadísticas');
+    }
+
+    // Generar Excel usando el servicio
+    const reportesGenerator = require('../src/services/reportes-generator.service');
+    const excelBuffer = await reportesGenerator.generateEstadisticasControlesExcel(estadisticasData.data);
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="estadisticas-controles.xlsx"');
+    res.send(excelBuffer);
+
+    console.log('📊 Excel de estadísticas de controles generado exitosamente');
+  } catch (error) {
+    console.error('❌ Error generando Excel de estadísticas de controles:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error generando Excel de estadísticas de controles: ' + error.message
+    });
+  }
+});
+
+// Endpoint genérico para descargar estadísticas de controles (redirige según formato)
+app.get('/api/reportes/descargar/estadisticas-controles', (req, res) => {
+  const formato = req.query.formato || 'pdf';
+  const queryString = new URLSearchParams(req.query).toString();
+  
+  if (formato === 'excel' || formato === 'xlsx') {
+    res.redirect(`/api/reportes/descargar/estadisticas-controles/excel?${queryString}`);
+  } else {
+    res.redirect(`/api/reportes/descargar/estadisticas-controles/pdf?${queryString}`);
+  }
+});
+
+// Descargar estadísticas de alertas como PDF
+app.get('/api/reportes/descargar/estadisticas-alertas/pdf', async (req, res) => {
+  try {
+    console.log('📄 Generando PDF de estadísticas de alertas...');
+
+    // Obtener datos de estadísticas
+    const estadisticasResponse = await fetch(`${req.protocol}://${req.get('host')}/api/reportes/estadisticas-alertas?${new URLSearchParams(req.query)}`);
+    const estadisticasData = await estadisticasResponse.json();
+
+    if (!estadisticasData.success) {
+      throw new Error('Error obteniendo datos de estadísticas');
+    }
+
+    // Generar PDF usando el servicio
+    const reportesGenerator = require('../src/services/reportes-generator.service');
+    const pdfBuffer = await reportesGenerator.generateEstadisticasAlertasPDF(estadisticasData.data);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="estadisticas-alertas.pdf"');
+    res.send(pdfBuffer);
+
+    console.log('📄 PDF de estadísticas de alertas generado exitosamente');
+  } catch (error) {
+    console.error('❌ Error generando PDF de estadísticas de alertas:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error generando PDF de estadísticas de alertas: ' + error.message
+    });
+  }
+});
+
+// Descargar estadísticas de alertas como Excel
+app.get('/api/reportes/descargar/estadisticas-alertas/excel', async (req, res) => {
+  try {
+    console.log('📊 Generando Excel de estadísticas de alertas...');
+
+    // Obtener datos de estadísticas
+    const estadisticasResponse = await fetch(`${req.protocol}://${req.get('host')}/api/reportes/estadisticas-alertas?${new URLSearchParams(req.query)}`);
+    const estadisticasData = await estadisticasResponse.json();
+
+    if (!estadisticasData.success) {
+      throw new Error('Error obteniendo datos de estadísticas');
+    }
+
+    // Generar Excel usando el servicio
+    const reportesGenerator = require('../src/services/reportes-generator.service');
+    const excelBuffer = await reportesGenerator.generateEstadisticasAlertasExcel(estadisticasData.data);
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="estadisticas-alertas.xlsx"');
+    res.send(excelBuffer);
+
+    console.log('📊 Excel de estadísticas de alertas generado exitosamente');
+  } catch (error) {
+    console.error('❌ Error generando Excel de estadísticas de alertas:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error generando Excel de estadísticas de alertas: ' + error.message
+    });
+  }
+});
+
+// Endpoint genérico para descargar estadísticas de alertas (redirige según formato)
+app.get('/api/reportes/descargar/estadisticas-alertas', (req, res) => {
+  const formato = req.query.formato || 'pdf';
+  const queryString = new URLSearchParams(req.query).toString();
+  
+  if (formato === 'excel' || formato === 'xlsx') {
+    res.redirect(`/api/reportes/descargar/estadisticas-alertas/excel?${queryString}`);
+  } else {
+    res.redirect(`/api/reportes/descargar/estadisticas-alertas/pdf?${queryString}`);
+  }
+});
+
 // ==================== FIN ENDPOINTS DE REPORTES ====================
 
 // 404 handler se mueve al final del archivo para no interceptar rutas válidas
@@ -4381,8 +4575,6 @@ if (require.main === module) {
   });
 }
 
-// Export for Vercel
-module.exports = app;
 // Controles - listado mínimo
 // Endpoint duplicado eliminado - usar el de línea 2133 que tiene filtrado por rol
 
@@ -5128,6 +5320,94 @@ app.delete('/api/alertas/:id', async (req, res) => {
   }
 });
 
+// ===== RUTAS DE REPORTES =====
+// Importar el servicio de reportes
+const ReportesService = require('./reportes.service');
+const reportesService = new ReportesService();
+
+// Generar reporte completo
+app.get('/api/reportes/generar', async (req, res) => {
+  try {
+    const { municipioId, madrinaId, fechaInicio, fechaFin } = req.query;
+    
+    const filtros = {};
+    
+    if (municipioId && typeof municipioId === 'string') {
+      filtros.municipioId = municipioId;
+    }
+    
+    if (madrinaId && typeof madrinaId === 'string') {
+      filtros.madrinaId = madrinaId;
+    }
+    
+    if (fechaInicio && typeof fechaInicio === 'string') {
+      filtros.fechaInicio = new Date(fechaInicio);
+    }
+    
+    if (fechaFin && typeof fechaFin === 'string') {
+      filtros.fechaFin = new Date(fechaFin);
+    }
+
+    console.log('📊 Generando reporte con filtros:', filtros);
+
+    const reporte = await reportesService.generarReporteCompleto(filtros);
+    
+    res.json({
+      success: true,
+      data: reporte
+    });
+    
+  } catch (error) {
+    console.error('❌ Error generando reporte:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error interno del servidor'
+    });
+  }
+});
+
+// Obtener municipios para filtros
+app.get('/api/reportes/municipios', async (req, res) => {
+  try {
+    const municipios = await reportesService.obtenerMunicipios();
+    
+    res.json({
+      success: true,
+      data: municipios
+    });
+    
+  } catch (error) {
+    console.error('❌ Error obteniendo municipios:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error interno del servidor'
+    });
+  }
+});
+
+// Obtener madrinas para filtros
+app.get('/api/reportes/madrinas', async (req, res) => {
+  try {
+    const { municipioId } = req.query;
+    
+    const madrinas = await reportesService.obtenerMadrinas(
+      municipioId && typeof municipioId === 'string' ? municipioId : undefined
+    );
+    
+    res.json({
+      success: true,
+      data: madrinas
+    });
+    
+  } catch (error) {
+    console.error('❌ Error obteniendo madrinas:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error interno del servidor'
+    });
+  }
+});
+
 // 404 handler - ÚLTIMO: debe ir al final
 app.use('*', (req, res) => {
   const auth = req.get('Authorization');
@@ -5229,6 +5509,286 @@ app.get('/api/reportes/resumen-general', async (req, res) => {
   }
 });
 */
+
+// ===== ENDPOINTS DE DESCARGA DASHBOARD REPORTES =====
+
+// Descargar dashboard de reportes como PDF
+app.get('/api/reportes/dashboard/pdf', async (req, res) => {
+  try {
+    console.log('📄 Generando PDF del dashboard de reportes...');
+    
+    const { municipioId, madrinaId, fechaInicio, fechaFin } = req.query;
+    
+    const filtros = {};
+    if (municipioId && typeof municipioId === 'string') {
+      filtros.municipioId = municipioId;
+    }
+    if (madrinaId && typeof madrinaId === 'string') {
+      filtros.madrinaId = madrinaId;
+    }
+    if (fechaInicio && typeof fechaInicio === 'string') {
+      filtros.fechaInicio = new Date(fechaInicio);
+    }
+    if (fechaFin && typeof fechaFin === 'string') {
+      filtros.fechaFin = new Date(fechaFin);
+    }
+
+    // Obtener datos del reporte
+    const reporte = await reportesService.generarReporteCompleto(filtros);
+    
+    if (!reporte) {
+      return res.status(404).json({ success: false, error: 'No se pudieron obtener los datos del reporte' });
+    }
+
+    // Generar PDF usando el servicio
+    const reportesGenerator = require('../src/services/reportes-generator.service');
+    const pdfBuffer = await reportesGenerator.generateDashboardReportesPDF(reporte);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="dashboard-reportes-${new Date().toISOString().split('T')[0]}.pdf"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+    
+    console.log('✅ PDF del dashboard de reportes generado exitosamente');
+    res.send(pdfBuffer);
+
+  } catch (error) {
+    console.error('❌ Error generando PDF del dashboard de reportes:', error);
+    res.status(500).json({ success: false, error: 'Error generando PDF del dashboard de reportes: ' + error.message });
+  }
+});
+
+// Descargar dashboard de reportes como Excel
+app.get('/api/reportes/dashboard/excel', async (req, res) => {
+  try {
+    console.log('📊 Generando Excel del dashboard de reportes...');
+    
+    const { municipioId, madrinaId, fechaInicio, fechaFin } = req.query;
+    
+    const filtros = {};
+    if (municipioId && typeof municipioId === 'string') {
+      filtros.municipioId = municipioId;
+    }
+    if (madrinaId && typeof madrinaId === 'string') {
+      filtros.madrinaId = madrinaId;
+    }
+    if (fechaInicio && typeof fechaInicio === 'string') {
+      filtros.fechaInicio = new Date(fechaInicio);
+    }
+    if (fechaFin && typeof fechaFin === 'string') {
+      filtros.fechaFin = new Date(fechaFin);
+    }
+
+    // Obtener datos del reporte
+    const reporte = await reportesService.generarReporteCompleto(filtros);
+    
+    if (!reporte) {
+      return res.status(404).json({ success: false, error: 'No se pudieron obtener los datos del reporte' });
+    }
+
+    // Generar Excel usando el servicio
+    const reportesGenerator = require('../src/services/reportes-generator.service');
+    const excelBuffer = await reportesGenerator.generateDashboardReportesExcel(reporte);
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="dashboard-reportes-${new Date().toISOString().split('T')[0]}.xlsx"`);
+    res.setHeader('Content-Length', excelBuffer.length);
+    
+    console.log('✅ Excel del dashboard de reportes generado exitosamente');
+    res.send(excelBuffer);
+
+  } catch (error) {
+    console.error('❌ Error generando Excel del dashboard de reportes:', error);
+    res.status(500).json({ success: false, error: 'Error generando Excel del dashboard de reportes: ' + error.message });
+  }
+});
+
+// Endpoint genérico para descargar dashboard de reportes (redirige según formato)
+app.get('/api/reportes/dashboard/descargar', (req, res) => {
+  const formato = req.query.formato || 'pdf';
+  const queryString = new URLSearchParams(req.query).toString();
+  
+  if (formato === 'excel' || formato === 'xlsx') {
+    res.redirect(`/api/reportes/dashboard/excel?${queryString}`);
+  } else {
+    res.redirect(`/api/reportes/dashboard/pdf?${queryString}`);
+  }
+});
+
+// ===== ENDPOINTS DE PUERPERIO =====
+
+// Endpoint para obtener estadísticas de puerperio
+app.get('/api/puerperio/estadisticas', async (req, res) => {
+  try {
+    console.log('📊 Obteniendo estadísticas de puerperio...');
+
+    // Obtener estadísticas de gestantes activas
+    const totalGestantesActivas = await prisma.gestantes.count({
+      where: { activa: true }
+    });
+
+    // Obtener estadísticas de puerperio
+    const totalPuerperio = await prisma.puerperio.count();
+
+    // Calcular total combinado
+    const totalCombinado = totalGestantesActivas + totalPuerperio;
+
+    const estadisticas = {
+      success: true,
+      data: {
+        resumen: {
+          total_gestantes_activas: totalGestantesActivas,
+          total_puerperio: totalPuerperio,
+          total_combinado: totalCombinado
+        },
+        detalles: {
+          gestantes_activas: totalGestantesActivas,
+          puerperio: totalPuerperio,
+          total: totalCombinado
+        }
+      }
+    };
+
+    console.log('✅ Estadísticas de puerperio obtenidas:', estadisticas.data.resumen);
+    res.json(estadisticas);
+
+  } catch (error) {
+    console.error('❌ Error obteniendo estadísticas de puerperio:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error obteniendo estadísticas de puerperio: ' + error.message
+    });
+  }
+});
+
+// Endpoint para listar registros de puerperio
+app.get('/api/puerperio', async (req, res) => {
+  try {
+    console.log('📋 Obteniendo registros de puerperio...');
+
+    const page = parseInt(req.query.page || '1', 10);
+    const limit = parseInt(req.query.limit || '20', 10);
+    const skip = (page - 1) * limit;
+
+    const [registros, total] = await Promise.all([
+      prisma.puerperio.findMany({
+        skip,
+        take: limit,
+        orderBy: { fecha_parto: 'desc' },
+        include: {
+          gestante: {
+            select: {
+              id: true,
+              nombre: true,
+              documento: true,
+              telefono: true
+            }
+          }
+        }
+      }),
+      prisma.puerperio.count()
+    ]);
+
+    console.log(`✅ ${registros.length} registros de puerperio obtenidos (página ${page})`);
+    
+    res.json({
+      success: true,
+      data: registros,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error obteniendo registros de puerperio:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error obteniendo registros de puerperio: ' + error.message
+    });
+  }
+});
+
+// Endpoint para crear registro de puerperio
+app.post('/api/puerperio', async (req, res) => {
+  try {
+    console.log('➕ Creando registro de puerperio...');
+
+    const {
+      gestante_id,
+      fecha_parto,
+      tipo_parto,
+      peso_bebe,
+      talla_bebe,
+      apgar_1min,
+      apgar_5min,
+      complicaciones,
+      observaciones
+    } = req.body;
+
+    if (!gestante_id || !fecha_parto) {
+      return res.status(400).json({
+        success: false,
+        error: 'gestante_id y fecha_parto son requeridos'
+      });
+    }
+
+    // Verificar que la gestante existe
+    const gestante = await prisma.gestantes.findUnique({
+      where: { id: gestante_id }
+    });
+
+    if (!gestante) {
+      return res.status(404).json({
+        success: false,
+        error: 'Gestante no encontrada'
+      });
+    }
+
+    // Generar ID único
+    const id = `puerperio_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+    const nuevoPuerperio = await prisma.puerperio.create({
+      data: {
+        id,
+        gestante_id,
+        fecha_parto: new Date(fecha_parto),
+        tipo_parto: tipo_parto || null,
+        peso_bebe: peso_bebe ? parseFloat(peso_bebe) : null,
+        talla_bebe: talla_bebe ? parseFloat(talla_bebe) : null,
+        apgar_1min: apgar_1min ? parseInt(apgar_1min) : null,
+        apgar_5min: apgar_5min ? parseInt(apgar_5min) : null,
+        complicaciones: complicaciones || null,
+        observaciones: observaciones || null
+      },
+      include: {
+        gestante: {
+          select: {
+            id: true,
+            nombre: true,
+            documento: true
+          }
+        }
+      }
+    });
+
+    console.log('✅ Registro de puerperio creado:', nuevoPuerperio.id);
+
+    res.status(201).json({
+      success: true,
+      message: 'Registro de puerperio creado exitosamente',
+      data: nuevoPuerperio
+    });
+
+  } catch (error) {
+    console.error('❌ Error creando registro de puerperio:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error creando registro de puerperio: ' + error.message
+    });
+  }
+});
 
 // Exportar para Vercel
 module.exports = app;

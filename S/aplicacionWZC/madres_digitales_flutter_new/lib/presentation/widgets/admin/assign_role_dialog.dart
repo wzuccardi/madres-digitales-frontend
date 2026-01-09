@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../data/services/api_service.dart';
+import '../../../core/network/api_service.dart';
 
 class AssignRoleDialog extends ConsumerStatefulWidget {
   final String userId;
@@ -37,8 +37,8 @@ class _AssignRoleDialogState extends ConsumerState<AssignRoleDialog> {
 
     setState(() => _isLoading = true);
     try {
-      final apiService = ref.read(apiServiceProvider);
-      await apiService.patch('/usuarios/${widget.userId}/rol', {
+      final apiService = ApiService();
+      await apiService.patch<Map<String, dynamic>>('/usuarios/${widget.userId}/rol', data: {
         'rol': _selectedRole,
       });
 

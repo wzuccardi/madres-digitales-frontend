@@ -182,16 +182,28 @@ class _ReportesScreenState extends ConsumerState<ReportesScreen> {
             childAspectRatio: 1.5,
             children: [
               _buildStatCard(
-                'Gestantes',
-                data['total_gestantes']?.toString() ?? '0',
+                'Gestantes Activas',
+                data['gestantes_activas']?.toString() ?? '0',
                 Colors.pink,
                 Icons.pregnant_woman,
               ),
               _buildStatCard(
-                'Controles',
-                data['total_controles']?.toString() ?? '0',
+                'Nuevas (Este Mes)',
+                data['gestantes_nuevas']?.toString() ?? '0',
+                Colors.purple,
+                Icons.person_add,
+              ),
+              _buildStatCard(
+                'Controles Realizados',
+                data['controles_realizados']?.toString() ?? '0',
+                Colors.green,
+                Icons.check_circle,
+              ),
+              _buildStatCard(
+                'Controles Pendientes',
+                data['controles_pendientes']?.toString() ?? '0',
                 Colors.blue,
-                Icons.assignment,
+                Icons.pending,
               ),
               _buildStatCard(
                 'Alertas Activas',
@@ -268,20 +280,7 @@ class _ReportesScreenState extends ConsumerState<ReportesScreen> {
             color: Colors.orange,
             endpoint: 'estadisticas-alertas',
           ),
-          _buildReporteCardWithDownload(
-            titulo: 'Estadísticas de Riesgo',
-            descripcion: 'Distribución de gestantes por nivel de riesgo',
-            icono: Icons.warning,
-            color: Colors.red,
-            endpoint: 'estadisticas-riesgo',
-          ),
-          _buildReporteCardWithDownload(
-            titulo: 'Tendencias',
-            descripcion: 'Análisis de tendencias temporales',
-            icono: Icons.trending_up,
-            color: Colors.teal,
-            endpoint: 'tendencias',
-          ),
+
         ],
       ),
     );
@@ -427,8 +426,14 @@ class _ReportesScreenState extends ConsumerState<ReportesScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al descargar: $e'),
+            content: Text('Error al descargar: El servidor aún no tiene implementada la generación de reportes en $formato. Por favor contacte al administrador.'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'OK',
+              textColor: Colors.white,
+              onPressed: () {},
+            ),
           ),
         );
       }

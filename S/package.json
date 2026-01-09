@@ -1,0 +1,9 @@
+{
+  "name": "madrinas-scripts",
+  "version": "1.0.0",
+  "description": "Scripts para gestión de usuarios",
+  "main": "generar_hash_password.js",
+  "dependencies": {
+    "bcrypt": "^5.1.0"
+  }
+}

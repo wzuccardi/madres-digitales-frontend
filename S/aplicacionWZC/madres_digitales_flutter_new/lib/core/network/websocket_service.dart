@@ -88,9 +88,7 @@ class WebSocketService {
       final protocol = server.startsWith('https') ? 'wss' : 'ws';
       final url = server.replaceFirst(RegExp(r'^https?'), protocol);
       final parsed = Uri.tryParse(url);
-      final wsUrl = (parsed != null && parsed.host == 'localhost' && (parsed.port == 3000 || parsed.port == 80))
-          ? parsed.replace(port: 3001).toString()
-          : url;
+      final wsUrl = url;
       final token = await ApiService().getAccessToken();
 
       final opts = io.OptionBuilder()
