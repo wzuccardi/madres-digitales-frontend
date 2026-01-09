@@ -1,5 +1,6 @@
 // Configuración centralizada de la aplicación
 // Asegura consistencia en todas las configuraciones del sistema
+// FORCE REDEPLOY: 2026-01-09 - Widget Puerperio Implementado
 
 class AppConfig {
   static const String environment = String.fromEnvironment('ENVIRONMENT', defaultValue: 'production');
