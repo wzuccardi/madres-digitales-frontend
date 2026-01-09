@@ -1,8 +1,9 @@
 // Configuración centralizada de la aplicación
 // Asegura consistencia en todas las configuraciones del sistema
+// FORCE REDEPLOY: 2026-01-09 - Widget Puerperio Implementado
 
 class AppConfig {
-  static const String environment = String.fromEnvironment('ENVIRONMENT', defaultValue: 'development');
+  static const String environment = String.fromEnvironment('ENVIRONMENT', defaultValue: 'production');
   static bool get isLocalMode => environment != 'production';
 
   // URLs configurables desde variables de entorno
@@ -21,7 +22,8 @@ class AppConfig {
 
   static String get backendBaseUrlEffective {
     final base = backendUrlPlainEnv.isNotEmpty ? backendUrlPlainEnv : backendBaseUrlProductionEnv;
-    return base.endsWith('/api') ? base : '$base/api';
+    // No agregar /api aquí porque se agrega en el endpoint específico
+    return base;
   }
   static String get backendBaseUrl => backendBaseUrlEffective;
   static String get webUrl => isLocalMode ? webUrlLocal : webUrlProduction;
@@ -91,9 +93,9 @@ class AppConfig {
   };
   
   // Configuración de desarrollo
-  static const bool isDebugMode = true;
-  static const bool enableLogging = true;
-  static const bool enableDebugPrints = true;
+  static const bool isDebugMode = false;
+  static const bool enableLogging = false;
+  static const bool enableDebugPrints = false;
   
   // Configuración de animaciones
   static const Duration defaultAnimationDuration = Duration(milliseconds: 300);
