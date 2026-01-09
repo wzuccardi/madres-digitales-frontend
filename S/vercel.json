@@ -1,20 +1,23 @@
 {
   "version": 2,
-  "buildCommand": "cd aplicacionWZC/madres-digitales-backend && npm run vercel-build",
-  "installCommand": "cd aplicacionWZC/madres-digitales-backend && npm install",
-  "outputDirectory": "aplicacionWZC/madres-digitales-backend/dist",
-  "functions": {
-    "aplicacionWZC/madres-digitales-backend/api/index.js": {
-      "includeFiles": "aplicacionWZC/madres-digitales-backend/api/**"
-    }
-  },
-  "rewrites": [
+  "builds": [
     {
-      "source": "/(.*)",
-      "destination": "/aplicacionWZC/madres-digitales-backend/api/index.js"
+      "src": "aplicacionWZC/madres-digitales-backend/api/index.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "aplicacionWZC/madres-digitales-backend/api/index.js"
     }
   ],
   "env": {
     "NODE_ENV": "production"
+  },
+  "functions": {
+    "aplicacionWZC/madres-digitales-backend/api/index.js": {
+      "maxDuration": 30
+    }
   }
 }

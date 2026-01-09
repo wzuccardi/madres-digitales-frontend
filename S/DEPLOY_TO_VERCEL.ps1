@@ -1,148 +1,83 @@
-# Script de Deployment a Vercel - Madres Digitales Frontend
-# Autor: Wilson Zuccardi
-# Fecha: 2024-11-21
+# Script para despliegue manual en Vercel
+Write-Host "🚀 INICIANDO DESPLIEGUE MANUAL EN VERCEL..." -ForegroundColor Cyan
 
-Write-Host "🚀 Madres Digitales - Deployment a Vercel" -ForegroundColor Cyan
-Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host ""
-
-# Verificar si Vercel CLI está instalado
-Write-Host "📦 Verificando Vercel CLI..." -ForegroundColor Yellow
-$vercelInstalled = Get-Command vercel -ErrorAction SilentlyContinue
-
-if (-not $vercelInstalled) {
-    Write-Host "❌ Vercel CLI no está instalado" -ForegroundColor Red
-    Write-Host ""
-    Write-Host "Instalando Vercel CLI..." -ForegroundColor Yellow
+# Verificar si vercel CLI está instalado
+try {
+    $vercelVersion = vercel --version
+    Write-Host "✅ Vercel CLI encontrado: $vercelVersion" -ForegroundColor Green
+} catch {
+    Write-Host "❌ Vercel CLI no encontrado. Instalando..." -ForegroundColor Red
     npm install -g vercel
+}
+
+Write-Host "`n📦 Configurando proyecto para despliegue..." -ForegroundColor Yellow
+
+# Hacer commit de los cambios de configuración
+Write-Host "📝 Haciendo commit de cambios de configuración..." -ForegroundColor Gray
+git add .
+git commit -m "fix: Simplificar configuración Vercel para despliegue
+
+- Cambiar vercel.json a configuración builds/routes estándar
+- Simplificar package.json para evitar errores de Prisma
+- Remover comandos complejos que causan problemas en Vercel"
+
+# Push a ambos repositorios
+Write-Host "📤 Haciendo push a repositorios..." -ForegroundColor Gray
+git push origin master
+git push frontend master
+
+Write-Host "`n🔧 OPCIONES DE DESPLIEGUE:" -ForegroundColor Cyan
+Write-Host "1. Despliegue automático: Vercel detectará los cambios en ~2-3 minutos" -ForegroundColor White
+Write-Host "2. Despliegue manual: Usar 'vercel --prod' en el directorio del proyecto" -ForegroundColor White
+Write-Host "3. Dashboard Vercel: Hacer redeploy manual desde https://vercel.com/dashboard" -ForegroundColor White
+
+Write-Host "`n📋 INFORMACIÓN DEL PROYECTO:" -ForegroundColor Cyan
+Write-Host "- Backend: https://github.com/wzuccardi/madres-digitales-backend" -ForegroundColor White
+Write-Host "- Frontend: https://github.com/wzuccardi/madres-digitales-frontend" -ForegroundColor White
+Write-Host "- Rama: master" -ForegroundColor White
+Write-Host "- Configuración: Simplificada para Vercel" -ForegroundColor White
+
+Write-Host "`n⏰ Esperando despliegue automático..." -ForegroundColor Yellow
+Write-Host "Los cambios deberían reflejarse en 2-3 minutos." -ForegroundColor Gray
+
+# Función para verificar el despliegue
+function Test-Deployment {
+    Write-Host "`n🔍 Verificando despliegue..." -ForegroundColor Yellow
     
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "❌ Error al instalar Vercel CLI" -ForegroundColor Red
-        exit 1
-    }
-    
-    Write-Host "✅ Vercel CLI instalado correctamente" -ForegroundColor Green
-} else {
-    Write-Host "✅ Vercel CLI ya está instalado" -ForegroundColor Green
-}
-
-Write-Host ""
-
-# Verificar si Flutter está instalado
-Write-Host "📦 Verificando Flutter..." -ForegroundColor Yellow
-$flutterInstalled = Get-Command flutter -ErrorAction SilentlyContinue
-
-if (-not $flutterInstalled) {
-    Write-Host "❌ Flutter no está instalado" -ForegroundColor Red
-    Write-Host "Por favor instala Flutter desde: https://flutter.dev/docs/get-started/install" -ForegroundColor Yellow
-    exit 1
-}
-
-Write-Host "✅ Flutter está instalado" -ForegroundColor Green
-flutter --version
-Write-Host ""
-
-# Cambiar al directorio del frontend
-Write-Host "📂 Cambiando al directorio del frontend..." -ForegroundColor Yellow
-Set-Location "S\aplicacionWZC\madres_digitales_flutter_new"
-
-if (-not (Test-Path "pubspec.yaml")) {
-    Write-Host "❌ No se encontró pubspec.yaml. Verifica que estás en el directorio correcto" -ForegroundColor Red
-    exit 1
-}
-
-Write-Host "✅ Directorio correcto" -ForegroundColor Green
-Write-Host ""
-
-# Limpiar build anterior
-Write-Host "🧹 Limpiando build anterior..." -ForegroundColor Yellow
-if (Test-Path "build\web") {
-    Remove-Item -Recurse -Force "build\web"
-    Write-Host "✅ Build anterior eliminado" -ForegroundColor Green
-} else {
-    Write-Host "ℹ️  No hay build anterior" -ForegroundColor Gray
-}
-
-Write-Host ""
-
-# Obtener dependencias
-Write-Host "📦 Obteniendo dependencias de Flutter..." -ForegroundColor Yellow
-flutter pub get
-
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "❌ Error al obtener dependencias" -ForegroundColor Red
-    exit 1
-}
-
-Write-Host "✅ Dependencias obtenidas" -ForegroundColor Green
-Write-Host ""
-
-# Build para web
-Write-Host "🔨 Compilando Flutter Web..." -ForegroundColor Yellow
-Write-Host "Esto puede tomar varios minutos..." -ForegroundColor Gray
-flutter build web --release --web-renderer canvaskit --no-tree-shake-icons
-
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "❌ Error al compilar Flutter Web" -ForegroundColor Red
-    exit 1
-}
-
-Write-Host "✅ Compilación exitosa" -ForegroundColor Green
-Write-Host ""
-
-# Verificar que build/web existe
-if (-not (Test-Path "build\web\index.html")) {
-    Write-Host "❌ No se generó el build correctamente" -ForegroundColor Red
-    exit 1
-}
-
-Write-Host "✅ Build generado en build/web" -ForegroundColor Green
-Write-Host ""
-
-# Preguntar tipo de deployment
-Write-Host "🚀 Tipo de deployment:" -ForegroundColor Cyan
-Write-Host "1. Production (--prod)" -ForegroundColor White
-Write-Host "2. Preview (default)" -ForegroundColor White
-Write-Host ""
-$deployType = Read-Host "Selecciona una opción (1 o 2)"
-
-$deployCommand = "vercel"
-if ($deployType -eq "1") {
-    $deployCommand = "vercel --prod"
-    Write-Host ""
-    Write-Host "⚠️  Vas a desplegar a PRODUCCIÓN" -ForegroundColor Yellow
-    $confirm = Read-Host "¿Estás seguro? (s/n)"
-    
-    if ($confirm -ne "s" -and $confirm -ne "S") {
-        Write-Host "❌ Deployment cancelado" -ForegroundColor Red
-        exit 0
+    try {
+        $response = Invoke-RestMethod -Uri "https://madres-digitales-backend.vercel.app" -TimeoutSec 10
+        if ($response.success) {
+            Write-Host "✅ Backend desplegado correctamente" -ForegroundColor Green
+            
+            # Probar endpoint de puerperio
+            try {
+                $puerperioResponse = Invoke-RestMethod -Uri "https://madres-digitales-backend.vercel.app/api/puerperio/estadisticas" -TimeoutSec 10
+                if ($puerperioResponse.success) {
+                    Write-Host "✅ Endpoint puerperio funcionando" -ForegroundColor Green
+                    Write-Host "   Datos: $($puerperioResponse.data.resumen.total_combinado) total" -ForegroundColor White
+                } else {
+                    Write-Host "❌ Endpoint puerperio con errores" -ForegroundColor Red
+                }
+            } catch {
+                Write-Host "❌ Endpoint puerperio no responde" -ForegroundColor Red
+            }
+        }
+    } catch {
+        Write-Host "❌ Backend no responde aún" -ForegroundColor Red
     }
 }
 
-Write-Host ""
-Write-Host "🚀 Desplegando a Vercel..." -ForegroundColor Yellow
-Write-Host "Comando: $deployCommand" -ForegroundColor Gray
-Write-Host ""
-
-# Ejecutar deployment
-Invoke-Expression $deployCommand
-
-if ($LASTEXITCODE -ne 0) {
-    Write-Host ""
-    Write-Host "❌ Error en el deployment" -ForegroundColor Red
-    exit 1
+# Verificar cada 30 segundos por 5 minutos
+Write-Host "`n⏳ Verificando cada 30 segundos..." -ForegroundColor Gray
+for ($i = 1; $i -le 10; $i++) {
+    Write-Host "Intento $i/10..." -ForegroundColor Gray
+    Test-Deployment
+    if ($i -lt 10) {
+        Start-Sleep -Seconds 30
+    }
 }
 
-Write-Host ""
-Write-Host "✅ Deployment completado exitosamente!" -ForegroundColor Green
-Write-Host ""
-Write-Host "📊 Próximos pasos:" -ForegroundColor Cyan
-Write-Host "1. Verifica que el sitio carga correctamente" -ForegroundColor White
-Write-Host "2. Prueba el login y funcionalidades principales" -ForegroundColor White
-Write-Host "3. Verifica que la conexión con el backend funciona" -ForegroundColor White
-Write-Host ""
-Write-Host "🔗 Enlaces útiles:" -ForegroundColor Cyan
-Write-Host "Dashboard Vercel: https://vercel.com/dashboard" -ForegroundColor White
-Write-Host "Documentación: Ver VERCEL_DEPLOYMENT.md" -ForegroundColor White
-Write-Host ""
-Write-Host "✨ ¡Listo!" -ForegroundColor Green
+Write-Host "`n🎯 DESPLIEGUE COMPLETADO" -ForegroundColor Green
+Write-Host "Verifica manualmente en:" -ForegroundColor White
+Write-Host "- Backend: https://madres-digitales-backend.vercel.app" -ForegroundColor Cyan
+Write-Host "- Frontend: https://madres-digitales-frontend.vercel.app" -ForegroundColor Cyan
