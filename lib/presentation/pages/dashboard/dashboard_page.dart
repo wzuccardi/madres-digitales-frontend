@@ -319,8 +319,10 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                     _buildStatCard('IPS', (_stats!['totalIps'] ?? 0).toString(), Colors.brown, Icons.local_hospital),
                     if (userRoleLower == AppConstants.adminRole ||
                         userRoleLower == AppConstants.superAdminRole ||
-                        userRoleLower == AppConstants.coordinatorRole)
+                        userRoleLower == AppConstants.coordinatorRole) ...[
+                      _buildStatCard('Usuarios', (_stats!['totalUsuarios'] ?? 0).toString(), Colors.purple, Icons.people),
                       _buildStatCard('Críticas Hoy', _alertasCriticas.toString(), Colors.red, Icons.priority_high),
+                    ],
                   ],
                 ),
               if (_topMunicipios.isNotEmpty || _topIps.isNotEmpty || _topMedicos.isNotEmpty) ...[

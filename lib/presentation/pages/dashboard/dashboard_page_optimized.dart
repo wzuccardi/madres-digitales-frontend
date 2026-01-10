@@ -343,7 +343,15 @@ class _DashboardPageOptimizedState extends ConsumerState<DashboardPageOptimized>
   Widget _buildStatsGrid(String? userRole) {
     final isAdmin = userRole == AppConstants.adminRole || 
                     userRole == AppConstants.superAdminRole ||
+                    userRole == 'superadmin' || // Agregar compatibilidad con superadmin sin guión bajo
                     userRole == AppConstants.coordinatorRole;
+
+    // Debug temporal: verificar rol y condición isAdmin
+    print('🔍 DEBUG Dashboard: userRole = "$userRole"');
+    print('🔍 DEBUG Dashboard: isAdmin = $isAdmin');
+    print('🔍 DEBUG Dashboard: adminRole = "${AppConstants.adminRole}"');
+    print('🔍 DEBUG Dashboard: superAdminRole = "${AppConstants.superAdminRole}"');
+    print('🔍 DEBUG Dashboard: coordinatorRole = "${AppConstants.coordinatorRole}"');
 
     return GridView.count(
       crossAxisCount: 2,
@@ -404,6 +412,15 @@ class _DashboardPageOptimizedState extends ConsumerState<DashboardPageOptimized>
             null,
           ),
         ],
+        // 🔧 TEMPORAL: Mostrar usuarios para todos los roles para debug
+        if (!isAdmin) 
+          _buildStatCard(
+            'Usuarios (Debug)',
+            (_stats!['totalUsuarios'] ?? 0).toString(),
+            Colors.purple.withOpacity(0.7),
+            Icons.people_outline,
+            null,
+          ),
       ],
     );
   }
