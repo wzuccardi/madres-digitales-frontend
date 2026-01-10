@@ -31,7 +31,7 @@ class _SyncConflictsScreenState extends State<SyncConflictsScreen> {
     try {
       setState(() => _isLoading = true);
 
-      final response = await _dio.get('/sync/conflicts');
+      final response = await _dio.get('/api/sync/conflicts');
       final data = response.data['data'] as List;
 
       setState(() {

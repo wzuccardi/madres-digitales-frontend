@@ -160,7 +160,7 @@ class ContenidoService {
   }
   
   Future<Map<String, dynamic>> getEstadisticasContenidos() async {
-    final response = await _apiService.get('/contenido/estadisticas');
+    final response = await _apiService.get('/api/contenido/estadisticas');
     if (response.statusCode == 200 && response.data != null) {
       return response.data['data'] as Map<String, dynamic>;
     }

@@ -166,7 +166,7 @@ class _UsuarioFormScreenState extends ConsumerState<UsuarioFormScreen> {
       if (widget.usuario == null) {
         // Crear nuevo usuario - usar API directamente
         final apiService = ref.read(apiServiceProvider);
-        await apiService.post('/usuarios', data: usuarioData);
+        await apiService.post('/api/usuarios', data: usuarioData);
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -177,7 +177,7 @@ class _UsuarioFormScreenState extends ConsumerState<UsuarioFormScreen> {
       } else {
         // Actualizar usuario existente - usar API directamente
         final apiService = ref.read(apiServiceProvider);
-        await apiService.put('/usuarios/${widget.usuario!.id}', data: usuarioData);
+        await apiService.put('/api/usuarios/${widget.usuario!.id}', data: usuarioData);
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

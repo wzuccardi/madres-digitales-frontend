@@ -5,14 +5,14 @@ class DashboardService {
   final ApiService _api;
 
   Future<Map<String, dynamic>> getDashboardData() async {
-    final resp = await _api.get<Map<String, dynamic>>('/dashboard');
+    final resp = await _api.get<Map<String, dynamic>>('/api/dashboard');
     if (!resp.success || resp.data == null) return <String, dynamic>{};
     final root = resp.data as Map<String, dynamic>;
     return root['data'] is Map<String, dynamic> ? root['data'] as Map<String, dynamic> : root;
   }
 
   Future<Map<String, dynamic>> getStatistics() async {
-    final resp = await _api.get<Map<String, dynamic>>('/dashboard/statistics');
+    final resp = await _api.get<Map<String, dynamic>>('/api/dashboard/statistics');
     if (!resp.success || resp.data == null) return <String, dynamic>{};
     final root = resp.data as Map<String, dynamic>;
     return root['data'] is Map<String, dynamic> ? root['data'] as Map<String, dynamic> : root;

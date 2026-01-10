@@ -169,7 +169,7 @@ class ApiService {
           if (refreshToken != null) {
             try {
               final response = await _dio.post(
-                '/auth/refresh',
+                '/api/auth/refresh',
                 data: {'refreshToken': refreshToken},
               );
                

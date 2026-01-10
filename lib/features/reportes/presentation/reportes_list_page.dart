@@ -24,7 +24,7 @@ class _ReportesListPageState extends ConsumerState<ReportesListPage> {
   Future<void> fetchReportes() async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      final response = await apiService.get('/reportes');
+      final response = await apiService.get('/api/reportes');
       
       // Manejar diferentes tipos de respuesta
       dynamic responseData = response.data;

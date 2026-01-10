@@ -19,7 +19,7 @@ class AlertaNotifier extends AsyncNotifier<List<Alerta>> {
   Future<List<Alerta>> _fetchAlertas() async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      final response = await apiService.get<dynamic>('/alertas');
+      final response = await apiService.get<dynamic>('/api/alertas');
       final List<dynamic> data = apiService.extractList(response.data);
       return data.map((json) => Alerta.fromJson(json)).toList();
     } catch (e) {
@@ -30,7 +30,7 @@ class AlertaNotifier extends AsyncNotifier<List<Alerta>> {
   Future<void> addAlerta(Alerta alerta) async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      await apiService.post('/alertas', data: alerta.toJson());
+      await apiService.post('/api/alertas', data: alerta.toJson());
       ref.invalidateSelf();
     } catch (e) {
       throw Exception('Error al agregar alerta: $e');
@@ -55,7 +55,7 @@ class AlertaNotifier extends AsyncNotifier<List<Alerta>> {
   Future<void> updateAlerta(String id, Alerta alerta) async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      await apiService.put('/alertas/$id', data: alerta.toJson());
+      await apiService.put('/api/alertas/$id', data: alerta.toJson());
       ref.invalidateSelf();
     } catch (e) {
       throw Exception('Error al actualizar alerta: $e');
@@ -65,7 +65,7 @@ class AlertaNotifier extends AsyncNotifier<List<Alerta>> {
   Future<void> deleteAlerta(String id) async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      await apiService.delete('/alertas/$id');
+      await apiService.delete('/api/alertas/$id');
       ref.invalidateSelf();
     } catch (e) {
       throw Exception('Error al eliminar alerta: $e');

@@ -13,11 +13,11 @@ class AppConstants {
   
   // Endpoints específicos
   static const String authEndpoint = '/auth';
-  static const String gestantesEndpoint = '/gestantes';
-  static const String medicosEndpoint = '/medicos';
-  static const String ipsEndpoint = '/ips';
+  static const String gestantesEndpoint = '/api/gestantes';
+  static const String medicosEndpoint = '/api/medicos';
+  static const String ipsEndpoint = '/api/ips';
   static const String sosEndpoint = '/sos';
-  static const String contenidoEndpoint = '/contenido';
+  static const String contenidoEndpoint = '/api/contenido';
   
   // Rutas de la aplicación
   static const String loginRoute = '/login';

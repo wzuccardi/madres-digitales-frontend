@@ -103,7 +103,7 @@ class ContenidoRemoteDataSourceImpl implements ContenidoRemoteDataSource {
     queryParams['limit'] = limit;
 
     final response = await apiService.get<Map<String, dynamic>>(
-      '/contenido-crud',
+      '/api/contenido-crud',
       queryParameters: queryParams,
     );
     if (response.success && response.data != null) {
@@ -116,7 +116,7 @@ class ContenidoRemoteDataSourceImpl implements ContenidoRemoteDataSource {
 
   @override
   Future<ContenidoModel> getContenidoById(String id) async {
-    final response = await apiService.get<Map<String, dynamic>>('/contenido-crud/$id');
+    final response = await apiService.get<Map<String, dynamic>>('/api/contenido-crud/$id');
     if (response.success && response.data != null) {
       final payload = response.data!;
       final data = payload.containsKey('data') ? payload['data'] as Map<String, dynamic> : payload;
@@ -168,7 +168,7 @@ class ContenidoRemoteDataSourceImpl implements ContenidoRemoteDataSource {
       data['semana_gestacion_fin'] = semanaGestacionFin;
     }
 
-    final response = await apiService.post<Map<String, dynamic>>('/contenido-crud', data: data);
+    final response = await apiService.post<Map<String, dynamic>>('/api/contenido-crud', data: data);
     if (response.success && response.data != null) {
       final payload = response.data!;
       final map = (payload['contenido'] as Map<String, dynamic>?) ?? (payload['data'] as Map<String, dynamic>?);
@@ -240,7 +240,7 @@ class ContenidoRemoteDataSourceImpl implements ContenidoRemoteDataSource {
       data['semana_gestacion_fin'] = semanaGestacionFin;
     }
 
-    final response = await apiService.put<Map<String, dynamic>>('/contenido-crud/$id', data: data);
+    final response = await apiService.put<Map<String, dynamic>>('/api/contenido-crud/$id', data: data);
     if (response.success && response.data != null) {
       final payload = response.data!;
       final map = (payload['contenido'] as Map<String, dynamic>?) ?? (payload['data'] as Map<String, dynamic>?);
@@ -253,7 +253,7 @@ class ContenidoRemoteDataSourceImpl implements ContenidoRemoteDataSource {
 
   @override
   Future<void> deleteContenido(String id) async {
-    final response = await apiService.delete<dynamic>('/contenido-crud/$id');
+    final response = await apiService.delete<dynamic>('/api/contenido-crud/$id');
     if (!response.success) {
       throw ServerException(response.message ?? 'Error al eliminar contenido');
     }
@@ -287,7 +287,7 @@ class ContenidoRemoteDataSourceImpl implements ContenidoRemoteDataSource {
     }
 
     final response = await apiService.get<Map<String, dynamic>>(
-      '/contenido-crud',
+      '/api/contenido-crud',
       queryParameters: queryParams,
     );
     if (response.success && response.data != null) {
@@ -300,7 +300,7 @@ class ContenidoRemoteDataSourceImpl implements ContenidoRemoteDataSource {
 
   @override
   Future<void> toggleFavorito(String contenidoId) async {
-    final response = await apiService.post<dynamic>('/contenido/$contenidoId/favorito');
+    final response = await apiService.post<dynamic>('/api/contenido/$contenidoId/favorito');
     if (!response.success) {
       throw ServerException(response.message ?? 'Error al alternar favorito');
     }
@@ -308,7 +308,7 @@ class ContenidoRemoteDataSourceImpl implements ContenidoRemoteDataSource {
 
   @override
   Future<void> registrarVista(String contenidoId) async {
-    final response = await apiService.post<dynamic>('/contenido/$contenidoId/vista');
+    final response = await apiService.post<dynamic>('/api/contenido/$contenidoId/vista');
     if (!response.success) {
       throw ServerException(response.message ?? 'Error al registrar vista');
     }
@@ -335,7 +335,7 @@ class ContenidoRemoteDataSourceImpl implements ContenidoRemoteDataSource {
       data['completado'] = completado;
     }
 
-    final response = await apiService.post<dynamic>('/contenido/$contenidoId/progreso', data: data);
+    final response = await apiService.post<dynamic>('/api/contenido/$contenidoId/progreso', data: data);
     if (!response.success) {
       throw ServerException(response.message ?? 'Error al actualizar progreso');
     }
@@ -343,7 +343,7 @@ class ContenidoRemoteDataSourceImpl implements ContenidoRemoteDataSource {
 
   @override
   Future<List<ContenidoModel>> getFavoritos(String usuarioId) async {
-    final response = await apiService.get<Map<String, dynamic>>('/usuarios/$usuarioId/favoritos');
+    final response = await apiService.get<Map<String, dynamic>>('/api/usuarios/$usuarioId/favoritos');
     if (response.success && response.data != null) {
       final payload = response.data!;
       final List<dynamic> contenidosJson = (payload['data'] as List?) ?? [];
@@ -354,7 +354,7 @@ class ContenidoRemoteDataSourceImpl implements ContenidoRemoteDataSource {
 
   @override
   Future<List<ContenidoModel>> getContenidosConProgreso(String usuarioId) async {
-    final response = await apiService.get<Map<String, dynamic>>('/usuarios/$usuarioId/progreso');
+    final response = await apiService.get<Map<String, dynamic>>('/api/usuarios/$usuarioId/progreso');
     if (response.success && response.data != null) {
       final payload = response.data!;
       final List<dynamic> contenidosJson = (payload['data'] as List?) ?? [];
@@ -365,7 +365,7 @@ class ContenidoRemoteDataSourceImpl implements ContenidoRemoteDataSource {
 
   @override
   Future<List<CategoriaModel>> getCategorias() async {
-    final response = await apiService.get<Map<String, dynamic>>('/categorias');
+    final response = await apiService.get<Map<String, dynamic>>('/api/categorias');
     if (response.success && response.data != null) {
       final payload = response.data!;
       final List<dynamic> categoriasJson = (payload['data'] as List?) ?? [];

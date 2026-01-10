@@ -143,21 +143,21 @@ class AppConfig {
   };
   
   // Configuración de endpoints
-  static const String endpointAuth = '/auth';
-  static const String endpointGestantes = '/gestantes';
-  static const String endpointAlertas = '/alertas';
-  static const String endpointControles = '/controles';
-  static const String endpointMunicipios = '/municipios';
-  static const String endpointIPS = '/ips';
-  static const String endpointMedicos = '/medicos';
-  static const String endpointUsuarios = '/usuarios';
+  static const String endpointAuth = '/api/auth';
+  static const String endpointGestantes = '/api/gestantes';
+  static const String endpointAlertas = '/api/alertas';
+  static const String endpointControles = '/api/controles';
+  static const String endpointMunicipios = '/api/municipios';
+  static const String endpointIPS = '/api/ips';
+  static const String endpointMedicos = '/api/medicos';
+  static const String endpointUsuarios = '/api/usuarios';
   
   // Configuración de endpoints específicos para madrinas
-  static const String endpointGestantesPorMadrina = '/gestantes/madrina';
-  static const String endpointAsignarGestante = '/gestantes/asignar';
-  static const String endpointTransferirGestante = '/gestantes/transferir';
-  static const String endpointPermisosGestante = '/gestantes/permiso';
-  static const String endpointSOS = '/alertas/sos';
+  static const String endpointGestantesPorMadrina = '/api/gestantes/madrina';
+  static const String endpointAsignarGestante = '/api/gestantes/asignar';
+  static const String endpointTransferirGestante = '/api/gestantes/transferir';
+  static const String endpointPermisosGestante = '/api/gestantes/permiso';
+  static const String endpointSOS = '/api/alertas/sos';
   
   // Configuración de errores
   static const String errorNetwork = 'Error de conexión';

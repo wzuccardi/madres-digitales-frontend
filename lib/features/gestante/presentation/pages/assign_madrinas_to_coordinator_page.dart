@@ -29,8 +29,8 @@ class _AssignMadrinasToCoordinatorPageState extends ConsumerState<AssignMadrinas
     });
     try {
       final api = ref.read(apiServiceProvider);
-      final coordResp = await api.get<dynamic>('/usuarios', queryParameters: {'rol': 'coordinador'});
-      final madrResp = await api.get<dynamic>('/usuarios', queryParameters: {'rol': 'madrina'});
+      final coordResp = await api.get<dynamic>('/api/usuarios', queryParameters: {'rol': 'coordinador'});
+      final madrResp = await api.get<dynamic>('/api/usuarios', queryParameters: {'rol': 'madrina'});
       final coords = api.extractData(coordResp.data);
       final mads = api.extractData(madrResp.data);
       final coordList = <Map<String, String>>[];

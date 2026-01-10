@@ -106,7 +106,7 @@ class AuthService {
       
       // Validar token con el servidor
       final response = await _apiService.get<Map<String, dynamic>>(
-        '/auth/me',
+        '/api/auth/me',
         options: Options(headers: {
           'Authorization': 'Bearer $token',
         }),
@@ -141,7 +141,7 @@ class AuthService {
       }
       
       final response = await _apiService.post<Map<String, dynamic>>(
-        '/auth/refresh',
+        '/api/auth/refresh',
         data: {
           'refreshToken': refreshToken,
         },
@@ -166,7 +166,7 @@ class AuthService {
       if (token == null) return false;
       
       final response = await _apiService.get<Map<String, dynamic>>(
-        '/auth/me',
+        '/api/auth/me',
         options: Options(headers: {
           'Authorization': 'Bearer $token',
         }),
@@ -188,7 +188,7 @@ class AuthService {
       }
       
       final response = await _apiService.post<Map<String, dynamic>>(
-        '/auth/change-password',
+        '/api/auth/change-password',
         data: {
           'userId': user.id,
           'currentPassword': currentPassword,
@@ -208,7 +208,7 @@ class AuthService {
   Future<void> resetPassword(String email) async {
     try {
       final response = await _apiService.post<Map<String, dynamic>>(
-        '/auth/reset-password',
+        '/api/auth/forgot-password',
         data: {
           'email': email,
         },
@@ -235,7 +235,7 @@ class AuthService {
       }
       
       final response = await _apiService.put<Map<String, dynamic>>(
-        '/auth/profile',
+        '/api/auth/profile',
         data: {
           'userId': user.id,
           'nombre': nombre,

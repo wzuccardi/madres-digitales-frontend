@@ -19,7 +19,7 @@ class ControlRepositoryImpl {
   Future<List<ControlModel>> fetchControles() async {
     List<dynamic> controlesData = [];
     if (_api != null) {
-      final resp = await _api!.get<dynamic>('/controles');
+      final resp = await _api!.get<dynamic>('/api/controles');
       final fromList = _api!.extractList(resp.data);
       if (fromList.isNotEmpty) {
         controlesData = fromList;
@@ -32,7 +32,7 @@ class ControlRepositoryImpl {
       await _cache.setList('controles_list', controlesData);
       await _cache.set('controles_list_meta', {'ts': DateTime.now().toIso8601String()});
     } else {
-      final response = await dio.get('/controles');
+      final response = await dio.get('/api/controles');
       if (response.data is Map && response.data['data'] != null) {
         final dataMap = response.data['data'];
         if (dataMap is Map && dataMap['controles'] != null) {
@@ -60,11 +60,11 @@ class ControlRepositoryImpl {
 
   Future<ControlModel> createControl(Map<String, dynamic> data) async {
     if (_api != null) {
-      final resp = await _api!.post<Map<String, dynamic>>('/controles', data: data);
+      final resp = await _api!.post<Map<String, dynamic>>('/api/controles', data: data);
       final obj = _api!.extractObject(resp.data);
       return ControlModel.fromJson(obj);
     }
-    final response = await dio.post('/controles', data: data);
+    final response = await dio.post('/api/controles', data: data);
     return ControlModel.fromJson(response.data);
   }
 }

@@ -33,7 +33,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     setState(() => _isLoading = true);
     try {
       final apiService = ApiService();
-      final response = await apiService.get<Map<String, dynamic>>('/usuarios/me/perfil');
+      final response = await apiService.get<Map<String, dynamic>>('/api/usuarios/me/perfil');
       final data = response.data;
       
       if (data != null && data['id'] != null) {
@@ -59,7 +59,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     setState(() => _isSaving = true);
     try {
       final apiService = ApiService();
-      await apiService.put<Map<String, dynamic>>('/usuarios/me/perfil', data: {
+      await apiService.put<Map<String, dynamic>>('/api/usuarios/me/perfil', data: {
         'nombre': _nombreController.text.trim(),
         'documento': _documentoController.text.trim(),
         'telefono': _telefonoController.text.trim(),

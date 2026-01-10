@@ -28,7 +28,7 @@ class UserRepositoryImpl implements UserRepository {
   @override
   Future<List<User>> getAllUsers([Map<String, dynamic>? filters]) async {
     try {
-      final response = await _apiService.get<List<dynamic>>('/users', queryParameters: filters);
+      final response = await _apiService.get<List<dynamic>>('/api/users', queryParameters: filters);
 
       if (!response.success) {
         throw _UserExceptionImpl(
@@ -48,7 +48,7 @@ class UserRepositoryImpl implements UserRepository {
   @override
   Future<User?> getUserById(String id) async {
     try {
-      final response = await _apiService.get<Map<String, dynamic>>('/users/$id');
+      final response = await _apiService.get<Map<String, dynamic>>('/api/users/$id');
 
       if (!response.success) {
         if (response.statusCode == 404) {

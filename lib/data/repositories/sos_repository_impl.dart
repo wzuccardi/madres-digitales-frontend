@@ -443,7 +443,7 @@ class SOSRepositoryImpl implements SOSRepository {
       }
 
       final response = await _apiService.get<Map<String, dynamic>>(
-        '/alertas/sos/estadisticas',
+        '/api/alertas/sos/estadisticas',
         queryParameters: queryParams,
       );
 

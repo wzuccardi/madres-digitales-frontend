@@ -41,7 +41,7 @@ class _AlertasPageState extends ConsumerState<AlertasPage> {
     try {
       final apiService = ref.read(apiServiceProvider);
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final response = await apiService.get('/alertas?_t=$timestamp');
+      final response = await apiService.get('/api/alertas?_t=$timestamp');
       
       if (!mounted) return;
       
@@ -291,7 +291,7 @@ class _AlertasPageState extends ConsumerState<AlertasPage> {
                                     onPressed: () async {
                                       try {
                                         final apiService = ref.read(apiServiceProvider);
-                                        await apiService.put('/alertas/${a.id}', data: {'resuelta': true});
+                                        await apiService.put('/api/alertas/${a.id}', data: {'resuelta': true});
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           const SnackBar(content: Text('✅ Alerta resuelta')),
                                         );

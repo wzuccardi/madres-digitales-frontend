@@ -15,7 +15,7 @@ class ControlNotifier extends AsyncNotifier<List<Control>> {
   Future<List<Control>> _fetchControles() async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      final response = await apiService.get('/controles');
+      final response = await apiService.get('/api/controles');
 
       // Manejar estructura de respuesta del backend: { success: true, data: { controles: [...] } }
       List<dynamic> controlesData = [];
@@ -44,7 +44,7 @@ class ControlNotifier extends AsyncNotifier<List<Control>> {
   Future<void> addControl(Control control) async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      await apiService.post('/controles', data: control.toJson());
+      await apiService.post('/api/controles', data: control.toJson());
       ref.invalidateSelf();
     } catch (e) {
       throw Exception('Error al agregar control: $e');
@@ -54,7 +54,7 @@ class ControlNotifier extends AsyncNotifier<List<Control>> {
   Future<void> updateControl(String id, Control control) async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      await apiService.put('/controles/$id', data: control.toJson());
+      await apiService.put('/api/controles/$id', data: control.toJson());
       ref.invalidateSelf();
     } catch (e) {
       throw Exception('Error al actualizar control: $e');
@@ -64,7 +64,7 @@ class ControlNotifier extends AsyncNotifier<List<Control>> {
   Future<void> deleteControl(String id) async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      await apiService.delete('/controles/$id');
+      await apiService.delete('/api/controles/$id');
       ref.invalidateSelf();
     } catch (e) {
       throw Exception('Error al eliminar control: $e');

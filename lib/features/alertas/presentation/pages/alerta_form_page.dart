@@ -89,9 +89,9 @@ class _AlertaFormPageState extends ConsumerState<AlertaFormPage> {
       'mensaje': mensajeController.text.trim(),
     };
     if (widget.alerta == null) {
-      await apiService.post('/alertas', data: payload);
+      await apiService.post('/api/alertas', data: payload);
     } else {
-      await apiService.put('/alertas/${widget.alerta!['id']}', data: payload);
+      await apiService.put('/api/alertas/${widget.alerta!['id']}', data: payload);
     }
     if (mounted) Navigator.pop(context);
   }

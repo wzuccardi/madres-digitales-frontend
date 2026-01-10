@@ -16,7 +16,7 @@ class AlertaServiceSimple {
       AppLogger.debug('AlertaServiceSimple: Token preview', context: {'preview': token.substring(0, token.length > 20 ? 20 : token.length)});
     }
     
-    final resp = await _api.get<dynamic>('/alertas', 
+    final resp = await _api.get<dynamic>('/api/alertas', 
       options: Options(
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -65,7 +65,7 @@ class AlertaServiceSimple {
   }
 
   Future<Alerta> getAlertaById(String id) async {
-    final resp = await _api.get<dynamic>('/alertas/$id');
+    final resp = await _api.get<dynamic>('/api/alertas/$id');
     final body = _api.extractObject(resp.data);
     return Alerta.fromJson(body);
   }
@@ -77,7 +77,7 @@ class AlertaServiceSimple {
       'nivel_prioridad': alerta.nivelPrioridad.toString().split('.').last,
       'mensaje': alerta.descripcion,
     };
-    final resp = await _api.post<dynamic>('/alertas', data: payload);
+    final resp = await _api.post<dynamic>('/api/alertas', data: payload);
     final body = _api.extractObject(resp.data);
     return Alerta.fromJson(body);
   }
@@ -89,26 +89,26 @@ class AlertaServiceSimple {
       'nivel_prioridad': alerta.nivelPrioridad.toString().split('.').last,
       'mensaje': alerta.descripcion,
     };
-    final resp = await _api.put<dynamic>('/alertas/$id', data: payload);
+    final resp = await _api.put<dynamic>('/api/alertas/$id', data: payload);
     final body = _api.extractObject(resp.data);
     return Alerta.fromJson(body);
   }
 
   Future<bool> deleteAlerta(String id) async {
-    final resp = await _api.delete<dynamic>('/alertas/$id');
+    final resp = await _api.delete<dynamic>('/api/alertas/$id');
     final code = resp.statusCode ?? 0;
     if (code == 200 || code == 204 || resp.success) return true;
     return false;
   }
 
   Future<Alerta> resolverAlerta(String id) async {
-    final resp = await _api.put<dynamic>('/alertas/$id/resolver');
+    final resp = await _api.put<dynamic>('/api/alertas/$id/resolver');
     final body = _api.extractObject(resp.data);
     return Alerta.fromJson(body);
   }
 
   Future<Alerta> marcarComoLeida(String id) async {
-    final resp = await _api.put<dynamic>('/alertas/$id/leida');
+    final resp = await _api.put<dynamic>('/api/alertas/$id/leida');
     final body = _api.extractObject(resp.data);
     return Alerta.fromJson(body);
   }

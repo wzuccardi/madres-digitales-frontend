@@ -134,7 +134,7 @@ class ContenidoProgresoService {
         'contenidoId': contenidoId,
       });
 
-      final response = await _apiService.get<Map<String, dynamic>>('/contenido/$contenidoId/progreso');
+      final response = await _apiService.get<Map<String, dynamic>>('/api/contenido/$contenidoId/progreso');
       
       if (response.success && response.data != null) {
         final progreso = ProgresoContenido.fromJson(response.data!);
@@ -198,7 +198,7 @@ class ContenidoProgresoService {
     try {
       AppLogger.debug('ContenidoProgresoService: Obteniendo todos los progresos');
 
-      final response = await _apiService.get<List<dynamic>>('/contenido/progreso/usuario');
+      final response = await _apiService.get<List<dynamic>>('/api/contenido/progreso/usuario');
       
       if (response.success && response.data is List<dynamic>) {
         final progresos = (response.data as List<dynamic>)

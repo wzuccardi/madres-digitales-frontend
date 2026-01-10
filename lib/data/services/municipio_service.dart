@@ -10,7 +10,7 @@ class MunicipioService {
   final CacheService _cache;
 
   Future<List<MunicipioIntegrado>> getAllMunicipios() async {
-    final resp = await _api.get<dynamic>('/municipios');
+    final resp = await _api.get<dynamic>('/api/municipios');
     List<dynamic> list = const [];
     if (resp.success && resp.data != null) {
       final payload = resp.data;
@@ -23,7 +23,7 @@ class MunicipioService {
       }
     }
     if (list.isEmpty) {
-      final retry = await _api.get<dynamic>('/municipios', queryParameters: {'ts': DateTime.now().millisecondsSinceEpoch});
+      final retry = await _api.get<dynamic>('/api/municipios', queryParameters: {'ts': DateTime.now().millisecondsSinceEpoch});
       if (retry.success && retry.data != null) {
         final payload = retry.data;
         if (payload is List) {
@@ -49,7 +49,7 @@ class MunicipioService {
   }
 
   Future<Map<String, dynamic>> getStats() async {
-    final resp = await _api.get<Map<String, dynamic>>('/municipios/stats');
+    final resp = await _api.get<Map<String, dynamic>>('/api/municipios/stats');
     if (!resp.success || resp.data == null) return <String, dynamic>{};
     final root = resp.data as Map<String, dynamic>;
     return root['data'] is Map<String, dynamic> ? root['data'] as Map<String, dynamic> : root;
@@ -69,7 +69,7 @@ class MunicipioService {
       if (departamento != null && departamento.isNotEmpty) 'departamento': departamento,
       if (activo != null) 'activo': activo,
     };
-    final resp = await _api.get<dynamic>('/municipios', queryParameters: query);
+    final resp = await _api.get<dynamic>('/api/municipios', queryParameters: query);
     List<dynamic> list = const [];
     if (resp.success && resp.data != null) {
       final payload = resp.data;
@@ -83,7 +83,7 @@ class MunicipioService {
     }
     if (list.isEmpty) {
       final retryQuery = Map<String, dynamic>.from(query)..['ts'] = DateTime.now().millisecondsSinceEpoch;
-      final retry = await _api.get<dynamic>('/municipios', queryParameters: retryQuery);
+      final retry = await _api.get<dynamic>('/api/municipios', queryParameters: retryQuery);
       if (retry.success && retry.data != null) {
         final payload = retry.data;
         if (payload is List) {
@@ -109,7 +109,7 @@ class MunicipioService {
   }
 
   Future<bool> setEstado(String municipioId, bool activo) async {
-    final endpoint = activo ? '/municipios/$municipioId/activar' : '/municipios/$municipioId/desactivar';
+    final endpoint = activo ? '/api/municipios/$municipioId/activar' : '/api/municipios/$municipioId/desactivar';
     final resp = await _api.post<Map<String, dynamic>>(endpoint);
     return resp.success;
   }

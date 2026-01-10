@@ -43,7 +43,7 @@ class MedicoService {
   // Obtener todos los médicos
   Future<List<dynamic>> getAllMedicos() async {
     AppLogger.info('MedicoService: Obteniendo todos los médicos');
-    final response = await _apiService.get<dynamic>('/medicos');
+    final response = await _apiService.get<dynamic>('/api/medicos');
     List<dynamic> medicosData = const [];
     if (response.success && response.data != null) {
       if (response.data is Map<String, dynamic>) {
@@ -99,7 +99,7 @@ class MedicoService {
   // Obtener médicos activos (usa el endpoint principal que ya filtra por activos)
   Future<List<dynamic>> getActiveMedicos() async {
     AppLogger.info('MedicoService: Obteniendo médicos activos');
-    final response = await _apiService.get<dynamic>('/medicos');
+    final response = await _apiService.get<dynamic>('/api/medicos');
     List<dynamic> medicosData = const [];
     if (response.success && response.data != null) {
       if (response.data is Map<String, dynamic>) {
@@ -144,7 +144,7 @@ class MedicoService {
   Future<List<dynamic>> searchMedicos(String query) async {
     try {
       AppLogger.info('MedicoService: Buscando médicos con query: $query');
-      final response = await _apiService.get<dynamic>('/medicos');
+      final response = await _apiService.get<dynamic>('/api/medicos');
       
       if (response.success && response.data != null) {
         List<dynamic> medicos;
@@ -204,7 +204,7 @@ class MedicoService {
     try {
       await _ensureAuthenticated();
       AppLogger.info('MedicoService: Creando nuevo médico');
-      final response = await _apiService.post<Map<String, dynamic>>('/medicos', data: medicoData);
+      final response = await _apiService.post<Map<String, dynamic>>('/api/medicos', data: medicoData);
       
       if (response.success && response.data != null) {
         return response.data!;
@@ -285,7 +285,7 @@ class MedicoService {
   Future<Map<String, dynamic>> getMedicosStats() async {
     try {
       AppLogger.info('MedicoService: Obteniendo estadísticas de médicos');
-      final response = await _apiService.get<dynamic>('/medicos');
+      final response = await _apiService.get<dynamic>('/api/medicos');
       
       if (response.success && response.data != null) {
         List<dynamic> medicos;

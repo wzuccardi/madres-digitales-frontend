@@ -19,7 +19,7 @@ class IntegratedAdminService {
   final ApiService _api;
 
   Future<void> toggleMunicipioEstado(String municipioId, bool activo) async {
-    await _api.put<Map<String, dynamic>>('/municipios/$municipioId/estado', data: {
+    await _api.put<Map<String, dynamic>>('/api/municipios/$municipioId/estado', data: {
       'activo': activo,
     });
   }

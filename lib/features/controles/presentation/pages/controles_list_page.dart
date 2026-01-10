@@ -24,7 +24,7 @@ class _ControlesListPageState extends ConsumerState<ControlesListPage> {
   Future<void> fetchControles() async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      final response = await apiService.get<Map<String, dynamic>>('/controles', options: Options(headers: {
+      final response = await apiService.get<Map<String, dynamic>>('/api/controles', options: Options(headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         'Pragma': 'no-cache',
         'Expires': '0',
@@ -79,7 +79,7 @@ class _ControlesListPageState extends ConsumerState<ControlesListPage> {
                         icon: const Icon(Icons.delete, color: Colors.red),
                         onPressed: () async {
                           final apiService = ref.read(apiServiceProvider);
-                          await apiService.delete('/controles/${control['id']}');
+                          await apiService.delete('/api/controles/${control['id']}');
                           fetchControles();
                         },
                       ),

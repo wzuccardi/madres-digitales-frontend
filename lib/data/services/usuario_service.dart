@@ -8,7 +8,7 @@ class UsuarioService {
 
   Future<List<UsuarioModel>> obtenerUsuarios() async {
     try {
-      final resp = await _apiService.get<Map<String, dynamic>>('/usuarios');
+      final resp = await _apiService.get<Map<String, dynamic>>('/api/usuarios');
       if (!resp.success || resp.data == null) {
         AppLogger.warning('UsuarioService.obtenerUsuarios: No data received');
         return [];

@@ -108,7 +108,7 @@ class IPSService {
   /// Obtener todas las IPS
   Future<List<IPS>> getAllIPS() async {
     AppLogger.debug('IPSService: Obteniendo todas las IPS');
-    final response = await _apiService.get<dynamic>('/ips');
+    final response = await _apiService.get<dynamic>('/api/ips');
     List<dynamic> raw = const [];
     if (response.success && response.data != null) {
       final data = _apiService.extractData(response.data);
@@ -117,7 +117,7 @@ class IPSService {
           : (data is List ? data : const []);
     }
     if (raw.isEmpty) {
-      final retry = await _apiService.get<dynamic>('/ips', queryParameters: {'ts': DateTime.now().millisecondsSinceEpoch});
+      final retry = await _apiService.get<dynamic>('/api/ips', queryParameters: {'ts': DateTime.now().millisecondsSinceEpoch});
       if (retry.success && retry.data != null) {
         final data = _apiService.extractData(retry.data);
         raw = (data is Map<String, dynamic> && data['ips'] is List)
@@ -331,7 +331,7 @@ class IPSService {
       AppLogger.debug('IPSService: Creando IPS: $nombre');
       
       final response = await _apiService.post<Map<String, dynamic>>(
-        '/ips',
+        '/api/ips',
         data: {
           'nombre': nombre,
           'nit': nit,

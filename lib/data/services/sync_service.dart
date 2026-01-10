@@ -235,7 +235,7 @@ class SyncService {
       }
       
       // Obtener datos del servidor
-      final response = await _apiService.get('/gestantes');
+      final response = await _apiService.get('/api/gestantes');
       if (response.success && response.data != null) {
         final serverGestantes = response.data as List<dynamic>;
         await _apiService.setList('gestantes', serverGestantes);
@@ -290,7 +290,7 @@ class SyncService {
       }
       
       // Obtener datos del servidor
-      final response = await _apiService.get('/controles');
+      final response = await _apiService.get('/api/controles');
       if (response.success && response.data != null) {
         final serverControles = response.data as List<dynamic>;
         await _apiService.setList('controles', serverControles);
@@ -320,7 +320,7 @@ class SyncService {
       AppLogger.debug('SyncService: Sincronizando contenido');
       
       // Obtener datos del servidor
-      final response = await _apiService.get('/contenido');
+      final response = await _apiService.get('/api/contenido');
       if (response.success && response.data != null) {
         final serverContenido = response.data as List<dynamic>;
         await _apiService.setList('contenido', serverContenido);
@@ -398,7 +398,7 @@ class SyncService {
   }
   Future<bool> _performQueuedOp(String type, Map<String, dynamic> data) async {
     if (type == 'alertas_create') {
-      final r = await _apiService.post('/alertas', data: data);
+      final r = await _apiService.post('/api/alertas', data: data);
       return r.success;
     } else if (type == 'alertas_resolver') {
       final id = data['id']?.toString() ?? '';
@@ -409,7 +409,7 @@ class SyncService {
       final r = await _apiService.post('/alertas/$id/leida');
       return r.success;
     } else if (type == 'controles_create') {
-      final r = await _apiService.post('/controles', data: data);
+      final r = await _apiService.post('/api/controles', data: data);
       return r.success;
     } else if (type == 'controles_create_eval') {
       final r = await _apiService.post('/alertas-automaticas/controles/con-evaluacion', data: data);
@@ -423,7 +423,7 @@ class SyncService {
       final r = await _apiService.delete('/controles/$id');
       return r.success;
     } else if (type == 'medicos_create') {
-      final r = await _apiService.post('/medicos', data: data);
+      final r = await _apiService.post('/api/medicos', data: data);
       return r.success;
     } else if (type == 'medicos_update') {
       final id = data['id']?.toString() ?? '';

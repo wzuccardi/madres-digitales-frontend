@@ -8,7 +8,7 @@ class GestanteService {
 
   Future<List<Gestante>> getGestantes({int page = 1, int limit = 20, String? search}) async {
     final resp = await _api.get<dynamic>(
-      '/gestantes',
+      '/api/gestantes',
       queryParameters: {
         'page': page,
         'limit': limit,
@@ -29,14 +29,14 @@ class GestanteService {
   Future<bool> eliminarGestante(String id) => deleteGestante(id);
 
   Future<Gestante> getGestanteById(String id) async {
-    final resp = await _api.get<dynamic>('/gestantes/$id');
+    final resp = await _api.get<dynamic>('/api/gestantes/$id');
     final body = _api.extractObject(resp.data);
     return GestanteConverter.apiToGestante(body);
   }
 
   Future<Gestante> createGestante(Gestante gestante) async {
     final payload = GestanteConverter.gestanteToApi(gestante);
-    final resp = await _api.post<dynamic>('/gestantes', data: payload);
+    final resp = await _api.post<dynamic>('/api/gestantes', data: payload);
     final raw = resp.data;
     Map<String, dynamic> body;
     if (raw is Map<String, dynamic> && raw['gestante'] is Map<String, dynamic>) {
@@ -49,7 +49,7 @@ class GestanteService {
 
   Future<Gestante> updateGestante(String id, Gestante gestante) async {
     final payload = GestanteConverter.gestanteToApi(gestante);
-    final resp = await _api.put<dynamic>('/gestantes/$id', data: payload);
+    final resp = await _api.put<dynamic>('/api/gestantes/$id', data: payload);
     final raw = resp.data;
     Map<String, dynamic> body;
     if (raw is Map<String, dynamic> && raw['gestante'] is Map<String, dynamic>) {
@@ -61,7 +61,7 @@ class GestanteService {
   }
 
   Future<bool> deleteGestante(String id) async {
-    final resp = await _api.delete<dynamic>('/gestantes/$id');
+    final resp = await _api.delete<dynamic>('/api/gestantes/$id');
     final code = resp.statusCode ?? 0;
     if (code == 200 || code == 204 || resp.success) return true;
     return false;

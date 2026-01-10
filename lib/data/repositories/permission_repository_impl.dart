@@ -26,7 +26,7 @@ class PermissionRepositoryImpl implements PermissionRepository {
       }
 
       // Obtener desde API
-      final response = await _apiService.get<Map<String, dynamic>>('/usuarios/$userId/permisos');
+      final response = await _apiService.get<Map<String, dynamic>>('/api/usuarios/$userId/permisos');
       if (response.success) {
         final userPermission = UserPermission.fromJson(response.data!);
         
@@ -67,7 +67,7 @@ class PermissionRepositoryImpl implements PermissionRepository {
       }
 
       // Para permisos específicos de gestantes, verificar con API
-      final response = await _apiService.post<Map<String, dynamic>>('/permisos/verificar-gestante', data: {
+      final response = await _apiService.post<Map<String, dynamic>>('/api/permisos/verificar-gestante', data: {
         'userId': userId,
         'gestanteId': gestanteId,
         'permiso': permiso.toString().split('.').last,
@@ -97,7 +97,7 @@ class PermissionRepositoryImpl implements PermissionRepository {
   @override
   Future<void> actualizarPermisosUsuario(String userId, Set<TipoPermiso> nuevosPermisos) async {
     try {
-      final response = await _apiService.put<Map<String, dynamic>>('/usuarios/$userId/permisos', data: {
+      final response = await _apiService.put<Map<String, dynamic>>('/api/usuarios/$userId/permisos', data: {
         'permisos': nuevosPermisos.map((p) => p.toString().split('.').last).toList(),
       });
       

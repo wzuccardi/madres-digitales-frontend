@@ -43,7 +43,7 @@ class GestanteRepositoryImpl implements GestanteRepository {
         queryParams['offset'] = offset;
       }
 
-      final response = await _apiService.get<dynamic>('/gestantes', queryParameters: queryParams);
+      final response = await _apiService.get<dynamic>('/api/gestantes', queryParameters: queryParams);
 
       if (!response.success) {
         AppLogger.error('Error obteniendo gestantes: ${response.error?.message}');
@@ -95,7 +95,7 @@ class GestanteRepositoryImpl implements GestanteRepository {
         return Result.success(cachedGestante);
       }
 
-      final response = await _apiService.get<dynamic>('/gestantes/$id');
+      final response = await _apiService.get<dynamic>('/api/gestantes/$id');
 
       if (!response.success) {
         if (response.statusCode == 404) {
@@ -130,7 +130,7 @@ class GestanteRepositoryImpl implements GestanteRepository {
   Future<Result<Gestante, AppError>> createGestante(Gestante gestante) async {
     try {
       final response = await _apiService.post<Map<String, dynamic>>(
-        '/gestantes',
+        '/api/gestantes',
         data: GestanteConverter.gestanteToApi(gestante),
       );
 
@@ -163,7 +163,7 @@ class GestanteRepositoryImpl implements GestanteRepository {
   Future<Result<Gestante, AppError>> createGestanteFromData(Map<String, dynamic> data) async {
     try {
       final response = await _apiService.post<Map<String, dynamic>>(
-        '/gestantes',
+        '/api/gestantes',
         data: data,
       );
 
@@ -191,7 +191,7 @@ class GestanteRepositoryImpl implements GestanteRepository {
   Future<Result<Gestante, AppError>> updateGestante(Gestante gestante) async {
     try {
       final response = await _apiService.put<Map<String, dynamic>>(
-        '/gestantes/${gestante.id}',
+        '/api/gestantes/${gestante.id}',
         data: GestanteConverter.gestanteToApi(gestante),
       );
 
@@ -224,7 +224,7 @@ class GestanteRepositoryImpl implements GestanteRepository {
   @override
   Future<Result<void, AppError>> deleteGestante(String id) async {
     try {
-      final response = await _apiService.delete<Map<String, dynamic>>('/gestantes/$id');
+      final response = await _apiService.delete<Map<String, dynamic>>('/api/gestantes/$id');
 
       if (!response.success) {
         AppLogger.error('Error eliminando gestante: ${response.error?.message}');

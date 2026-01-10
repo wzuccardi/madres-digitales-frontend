@@ -833,8 +833,8 @@ class _ControlPrenatalMejoradoScreenState extends ConsumerState<ControlPrenatalM
       if (!ok) {
         final apiService = ref.read(apiServiceProvider);
         final endpoint = _evaluarAutomaticamente
-            ? '/alertas-automaticas/controles/con-evaluacion'
-            : '/controles';
+            ? '/api/alertas-automaticas/controles/con-evaluacion'
+            : '/api/controles';
         final resp = await apiService.post<Map<String, dynamic>>(endpoint, data: payload);
         String mensaje = 'Error al guardar';
         if (resp.statusCode == 404) {

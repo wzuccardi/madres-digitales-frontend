@@ -513,8 +513,8 @@ class _MunicipiosAdminScreenState extends ConsumerState<MunicipiosAdminScreen> {
 
       // Usar el endpoint correcto según el estado actual
       final endpoint = activo
-          ? '/municipios/$municipioId/desactivar'
-          : '/municipios/$municipioId/activar';
+          ? '/api/municipios/$municipioId/desactivar'
+          : '/api/municipios/$municipioId/activar';
 
       final response = await apiService.post(endpoint);
 

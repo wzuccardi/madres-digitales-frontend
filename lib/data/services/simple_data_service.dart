@@ -15,7 +15,7 @@ class SimpleDataService {
   Future<List<SimpleGestante>> obtenerGestantes() async {
 
     try {
-      final response = await _apiService.get('/gestantes');
+      final response = await _apiService.get('/api/gestantes');
 
       // Manejar formato paginado: { success: true, data: { gestantes: [...], total: ... } }
       if (response.data is Map<String, dynamic>) {
@@ -59,7 +59,7 @@ class SimpleDataService {
   // Obtener controles - igual que el dashboard
   Future<List<SimpleControl>> obtenerControles() async {
     try {
-      final response = await _apiService.get('/controles');
+      final response = await _apiService.get('/api/controles');
 
       List<dynamic> controlesData;
       if (response.data is Map<String, dynamic>) {
@@ -94,7 +94,7 @@ class SimpleDataService {
   // Obtener alertas - igual que el dashboard
   Future<List<SimpleAlerta>> obtenerAlertas() async {
     try {
-      final response = await _apiService.get('/alertas');
+      final response = await _apiService.get('/api/alertas');
 
       List<dynamic> alertasData;
       if (response.data is Map<String, dynamic>) {
@@ -129,7 +129,7 @@ class SimpleDataService {
   // Obtener gestante por ID
   Future<SimpleGestante?> obtenerGestantePorId(String id) async {
     try {
-      final response = await _apiService.get('/gestantes/$id');
+      final response = await _apiService.get('/api/gestantes/$id');
       
       if (response.data != null) {
         final gestante = SimpleGestante.fromJson(response.data as Map<String, dynamic>);
@@ -178,7 +178,7 @@ class SimpleDataService {
   }) async {
     try {
 
-      final response = await _apiService.post('/alertas/emergencia', data: {
+      final response = await _apiService.post('/api/alertas/emergencia', data: {
         'gestanteId': gestanteId,
         'coordenadas': [longitud, latitud], // Backend espera [lng, lat]
       });
@@ -193,7 +193,7 @@ class SimpleDataService {
   // MÃ©todo para obtener alertas por gestante
   Future<List<SimpleAlerta>> obtenerAlertasPorGestante(String gestanteId) async {
     try {
-      final response = await _apiService.get('/alertas/gestante/$gestanteId');
+      final response = await _apiService.get('/api/alertas/gestante/$gestanteId');
 
       if (response.data is List) {
         final List<dynamic> data = response.data as List<dynamic>;
@@ -213,7 +213,7 @@ class SimpleDataService {
   // MÃ©todo para resolver una alerta
   Future<Map<String, dynamic>> resolverAlerta(String alertaId, {String? observaciones}) async {
     try {
-      final response = await _apiService.put('/alertas/$alertaId/resolver', data: {
+      final response = await _apiService.put('/api/alertas/$alertaId/resolver', data: {
         if (observaciones != null) 'observaciones': observaciones,
       });
 
@@ -232,7 +232,7 @@ class SimpleDataService {
     try {
 
       // Usar el endpoint correcto del backend: /ips-crud/nearby
-      final response = await _apiService.get('/ips-crud/nearby', queryParameters: {
+      final response = await _apiService.get('/api/ips', queryParameters: {
         'lat': latitud.toString(),
         'lng': longitud.toString(),
         'radius': radioKm.toString(),
@@ -258,7 +258,7 @@ class SimpleDataService {
   // MÃ©todo para obtener todas las IPS
   Future<List<SimpleIPS>> obtenerTodasLasIPS() async {
     try {
-      final response = await _apiService.get('/ips');
+      final response = await _apiService.get('/api/ips');
 
       if (response.data is List) {
         final List<dynamic> data = response.data as List<dynamic>;
@@ -278,7 +278,7 @@ class SimpleDataService {
   // MÃ©todo para obtener IPS por municipio
   Future<List<SimpleIPS>> obtenerIPSPorMunicipio(String municipioId) async {
     try {
-      final response = await _apiService.get('/ips/municipio/$municipioId');
+      final response = await _apiService.get('/api/ips/municipio/$municipioId');
 
       if (response.data is List) {
         final List<dynamic> data = response.data as List<dynamic>;
@@ -328,7 +328,7 @@ class SimpleDataService {
         data['creada_por'] = creadaPor;
       }
       
-      final response = await _apiService.post('/gestantes', data: data);
+      final response = await _apiService.post('/api/gestantes', data: data);
 
       if (response.data is Map<String, dynamic>) {
         final data = response.data as Map<String, dynamic>;
@@ -370,7 +370,7 @@ class SimpleDataService {
       if (fechaNacimiento != null) updateData['fecha_nacimiento'] = fechaNacimiento.toIso8601String();
       if (fechaProbableParto != null) updateData['fecha_probable_parto'] = fechaProbableParto.toIso8601String();
 
-      final response = await _apiService.put('/gestantes/$id', data: updateData);
+      final response = await _apiService.put('/api/gestantes/$id', data: updateData);
 
       if (response.data is Map<String, dynamic>) {
         final data = response.data as Map<String, dynamic>;
@@ -398,7 +398,7 @@ class SimpleDataService {
   }) async {
     try {
 
-      final response = await _apiService.post('/controles', data: {
+      final response = await _apiService.post('/api/controles', data: {
         'id': const Uuid().v4(),
         'gestante_id': gestanteId,
         'fecha_control': fechaControl.toIso8601String(),
@@ -445,7 +445,7 @@ class SimpleDataService {
       if (presionDiastolica != null) updateData['presion_diastolica'] = presionDiastolica;
       if (observaciones != null) updateData['observaciones'] = observaciones;
 
-      final response = await _apiService.put('/controles/$id', data: updateData);
+      final response = await _apiService.put('/api/controles/$id', data: updateData);
 
       if (response.data is Map<String, dynamic>) {
         final data = response.data as Map<String, dynamic>;
@@ -473,7 +473,7 @@ class SimpleDataService {
   }) async {
     try {
 
-      final response = await _apiService.post('/alertas', data: {
+      final response = await _apiService.post('/api/alertas', data: {
         'gestante_id': gestanteId,
         'tipo_alerta': tipoAlerta.backendValue,
         'nivel_prioridad': nivelPrioridad.backendValue,
@@ -521,7 +521,7 @@ class SimpleDataService {
       if (latitud != null) updateData['latitud'] = latitud;
       if (longitud != null) updateData['longitud'] = longitud;
 
-      final response = await _apiService.put('/alertas/$id', data: updateData);
+      final response = await _apiService.put('/api/alertas/$id', data: updateData);
 
       if (response.data is Map<String, dynamic>) {
         final data = response.data as Map<String, dynamic>;
@@ -558,13 +558,13 @@ class SimpleDataService {
             
             // Intentar endpoint especÃ­fico de madrina
             try {
-              final response = await _apiService.get('/gestantes/madrina/$madrinaId');
+              final response = await _apiService.get('/api/gestantes/madrina/$madrinaId');
               final gestantes = parseGestantesResponse(response);
               return gestantes;
             } catch (e) {
               
               // MÃ©todo alternativo: obtener todas y filtrar
-              final response = await _apiService.get('/gestantes');
+              final response = await _apiService.get('/api/gestantes');
               final todasGestantes = parseGestantesResponse(response);
               
               // Filtrar manualmente por las relaciones
@@ -583,7 +583,7 @@ class SimpleDataService {
         Future<bool> verificarAccesoMadrina(String gestanteId, String madrinaId) async {
           try {
             // Verificación local
-            final response = await _apiService.get('/gestantes/$gestanteId');
+            final response = await _apiService.get('/api/gestantes/$gestanteId');
             if (response.data != null) {
               final gestante = SimpleGestante.fromJson(response.data as Map<String, dynamic>);
               final tieneAcceso = gestante.madrinaTieneAcceso(madrinaId);
@@ -604,7 +604,7 @@ class SimpleDataService {
         }) async {
           try {
             // Asignación directa a través de la API
-            final response = await _apiService.post('/gestantes/$gestanteId/asignar', data: {
+            final response = await _apiService.post('/api/gestantes/$gestanteId/asignar', data: {
               'madrina_id': madrinaId,
               'asignado_por': asignadoPor,
             });

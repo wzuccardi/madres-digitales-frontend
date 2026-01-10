@@ -52,7 +52,7 @@ class AlertaService {
       }
       
       // Si no hay en caché, obtener del servidor
-      final response = await _apiService.get<Map<String, dynamic>>('/alertas');
+      final response = await _apiService.get<Map<String, dynamic>>('/api/alertas');
       if (response.success) {
         final list = _apiService.extractList(response.data);
         final alertas = list.map((json) => Alerta.fromJson(json)).toList();
@@ -111,7 +111,7 @@ class AlertaService {
         'sobrescribir_con_automatica': sobrescribirConAutomatica,
       };
       final response = await _apiService.post<Map<String, dynamic>>(
-        '/alertas-automaticas/alertas/con-evaluacion',
+        '/api/alertas-automaticas/alertas/con-evaluacion',
         data: payload,
       );
       if (response.success && response.data != null) {
@@ -132,7 +132,7 @@ class AlertaService {
 
   Future<List<Map<String, dynamic>>> obtenerGestantesDisponibles() async {
     try {
-      final resp = await _apiService.get<Map<String, dynamic>>('/gestantes');
+      final resp = await _apiService.get<Map<String, dynamic>>('/api/gestantes');
       if (!resp.success || resp.data == null) return [];
       final root = resp.data!;
       final list = (root['data'] is List)
@@ -172,7 +172,7 @@ class AlertaService {
         if (sintomas != null) 'sintomas': sintomas,
         if (latitud != null && longitud != null) 'coordenadas_alerta': [longitud, latitud],
       };
-      final response = await _apiService.post<Map<String, dynamic>>('/alertas', data: payload);
+      final response = await _apiService.post<Map<String, dynamic>>('/api/alertas', data: payload);
       if (response.success && response.data != null) {
         final alerta = Alerta.fromJson((response.data!['data'] as Map<String, dynamic>)
             .cast<String, dynamic>());
@@ -190,7 +190,7 @@ class AlertaService {
   
   Future<List<Alerta>> getAlertasByGestante(String gestanteId) async {
     try {
-      return await _getAlertasByPath('/alertas/gestante/$gestanteId');
+      return await _getAlertasByPath('/api/alertas/gestante/$gestanteId');
     } on NetworkException catch (e) {
       throw AlertaException(e.message);
     } catch (_) {
@@ -200,7 +200,7 @@ class AlertaService {
   
   Future<List<Alerta>> getAlertasByMadrina(String madrinaId) async {
     try {
-      return await _getAlertasByPath('/alertas/madrina/$madrinaId');
+      return await _getAlertasByPath('/api/alertas/madrina/$madrinaId');
     } on NetworkException catch (e) {
       throw AlertaException(e.message);
     } catch (_) {
@@ -210,7 +210,7 @@ class AlertaService {
   
   Future<Alerta> createAlerta(Alerta alerta) async {
     try {
-      final response = await _apiService.post<Map<String, dynamic>>('/alertas', data: alerta.toJson());
+      final response = await _apiService.post<Map<String, dynamic>>('/api/alertas', data: alerta.toJson());
       if (response.success) {
         final createdAlerta = Alerta.fromJson(response.data!['data']);
         
@@ -233,7 +233,7 @@ class AlertaService {
   
   Future<Alerta> updateAlertaStatus(String id, AlertaEstado estado) async {
     try {
-      final response = await _apiService.put<Map<String, dynamic>>('/alertas/$id/status', data: {
+      final response = await _apiService.put<Map<String, dynamic>>('/api/alertas/$id/status', data: {
         'estado': estado.toString().split('.').last,
       });
       if (response.success) {
@@ -258,7 +258,7 @@ class AlertaService {
   
   Future<void> deleteAlerta(String id) async {
     try {
-      final response = await _apiService.delete<Map<String, dynamic>>('/alertas/$id');
+      final response = await _apiService.delete<Map<String, dynamic>>('/api/alertas/$id');
       if (response.success) {
         // Eliminar de caché
         await _cacheService.deleteCachedAlerta(id);
@@ -296,7 +296,7 @@ class AlertaService {
         if (longitude != null) 'longitude': longitude,
         if (accuracy != null) 'accuracy': accuracy,
       };
-      final response = await _apiService.post<Map<String, dynamic>>('/alertas/emergencia', data: payload);
+      final response = await _apiService.post<Map<String, dynamic>>('/api/alertas/emergencia', data: payload);
       if (!response.success) {
         throw const AlertaException('Failed to send SOS alert');
       }
@@ -309,7 +309,7 @@ class AlertaService {
   
   Future<List<Alerta>> getAlertasByTipo(AlertaTipo tipo) async {
     try {
-      final p = '/alertas/tipo/${tipo.toString().split('.').last}';
+      final p = '/api/alertas/tipo/${tipo.toString().split('.').last}';
       return await _getAlertasByPath(p);
     } on NetworkException catch (e) {
       throw AlertaException(e.message);
@@ -320,7 +320,7 @@ class AlertaService {
   
   Future<List<Alerta>> getAlertasByNivel(AlertaNivel nivel) async {
     try {
-      final p = '/alertas/nivel/${nivel.toString().split('.').last}';
+      final p = '/api/alertas/nivel/${nivel.toString().split('.').last}';
       return await _getAlertasByPath(p);
     } on NetworkException catch (e) {
       throw AlertaException(e.message);
@@ -331,7 +331,7 @@ class AlertaService {
   
   Future<List<Alerta>> getAlertasByEstado(AlertaEstado estado) async {
     try {
-      final p = '/alertas/estado/${estado.toString().split('.').last}';
+      final p = '/api/alertas/estado/${estado.toString().split('.').last}';
       return await _getAlertasByPath(p);
     } on NetworkException catch (e) {
       throw AlertaException(e.message);
@@ -342,7 +342,7 @@ class AlertaService {
   
   Future<List<Alerta>> getAlertasByRangoFecha(DateTime inicio, DateTime fin) async {
     try {
-      final response = await _apiService.get<Map<String, dynamic>>('/alertas/rango', queryParameters: {
+      final response = await _apiService.get<Map<String, dynamic>>('/api/alertas/rango', queryParameters: {
         'inicio': inicio.toIso8601String(),
         'fin': fin.toIso8601String(),
       });
@@ -360,7 +360,7 @@ class AlertaService {
   
   Future<Map<String, dynamic>> getEstadisticasAlertas() async {
     try {
-      final response = await _apiService.get<Map<String, dynamic>>('/alertas/estadisticas');
+      final response = await _apiService.get<Map<String, dynamic>>('/api/alertas/estadisticas');
       if (response.success) {
         return response.data!['data'] as Map<String, dynamic>;
       } else {
@@ -375,7 +375,7 @@ class AlertaService {
   
   Future<void> asignarAlertaMadrina(String alertaId, String madrinaId) async {
     try {
-      final response = await _apiService.post<Map<String, dynamic>>('/alertas/$alertaId/asignar', data: {
+      final response = await _apiService.post<Map<String, dynamic>>('/api/alertas/$alertaId/asignar', data: {
         'madrinaId': madrinaId,
       });
       if (response.success) {
@@ -398,7 +398,7 @@ class AlertaService {
   
   Future<void> marcarAlertaComoLeida(String alertaId) async {
     try {
-      final response = await _apiService.put<Map<String, dynamic>>('/alertas/$alertaId/leida');
+      final response = await _apiService.put<Map<String, dynamic>>('/api/alertas/$alertaId/leida');
       if (response.success) {
         final updatedAlerta = Alerta.fromJson(response.data!['data']);
         
@@ -423,7 +423,7 @@ class AlertaService {
   // Métodos utilitarios
   Future<bool> hasUnreadAlertas(String userId) async {
     try {
-      final response = await _apiService.get<Map<String, dynamic>>('/alertas/$userId/unread/count');
+      final response = await _apiService.get<Map<String, dynamic>>('/api/alertas/$userId/unread/count');
       if (response.success) {
         return (response.data?['count'] as int? ?? 0) > 0;
       } else {
@@ -436,7 +436,7 @@ class AlertaService {
   
   Future<int> getUnreadAlertasCount(String userId) async {
     try {
-      final response = await _apiService.get<Map<String, dynamic>>('/alertas/$userId/unread/count');
+      final response = await _apiService.get<Map<String, dynamic>>('/api/alertas/$userId/unread/count');
       if (response.success) {
         return response.data?['count'] as int? ?? 0;
       } else {

@@ -298,7 +298,7 @@ class MensajeService {
   /// Obtener estadísticas
   Future<EstadisticasMensajeria> obtenerEstadisticas() async {
     try {
-      final resp = await _api.get<Map<String, dynamic>>('/mensajes/estadisticas');
+      final resp = await _api.get<Map<String, dynamic>>('/api/mensajes/estadisticas');
       return EstadisticasMensajeria.fromJson(_api.extractObject(resp.data));
     } catch (e, stackTrace) {
       _logger.error('Error obteniendo estadísticas', error: e, stackTrace: stackTrace);

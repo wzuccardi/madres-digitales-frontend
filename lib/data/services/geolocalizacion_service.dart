@@ -217,7 +217,7 @@ class GeolocalizacionService {
   /// Obtener estadísticas de geolocalización
   Future<EstadisticasGeolocalizacion> obtenerEstadisticas() async {
     try {
-      final response = await _dio!.get('/geolocalizacion/estadisticas');
+      final response = await _dio!.get('/api/geolocalizacion/estadisticas');
       return EstadisticasGeolocalizacion.fromJson(response.data['data']);
     } catch (e, stackTrace) {
       _logger.error('Error obteniendo estadísticas', error: e, stackTrace: stackTrace);

@@ -51,7 +51,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     try {
       // Usar el apiService directamente desde el provider
       final apiService = ref.read(apiServiceProvider);
-      final response = await apiService.get('/municipios');
+      final response = await apiService.get('/api/municipios');
       
       if (response.success && response.data != null) {
         final List<dynamic> municipiosList = response.data is List 

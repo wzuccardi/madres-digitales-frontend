@@ -300,7 +300,7 @@ class _ContenidoFormScreenState extends ConsumerState<ContenidoFormScreen> {
       
       // Enviar usando el ApiService directamente
       final apiService = ref.read(apiServiceProvider);
-      final response = await apiService.post('/contenido-crud', data: formData);
+      final response = await apiService.post('/api/contenido-crud', data: formData);
       
       if (response.statusCode != 201) {
         final Map<String, dynamic>? body = response.data as Map<String, dynamic>?;

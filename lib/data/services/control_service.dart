@@ -14,7 +14,7 @@ class ControlService {
   final WebSocketService _ws;
 
   Future<List<Control>> getControles() async {
-    final resp = await _api.get<Map<String, dynamic>>('/controles');
+    final resp = await _api.get<Map<String, dynamic>>('/api/controles');
     if (!resp.success || resp.data == null) return [];
     final data = resp.data as dynamic;
     List<dynamic> controlesData = [];
@@ -36,7 +36,7 @@ class ControlService {
 
   Future<bool> createControl(Map<String, dynamic> control) async {
     try {
-      final resp = await _api.post<Map<String, dynamic>>('/controles', data: control);
+      final resp = await _api.post<Map<String, dynamic>>('/api/controles', data: control);
       if (resp.success) {
         await _ws.emit('control:created', control);
       }
@@ -63,7 +63,7 @@ class ControlService {
   }
   Future<bool> updateControl(String id, Map<String, dynamic> control) async {
     try {
-      final resp = await _api.put<Map<String, dynamic>>('/controles/$id', data: control);
+      final resp = await _api.put<Map<String, dynamic>>('/api/controles/$id', data: control);
       if (resp.success) {
         await _ws.emit('control:updated', {'id': id, ...control});
       }
@@ -75,7 +75,7 @@ class ControlService {
   }
   Future<bool> deleteControl(String id) async {
     try {
-      final resp = await _api.delete<Map<String, dynamic>>('/controles/$id');
+      final resp = await _api.delete<Map<String, dynamic>>('/api/controles/$id');
       if (resp.success) {
         await _ws.emit('control:deleted', {'id': id});
       }

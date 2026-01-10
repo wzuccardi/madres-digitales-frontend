@@ -21,7 +21,7 @@ class _HelpPageState extends ConsumerState<HelpPage> {
     setState(() { _loading = true; _error = null; });
     try {
       final api = ref.read(apiServiceProvider);
-      final resp = await api.get<Map<String, dynamic>>('/help');
+      final resp = await api.get<Map<String, dynamic>>('/api/help');
       if (resp.success && resp.data != null) {
         final obj = api.extractObject(resp.data);
         final text = (obj['content'] ?? obj['help'] ?? obj['data'] ?? '').toString();

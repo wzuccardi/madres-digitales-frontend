@@ -13,7 +13,7 @@ class IntegratedAdminService {
     try {
       final response = await _api.authenticatedRequestApiResponse(
         'GET',
-        '/municipios/integrados',
+        '/api/municipios/integrados',
       );
       if (response.success) {
         final list = response.data as List<dynamic>;
@@ -29,8 +29,8 @@ class IntegratedAdminService {
   Future<void> toggleMunicipioEstado(String municipioId, bool nuevoEstado) async {
     try {
       final endpoint = nuevoEstado
-          ? '/municipios/$municipioId/activar'
-          : '/municipios/$municipioId/desactivar';
+          ? '/api/municipios/$municipioId/activar'
+          : '/api/municipios/$municipioId/desactivar';
       final response = await _api.authenticatedRequestApiResponse(
         'POST',
         endpoint,
@@ -48,7 +48,7 @@ class IntegratedAdminService {
     try {
       final response = await _api.authenticatedRequestApiResponse(
         'GET',
-        '/municipios/$municipioId/detallado',
+        '/api/municipios/$municipioId/detallado',
       );
       if (response.success) {
         final map = response.data as Map<String, dynamic>;
@@ -298,7 +298,7 @@ class IntegratedAdminService {
     try {
       final response = await _api.authenticatedRequestApiResponse(
         'GET',
-        '/admin/estadisticas/municipio/$municipioId',
+        '/api/admin/estadisticas/municipio/$municipioId',
       );
       if (response.success) {
         return response.data as Map<String, dynamic>;
@@ -315,7 +315,7 @@ class IntegratedAdminService {
     try {
       final response = await _api.authenticatedRequestApiResponse(
         'GET',
-        '/admin/estadisticas/ips/$ipsId',
+        '/api/admin/estadisticas/ips/$ipsId',
       );
       if (response.success) {
         return response.data as Map<String, dynamic>;
@@ -332,7 +332,7 @@ class IntegratedAdminService {
     try {
       final response = await _api.authenticatedRequestApiResponse(
         'GET',
-        '/admin/estadisticas/medico/$medicoId',
+        '/api/admin/estadisticas/medico/$medicoId',
       );
       if (response.success) {
         return response.data as Map<String, dynamic>;
@@ -398,7 +398,7 @@ class IntegratedAdminService {
 
       final response = await _api.authenticatedRequestApiResponse(
         'GET',
-        '/municipios/integrados/filtros?$queryString',
+        '/api/municipios/integrados/filtros?$queryString',
       );
       if (response.success) {
         final list = response.data as List<dynamic>;
@@ -418,7 +418,7 @@ class IntegratedAdminService {
     try {
       final response = await _api.authenticatedRequestApiResponse(
         'POST',
-        '/municipios/toggle-multiple',
+        '/api/municipios/toggle-multiple',
         body: {
           'municipio_ids': municipioIds,
           'activo': nuevoEstado,

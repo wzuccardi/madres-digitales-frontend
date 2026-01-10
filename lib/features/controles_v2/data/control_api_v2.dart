@@ -8,7 +8,7 @@ class ControlApiV2 {
   final ApiService _api;
 
   Future<List<ControlDto>> fetchControles() async {
-    final resp = await _api.get<Map<String, dynamic>>('/controles');
+    final resp = await _api.get<Map<String, dynamic>>('/api/controles');
     final data = _api.extractData(resp.data);
     List<dynamic> list = [];
     if (data is List) {
@@ -28,8 +28,8 @@ class ControlApiV2 {
       payload['id'] = const Uuid().v4();
     }
     final path = evaluar
-        ? '/alertas-automaticas/controles/con-evaluacion'
-        : '/controles';
+        ? '/api/alertas-automaticas/controles/con-evaluacion'
+        : '/api/controles';
     final resp = await _api.post<Map<String, dynamic>>(path, data: payload);
     return resp.success;
   }

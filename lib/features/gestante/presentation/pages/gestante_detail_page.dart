@@ -637,7 +637,7 @@ class _GestanteDetailPageState extends ConsumerState<GestanteDetailPage>
                   return;
                 }
                 final apiService = ref.read(apiServiceProvider);
-                final resp = await apiService.delete<dynamic>('/gestantes/${_gestante!.id}');
+                final resp = await apiService.delete<dynamic>('/api/gestantes/${_gestante!.id}');
                 if (resp.success) {
                   messenger.showSnackBar(
                     const SnackBar(

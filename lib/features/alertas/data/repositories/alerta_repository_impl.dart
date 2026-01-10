@@ -23,7 +23,7 @@ class AlertaRepositoryImpl implements AlertaRepository {
   @override
   Future<Result<List<Alerta>, AppError>> fetchAlertas() async {
     try {
-      final response = await _apiService.get<dynamic>('/alertas');
+      final response = await _apiService.get<dynamic>('/api/alertas');
       if (!response.success) {
         final error = ServerError(response.error?.message ?? 'Error al obtener alertas');
         return Result.failure(error);
@@ -67,7 +67,7 @@ class AlertaRepositoryImpl implements AlertaRepository {
   @override
   Future<Result<Alerta, AppError>> createAlerta(Map<String, dynamic> data) async {
     try {
-      final response = await _apiService.post<Map<String, dynamic>>('/alertas', data: data);
+      final response = await _apiService.post<Map<String, dynamic>>('/api/alertas', data: data);
       if (!response.success) {
         final error = ServerError(response.error?.message ?? 'Error al crear alerta');
         return Result.failure(error);
@@ -86,7 +86,7 @@ class AlertaRepositoryImpl implements AlertaRepository {
   @override
   Future<Result<void, AppError>> resolverAlerta(String id) async {
     try {
-      final response = await _apiService.put<Map<String, dynamic>>('/alertas/$id/resolver');
+      final response = await _apiService.put<Map<String, dynamic>>('/api/alertas/$id/resolver');
       if (!response.success) {
         final error = ServerError(response.error?.message ?? 'Error al resolver alerta');
         return Result.failure(error);
@@ -104,7 +104,7 @@ class AlertaRepositoryImpl implements AlertaRepository {
   @override
   Future<Result<void, AppError>> marcarComoLeida(String id) async {
     try {
-      final response = await _apiService.post<Map<String, dynamic>>('/alertas/$id/leida');
+      final response = await _apiService.post<Map<String, dynamic>>('/api/alertas/$id/leida');
       if (!response.success) {
         final error = ServerError(response.error?.message ?? 'Error al marcar alerta como leída');
         return Result.failure(error);
