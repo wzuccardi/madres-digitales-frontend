@@ -8,6 +8,7 @@ abstract class GestanteRepository {
     String? madrinaId,
     int? limit,
     int? offset,
+    Map<String, dynamic>? filters,
   });
 
   Future<Result<Gestante, AppError>> getGestanteById(String id);

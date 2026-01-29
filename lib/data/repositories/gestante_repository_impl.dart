@@ -27,6 +27,7 @@ class GestanteRepositoryImpl implements GestanteRepository {
     String? madrinaId,
     int? limit,
     int? offset,
+    Map<String, dynamic>? filters,
   }) async {
     try {
       final queryParams = <String, dynamic>{};
@@ -41,6 +42,11 @@ class GestanteRepositoryImpl implements GestanteRepository {
       
       if (offset != null) {
         queryParams['offset'] = offset;
+      }
+
+      // Agregar filtros adicionales
+      if (filters != null) {
+        queryParams.addAll(filters);
       }
 
       final response = await _apiService.get<dynamic>('/api/gestantes', queryParameters: queryParams);

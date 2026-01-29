@@ -20,14 +20,18 @@ class _GestantesListPageState extends ConsumerState<GestantesListPage> {
   int page = 1;
   final int limit = 40;
   List<Map<String, String>> _municipios = [];
+  List<Map<String, String>> _madrinas = [];
   String? _selectedMunicipioId;
+  String? _selectedMadrinaId;
   bool _loadingMunicipios = true;
+  bool _loadingMadrinas = true;
 
   @override
   void initState() {
     super.initState();
     _fetchGestantes(reset: true);
     _loadMunicipios();
+    _loadMadrinas();
   }
 
   Future<void> _fetchGestantes({bool reset = false}) async {
@@ -37,8 +41,23 @@ class _GestantesListPageState extends ConsumerState<GestantesListPage> {
       if (reset) gestantes = const [];
       errorMessage = null;
     });
+    
+    // Construir filtros para el backend
+    final filters = <String, dynamic>{};
+    if (_selectedMunicipioId != null) {
+      filters['municipio_id'] = _selectedMunicipioId;
+    }
+    if (_selectedMadrinaId != null) {
+      filters['madrina_id'] = _selectedMadrinaId;
+    }
+    
     final repo = ref.read(gestanteRepositoryProvider);
-    final result = await repo.getGestantes(limit: limit, offset: (page - 1) * limit);
+    final result = await repo.getGestantes(
+      limit: limit, 
+      offset: (page - 1) * limit,
+      filters: filters,
+    );
+    
     if (!mounted) return;
     if (result.isFailure) {
       setState(() {
@@ -74,27 +93,62 @@ class _GestantesListPageState extends ConsumerState<GestantesListPage> {
     }
   }
 
+  Future<void> _loadMadrinas() async {
+    setState(() {
+      _loadingMadrinas = true;
+    });
+    try {
+      final apiService = ref.read(apiServiceProvider);
+      final response = await apiService.get<Map<String, dynamic>>('/api/usuarios');
+      
+      if (response.success && response.data != null) {
+        final data = response.data!;
+        final usuarios = data['data'] as List<dynamic>? ?? [];
+        
+        // Filtrar solo madrinas activas
+        final madrinas = usuarios
+            .where((u) => u['rol'] == 'madrina' && u['activo'] == true)
+            .map((u) => {
+                  'id': u['id'] as String,
+                  'nombre': u['nombre'] as String? ?? u['email'] as String,
+                })
+            .toList();
+        
+        if (!mounted) return;
+        setState(() {
+          _madrinas = madrinas;
+          _loadingMadrinas = false;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loadingMadrinas = false;
+      });
+    }
+  }
+
   Future<void> _loadMore() async {
     page += 1;
     await _fetchGestantes();
   }
 
+  void _onMunicipioChanged(String? value) {
+    setState(() {
+      _selectedMunicipioId = value;
+    });
+    _fetchGestantes(reset: true);
+  }
+
+  void _onMadrinaChanged(String? value) {
+    setState(() {
+      _selectedMadrinaId = value;
+    });
+    _fetchGestantes(reset: true);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final selectedNombre = _selectedMunicipioId == null
-        ? null
-        : (_municipios.firstWhere(
-              (m) => m['id'] == _selectedMunicipioId,
-              orElse: () => {'id': _selectedMunicipioId!, 'nombre': ''},
-            ))['nombre'];
-    final visibles = (_selectedMunicipioId == null)
-        ? gestantes
-        : gestantes.where((g) {
-            if (g.municipioId != null && g.municipioId == _selectedMunicipioId) return true;
-            if (selectedNombre != null && selectedNombre.isNotEmpty && (g.municipio ?? '').toLowerCase() == selectedNombre.toLowerCase()) return true;
-            return false;
-          }).toList();
-
     return V2PageScaffold(
       title: 'Gestantes',
       actions: [
@@ -104,39 +158,90 @@ class _GestantesListPageState extends ConsumerState<GestantesListPage> {
           onPressed: () => context.go('/gestantes/nueva'),
         ),
       ],
-      body: isLoading
+      body: isLoading && gestantes.isEmpty
           ? const Center(child: CircularProgressIndicator())
-          : errorMessage != null
+          : errorMessage != null && gestantes.isEmpty
               ? Center(child: Text(errorMessage!))
               : RefreshIndicator(
                   onRefresh: () => _fetchGestantes(reset: true),
                   child: ListView(
                     children: [
+                      // Filtro por Municipio
                       Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.only(bottom: 8),
                         child: _loadingMunicipios
                             ? const Center(child: CircularProgressIndicator())
                             : V2FilterBar(
                                 label: 'Municipio',
                                 child: DropdownButton<String?>(
                                   value: _selectedMunicipioId,
+                                  isExpanded: true,
                                   items: [
                                     const DropdownMenuItem<String?>(value: null, child: Text('Todos')),
-                                    ..._municipios.map((m) => DropdownMenuItem<String?>(value: m['id'], child: Text(m['nombre']!))),
+                                    ..._municipios.map((m) => DropdownMenuItem<String?>(
+                                          value: m['id'],
+                                          child: Text(m['nombre']!),
+                                        )),
                                   ],
-                                  onChanged: (v) => setState(() => _selectedMunicipioId = v),
+                                  onChanged: _onMunicipioChanged,
                                 ),
                               ),
                       ),
-                      ...visibles.map((g) => V2CardListTile(
+                      // Filtro por Madrina
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _loadingMadrinas
+                            ? const Center(child: CircularProgressIndicator())
+                            : V2FilterBar(
+                                label: 'Madrina',
+                                child: DropdownButton<String?>(
+                                  value: _selectedMadrinaId,
+                                  isExpanded: true,
+                                  items: [
+                                    const DropdownMenuItem<String?>(value: null, child: Text('Todas')),
+                                    ..._madrinas.map((m) => DropdownMenuItem<String?>(
+                                          value: m['id'],
+                                          child: Text(m['nombre']!),
+                                        )),
+                                  ],
+                                  onChanged: _onMadrinaChanged,
+                                ),
+                              ),
+                      ),
+                      // Mostrar contador de resultados
+                      if (gestantes.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          child: Text(
+                            'Mostrando ${gestantes.length} gestante${gestantes.length != 1 ? 's' : ''}',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
+                      // Lista de gestantes
+                      ...gestantes.map((g) => V2CardListTile(
                             title: g.nombre,
                             subtitle: '${g.id} · ${(g.municipio ?? '').isNotEmpty ? g.municipio! : (g.municipioId ?? '')}',
                             onTap: () => context.go('/gestantes/editar/${g.id}'),
                           )),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: ElevatedButton(onPressed: _loadMore, child: const Text('Cargar más')),
-                      ),
+                      // Botón cargar más
+                      if (gestantes.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: isLoading
+                              ? const Center(child: CircularProgressIndicator())
+                              : ElevatedButton(
+                                  onPressed: _loadMore,
+                                  child: const Text('Cargar más'),
+                                ),
+                        ),
+                      // Mensaje si no hay resultados
+                      if (gestantes.isEmpty && !isLoading)
+                        const Padding(
+                          padding: EdgeInsets.all(32),
+                          child: Center(
+                            child: Text('No se encontraron gestantes con los filtros seleccionados'),
+                          ),
+                        ),
                     ],
                   ),
                 ),
